@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI Tabanlı Akıllı Yemekhane Asistan Sistemi - Menü optimizasyonu, yemek tanıma ve chatbot asistan">
+    <title>AI Akıllı Yemekhane Asistanı</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- ═══ NAVBAR ═══ -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <span class="logo-icon">🍽️</span>
+                <span class="logo-text">Akıllı Yemekhane</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#features">Özellikler</a></li>
+                <li><a href="#menu">Menü</a></li>
+                <li><a href="#chatbot">Asistan</a></li>
+                <li><a href="/docs" class="nav-btn" target="_blank">API Docs</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- ═══ HERO ═══ -->
+    <header class="hero" id="hero">
+        <div class="hero-bg-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+        <div class="hero-content">
+            <div class="hero-badge">🤖 Yapay Zeka Destekli</div>
+            <h1>Akıllı Yemekhane<br><span class="gradient-text">Asistan Sistemi</span></h1>
+            <p class="hero-desc">
+                Menü optimizasyonu, fotoğraftan yemek tanıma ve kişiselleştirilmiş
+                beslenme önerilerini tek bir platformda deneyimleyin.
+            </p>
+            <div class="hero-actions">
+                <a href="#chatbot" class="btn btn-primary">Chatbot'u Dene</a>
+                <a href="#features" class="btn btn-outline">Keşfet</a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat"><span class="stat-num">30+</span><span class="stat-label">Yemek Verisi</span></div>
+                <div class="stat"><span class="stat-num">3</span><span class="stat-label">AI Modülü</span></div>
+                <div class="stat"><span class="stat-num">6</span><span class="stat-label">API Endpoint</span></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ═══ FEATURES ═══ -->
+    <section class="features" id="features">
+        <div class="container">
+            <h2 class="section-title">Modüller</h2>
+            <p class="section-desc">Üç güçlü AI modülü ile yemekhane deneyiminizi dönüştürün</p>
+            <div class="features-grid">
+
+                <!-- Modül 1 -->
+                <div class="feature-card" id="feature-menu">
+                    <div class="card-icon">📊</div>
+                    <h3>Menü Optimizasyonu</h3>
+                    <p>Makine öğrenimi ile yemek popülerlik tahmini yaparak dengeli
+                       ve beğenilen haftalık menüler oluşturur.</p>
+                    <ul class="card-tags">
+                        <li>scikit-learn</li>
+                        <li>RandomForest</li>
+                        <li>pandas</li>
+                    </ul>
+                    <button class="btn btn-card" onclick="predictMenu()">Menü Öner</button>
+                </div>
+
+                <!-- Modül 2 -->
+                <div class="feature-card" id="feature-food">
+                    <div class="card-icon">📸</div>
+                    <h3>Yemek Tanıma</h3>
+                    <p>Fotoğraf yükleyerek yemeğini tanıt ve besin değerlerini
+                       anında öğren. YOLO + Food-101 modeli.</p>
+                    <ul class="card-tags">
+                        <li>YOLO</li>
+                        <li>Food-101</li>
+                        <li>Pillow</li>
+                    </ul>
+                    <label class="btn btn-card" for="food-upload">Fotoğraf Yükle</label>
+                    <input type="file" id="food-upload" accept="image/*" style="display:none" onchange="recognizeFood(this)">
+                </div>
+
+                <!-- Modül 3 -->
+                <div class="feature-card" id="feature-chat">
+                    <div class="card-icon">💬</div>
+                    <h3>Chatbot Asistan</h3>
+                    <p>Gemini LLM tabanlı asistanınız menü bilgisi, besin
+                       değerleri ve diyet önerileri sunar.</p>
+                    <ul class="card-tags">
+                        <li>Gemini API</li>
+                        <li>NLP</li>
+                        <li>LLM</li>
+                    </ul>
+                    <a href="#chatbot" class="btn btn-card">Sohbet Başlat</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ TODAY MENU ═══ -->
+    <section class="menu-section" id="menu">
+        <div class="container">
+            <h2 class="section-title">Bugünün Menüsü</h2>
+            <p class="section-desc">Günlük yemekhane menüsünü buradan takip edin</p>
+            <div class="menu-card" id="today-menu-card">
+                <div class="menu-loading">⏳ Menü yükleniyor...</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ CHATBOT ═══ -->
+    <section class="chatbot-section" id="chatbot">
+        <div class="container">
+            <h2 class="section-title">Yemekhane Asistanı</h2>
+            <p class="section-desc">Menü, besin değeri veya diyet hakkında soru sorun</p>
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message bot-message">
+                        <div class="message-avatar">🤖</div>
+                        <div class="message-body">
+                            <p>Merhaba! 👋 Ben yemekhane asistanıyım. Size menü, besin değerleri
+                            veya diyet önerileri konusunda yardımcı olabilirim.</p>
+                            <div class="suggestions" id="suggestions">
+                                <button onclick="sendSuggestion('Bugünkü menü ne?')">Bugünkü menü ne?</button>
+                                <button onclick="sendSuggestion('Kalori hesapla')">Kalori hesapla</button>
+                                <button onclick="sendSuggestion('Sağlıklı bir öğün öner')">Sağlıklı öğün öner</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" placeholder="Mesajınızı yazın..."
+                           onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button class="send-btn" onclick="sendMessage()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ FOOTER ═══ -->
+    <footer class="footer">
+        <div class="container">
+            <p>🎓 AI Tabanlı Akıllı Yemekhane Asistan Sistemi — Üniversite Bitirme Projesi</p>
+            <p class="footer-tech">Python • FastAPI • SQLite • YOLO • Gemini AI</p>
+        </div>
+    </footer>
+
+    <!-- ═══ RESULT MODAL ═══ -->
+    <div class="modal-overlay" id="result-modal" style="display:none">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal()">✕</button>
+            <h3 id="modal-title">Sonuç</h3>
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // ─── API Base URL ─────────────────────────────────────────
+        const API = '';
+
+        // ─── Bugünün menüsünü yükle ──────────────────────────────
+        async function loadTodayMenu() {
+            const card = document.getElementById('today-menu-card');
+            try {
+                const res = await fetch(`${API}/api/menu/today`);
+                const data = await res.json();
+                if (data.success) {
+                    const m = data.data;
+                    card.innerHTML = `
+                        <div class="menu-header">
+                            <span class="menu-day">${m.gun}</span>
+                            <span class="menu-date">${m.tarih}</span>
+                        </div>
+                        <div class="menu-items">
+                            <div class="menu-item"><span class="item-cat">🥣 Çorba</span><span class="item-name">${m.corba || '-'}</span></div>
+                            <div class="menu-item"><span class="item-cat">🍖 Ana Yemek</span><span class="item-name">${m.ana_yemek || '-'}</span></div>
+                            <div class="menu-item"><span class="item-cat">🍚 Pilav</span><span class="item-name">${m.pilav || '-'}</span></div>
+                            <div class="menu-item"><span class="item-cat">🍰 Tatlı</span><span class="item-name">${m.tatli || '-'}</span></div>
+                            <div class="menu-item"><span class="item-cat">🥗 Salata</span><span class="item-name">${m.salata || '-'}</span></div>
+                        </div>
+                    `;
+                } else {
+                    card.innerHTML = `<div class="menu-empty">📋 ${data.message || 'Bugün için menü bulunamadı.'}</div>`;
+                }
+            } catch (e) {
+                card.innerHTML = `<div class="menu-empty">⚠️ Menü yüklenirken hata oluştu.</div>`;
+            }
+        }
+
+        // ─── Menü Öner ───────────────────────────────────────────
+        async function predictMenu() {
+            try {
+                const res = await fetch(`${API}/api/predict-menu`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    let html = '<div class="weekly-menu">';
+                    data.data.forEach(day => {
+                        html += `
+                            <div class="weekly-day">
+                                <strong>${day.gun} (${day.tarih})</strong>
+                                <ul>
+                                    <li>🥣 ${day.corba}</li>
+                                    <li>🍖 ${day.ana_yemek}</li>
+                                    <li>🍚 ${day.pilav}</li>
+                                    <li>🍰 ${day.tatli}</li>
+                                    <li>🥗 ${day.salata}</li>
+                                </ul>
+                            </div>`;
+                    });
+                    html += '</div>';
+                    showModal('Haftalık Menü Önerisi', html);
+                } else {
+                    showModal('Hata', `<p>${data.message}</p>`);
+                }
+            } catch (e) {
+                showModal('Hata', '<p>Menü önerisi alınamadı.</p>');
+            }
+        }
+
+        // ─── Yemek Tanıma ────────────────────────────────────────
+        async function recognizeFood(input) {
+            if (!input.files || !input.files[0]) return;
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+            try {
+                const res = await fetch(`${API}/api/recognize-food`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const items = data.data.taninan_yemekler || [];
+                    let html = '<div class="food-results">';
+                    items.forEach(item => {
+                        html += `
+                            <div class="food-item">
+                                <strong>${item.yemek_adi}</strong>
+                                <span>Güven: %${(item.guven_skoru * 100).toFixed(0)}</span>
+                            </div>`;
+                    });
+                    const n = data.data.toplam_besin_degeri;
+                    html += `
+                        <div class="nutrition-summary">
+                            <h4>Toplam Besin Değeri</h4>
+                            <p>🔥 Kalori: ${n.kalori} kcal</p>
+                            <p>💪 Protein: ${n.protein}g</p>
+                            <p>🌾 Karbonhidrat: ${n.karbonhidrat}g</p>
+                            <p>🧈 Yağ: ${n.yag}g</p>
+                        </div>`;
+                    html += '</div>';
+                    showModal('Yemek Tanıma Sonucu', html);
+                } else {
+                    showModal('Hata', `<p>${data.message}</p>`);
+                }
+            } catch (e) {
+                showModal('Hata', '<p>Yemek tanıma başarısız.</p>');
+            }
+            input.value = '';
+        }
+
+        // ─── Chatbot ─────────────────────────────────────────────
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+            input.value = '';
+            appendMessage('user', msg);
+
+            try {
+                const res = await fetch(`${API}/api/chat`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: msg})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    appendMessage('bot', data.data.response, data.data.suggestions);
+                } else {
+                    appendMessage('bot', 'Bir hata oluştu, tekrar deneyin.');
+                }
+            } catch (e) {
+                appendMessage('bot', 'Sunucuya bağlanılamadı.');
+            }
+        }
+
+        function sendSuggestion(text) {
+            document.getElementById('chat-input').value = text;
+            sendMessage();
+        }
+
+        function appendMessage(role, text, suggestions) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `message ${role === 'bot' ? 'bot-message' : 'user-message'}`;
+
+            let avatar = role === 'bot' ? '🤖' : '👤';
+            let suggestionsHtml = '';
+            if (suggestions && suggestions.length > 0) {
+                suggestionsHtml = '<div class="suggestions">' +
+                    suggestions.map(s => `<button onclick="sendSuggestion('${s}')">${s}</button>`).join('') +
+                    '</div>';
+            }
+
+            div.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-body"><p>${text}</p>${suggestionsHtml}</div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // ─── Modal ───────────────────────────────────────────────
+        function showModal(title, content) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-content').innerHTML = content;
+            document.getElementById('result-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('result-modal').style.display = 'none';
+        }
+
+        // ─── Sayfa yüklendiğinde ─────────────────────────────────
+        document.addEventListener('DOMContentLoaded', loadTodayMenu);
+    </script>
+</body>
+</html>
