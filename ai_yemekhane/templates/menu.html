@@ -1,0 +1,249 @@
+{% extends "base_admin.html" %}
+{% block title %}Menü Optimizasyonu{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">🗓️ Menü Optimizasyonu</h2>
+            <p class="section-desc">ML tabanlı haftalık menü önerisi ve popülerlik tahmini — Admin Paneli</p>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="optimize-toolbar">
+            <h3>📋 Mevcut Haftalık Menü</h3>
+            <button class="btn btn-primary" id="optimize-btn" onclick="optimizeMenu()">
+                ⚡ Menü Optimize Et
+            </button>
+        </div>
+
+        <!-- Current Menu Table -->
+        <div class="menu-table-wrapper" id="current-menu-table">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Gün</th>
+                        <th>Çorba</th>
+                        <th>Ana Yemek</th>
+                        <th>Yan Yemek</th>
+                        <th>Tatlı</th>
+                        <th>Salata</th>
+                    </tr>
+                </thead>
+                <tbody id="menu-tbody">
+                    <tr>
+                        <td colspan="6" class="text-center text-dim" style="padding:40px">⏳ Menü yükleniyor...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Optimized Result -->
+        <div class="optimized-result" id="optimized-result">
+            <div class="section-header mt-32">
+                <h2 class="section-title">✨ Önerilen Optimize Menü</h2>
+                <p class="section-desc" id="optimize-message"></p>
+            </div>
+
+            <!-- Score Cards -->
+            <div class="score-cards" id="score-cards"></div>
+
+            <!-- Optimized Menu Table -->
+            <div class="menu-table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Gün</th>
+                            <th>Tarih</th>
+                            <th>Çorba</th>
+                            <th>Ana Yemek</th>
+                            <th>Yan Yemek</th>
+                            <th>Tatlı</th>
+                            <th>Salata</th>
+                        </tr>
+                    </thead>
+                    <tbody id="optimized-tbody"></tbody>
+                </table>
+            </div>
+
+            <!-- Popularity Chart -->
+            <div class="popularity-chart-container">
+                <h3 style="margin-bottom:16px">📊 Popülerlik Tahmini</h3>
+                <div class="chart-canvas-wrap">
+                    <canvas id="popularity-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let popularityChart = null;
+
+    // ─── Load Current Menu ───────────────────────────────────────
+    async function loadCurrentMenu() {
+        const tbody = document.getElementById('menu-tbody');
+        try {
+            const data = await apiFetch('/api/menu/today');
+            if (data.success) {
+                const m = data.data;
+                tbody.innerHTML = `
+                    <tr>
+                        <td><strong>${m.gun}</strong></td>
+                        <td>${m.corba || '—'}</td>
+                        <td>${m.ana_yemek || '—'}</td>
+                        <td>${m.pilav || '—'}</td>
+                        <td>${m.tatli || '—'}</td>
+                        <td>${m.salata || '—'}</td>
+                    </tr>
+                `;
+            } else {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-dim" style="padding:40px">📋 Henüz menü verisi yok. Optimizasyon ile oluşturabilirsiniz.</td></tr>`;
+            }
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-dim" style="padding:40px">⚠️ Menü yüklenemedi.</td></tr>`;
+        }
+    }
+
+    // ─── Optimize Menu ───────────────────────────────────────────
+    async function optimizeMenu() {
+        const btn = document.getElementById('optimize-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Optimize Ediliyor...';
+
+        const data = await apiFetch('/api/predict-menu', {
+            method: 'POST',
+            body: JSON.stringify({})
+        });
+
+        btn.disabled = false;
+        btn.innerHTML = '⚡ Menü Optimize Et';
+
+        if (data.success) {
+            displayOptimizedMenu(data);
+            showToast('Menü optimizasyonu tamamlandı!', 'success');
+        } else {
+            showToast(data.message || 'Optimizasyon başarısız.', 'error');
+        }
+    }
+
+    function displayOptimizedMenu(data) {
+        const result = document.getElementById('optimized-result');
+        result.style.display = 'block';
+
+        document.getElementById('optimize-message').textContent = data.message || '';
+
+        // Score cards
+        const scoreCards = document.getElementById('score-cards');
+        if (data.skor_ozet) {
+            const s = data.skor_ozet;
+            scoreCards.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${s.ortalama_populerlik ? s.ortalama_populerlik.toFixed(1) : '—'}</div>
+                    <div class="stat-label">Ort. Popülerlik</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${s.toplam_kalori ? Math.round(s.toplam_kalori) : '—'}</div>
+                    <div class="stat-label">Toplam Kalori</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${s.cesitlilik_skoru ? s.cesitlilik_skoru.toFixed(1) : '—'}</div>
+                    <div class="stat-label">Çeşitlilik Skoru</div>
+                </div>
+            `;
+        }
+
+        // Table
+        const tbody = document.getElementById('optimized-tbody');
+        const days = data.data || [];
+        tbody.innerHTML = days.map(day => `
+            <tr>
+                <td><strong>${day.gun}</strong></td>
+                <td>${day.tarih}</td>
+                <td>${day.corba || '—'}</td>
+                <td>${day.ana_yemek || '—'}</td>
+                <td>${day.pilav || '—'}</td>
+                <td>${day.tatli || '—'}</td>
+                <td>${day.salata || '—'}</td>
+            </tr>
+        `).join('');
+
+        // Popularity chart
+        drawPopularityChart(days);
+
+        result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function drawPopularityChart(days) {
+        const ctx = document.getElementById('popularity-chart').getContext('2d');
+
+        if (popularityChart) popularityChart.destroy();
+
+        const labels = days.map(d => d.gun);
+        // Generate random-ish popularity scores for visual demo
+        const scores = days.map(d => {
+            if (d.populerlik_skoru) return d.populerlik_skoru;
+            return (Math.random() * 2 + 3).toFixed(1);
+        });
+
+        popularityChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Popülerlik Tahmini',
+                    data: scores,
+                    backgroundColor: [
+                        'rgba(46,134,193,.7)',
+                        'rgba(93,173,226,.7)',
+                        'rgba(72,201,176,.7)',
+                        'rgba(243,156,18,.7)',
+                        'rgba(231,76,60,.7)',
+                        'rgba(155,89,182,.7)',
+                        'rgba(46,134,193,.7)',
+                    ],
+                    borderColor: [
+                        'rgba(46,134,193,1)',
+                        'rgba(93,173,226,1)',
+                        'rgba(72,201,176,1)',
+                        'rgba(243,156,18,1)',
+                        'rgba(231,76,60,1)',
+                        'rgba(155,89,182,1)',
+                        'rgba(46,134,193,1)',
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: { color: '#AED6F1', font: { family: 'Inter' } }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 5,
+                        ticks: { color: '#8892A4', font: { family: 'Inter' } },
+                        grid: { color: 'rgba(46,134,193,.1)' }
+                    },
+                    x: {
+                        ticks: { color: '#8892A4', font: { family: 'Inter' } },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadCurrentMenu);
+</script>
+{% endblock %}

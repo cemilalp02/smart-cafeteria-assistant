@@ -1,0 +1,347 @@
+{% extends "base_admin.html" %}
+{% block title %}Yönetici Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">🛡️ Yönetici Dashboard</h2>
+            <p class="section-desc">İsraf analizi, uyarılar ve trend takibi</p>
+        </div>
+
+        <!-- Özet Kartlar -->
+        <div class="admin-summary-grid">
+            <div class="admin-stat-card waste-card">
+                <div class="stat-icon">🗑️</div>
+                <div class="stat-value" id="stat-waste">—</div>
+                <div class="stat-label">Bugünün İsraf Skoru</div>
+                <div class="stat-sub" id="stat-waste-level">—</div>
+            </div>
+            <div class="admin-stat-card alert-card">
+                <div class="stat-icon">⚠️</div>
+                <div class="stat-value" id="stat-alerts">—</div>
+                <div class="stat-label">Aktif Uyarı</div>
+                <div class="stat-sub" id="stat-alert-detail">—</div>
+            </div>
+            <div class="admin-stat-card rating-stat-card">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-value" id="stat-rating">—</div>
+                <div class="stat-label">Ortalama Memnuniyet</div>
+                <div class="stat-sub" id="stat-rating-trend">—</div>
+            </div>
+        </div>
+
+        <!-- Aktif Uyarılar -->
+        <div class="section-header" style="margin-top:40px;">
+            <h2 class="section-title">🚨 Aktif Uyarılar</h2>
+        </div>
+        <div id="alerts-container" class="alerts-list">
+            <p class="text-dim">Yükleniyor...</p>
+        </div>
+
+        <!-- Grafikler -->
+        <div class="report-grid" style="margin-top:40px;">
+            <div>
+                <div class="chart-card mb-20">
+                    <h3>📉 İsraf Oranı Trendi (Son 30 Gün)</h3>
+                    <div class="chart-canvas-wrap"><canvas id="waste-trend-chart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <h3>🏆 En Beğenilen 5 Yemek</h3>
+                    <div class="chart-canvas-wrap"><canvas id="top-rated-admin"></canvas></div>
+                </div>
+            </div>
+            <div>
+                <div class="chart-card mb-20">
+                    <h3>🗑️ En Çok İsraf Edilen 5 Yemek</h3>
+                    <div class="chart-canvas-wrap"><canvas id="top-waste-chart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <h3>🌿 Mevsimsel Ortalama</h3>
+                    <div class="chart-canvas-wrap"><canvas id="seasonal-chart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🔮 Tahminsel Analiz -->
+        <div class="section-header" style="margin-top:40px;">
+            <h2 class="section-title">🔮 Tahminsel Analiz</h2>
+            <p class="section-desc">Gelecek hafta israf tahmini ve riskli yemekler</p>
+        </div>
+
+        <div class="admin-summary-grid">
+            <div class="admin-stat-card">
+                <div class="stat-icon">🔮</div>
+                <div class="stat-value" id="pred-waste">—</div>
+                <div class="stat-label">Tahmini İsraf</div>
+                <div class="stat-sub" id="pred-level">—</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="stat-icon">📈</div>
+                <div class="stat-value" id="pred-trend">—</div>
+                <div class="stat-label">Trend Yönü</div>
+                <div class="stat-sub" id="pred-confidence">—</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="stat-icon">⚠️</div>
+                <div class="stat-value" id="pred-risky">—</div>
+                <div class="stat-label">Riskli Yemek</div>
+                <div class="stat-sub" id="pred-risky-detail">—</div>
+            </div>
+        </div>
+
+        <!-- Öneriler -->
+        <div id="pred-suggestions" class="alerts-list" style="margin-top: 16px;"></div>
+
+        <!-- Riskli Yemekler Tablosu -->
+        <div id="pred-risky-table" style="margin-top: 16px;"></div>
+
+        <!-- Menü Optimizasyonu -->
+        <div class="admin-actions" style="margin-top:32px;">
+            <button class="btn btn-primary" onclick="runOptimize()">🤖 Menü Optimizasyonu Çalıştır</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // ─── Özet kartları yükle ──────────────────────────────────────
+    async function loadAdminSummary() {
+        // İsraf
+        try {
+            const waste = await apiFetch('/api/waste/daily');
+            if (waste.success) {
+                document.getElementById('stat-waste').textContent = waste.genel_israf_skoru + '%';
+                document.getElementById('stat-waste-level').textContent = waste.genel_israf_seviye;
+                const el = document.querySelector('.waste-card');
+                if (waste.genel_israf_skoru >= 50) el.classList.add('level-high');
+                else if (waste.genel_israf_skoru >= 25) el.classList.add('level-mid');
+                else el.classList.add('level-low');
+            }
+        } catch (e) { document.getElementById('stat-waste').textContent = '0%'; }
+
+        // Uyarılar
+        try {
+            const alerts = await apiFetch('/api/alerts/active');
+            if (alerts.success) {
+                document.getElementById('stat-alerts').textContent = alerts.toplam;
+                const oz = alerts.ozet;
+                let parts = [];
+                if (oz.kritik) parts.push(`${oz.kritik} Kritik`);
+                if (oz.uyari) parts.push(`${oz.uyari} Uyarı`);
+                if (oz.dikkat) parts.push(`${oz.dikkat} Dikkat`);
+                document.getElementById('stat-alert-detail').textContent = parts.join(', ') || 'Uyarı yok';
+                renderAlerts(alerts.alerts);
+            }
+        } catch (e) { document.getElementById('stat-alerts').textContent = '0'; }
+
+        // Memnuniyet
+        try {
+            const trends = await apiFetch('/api/trends/monthly?gun=7');
+            if (trends.success) {
+                document.getElementById('stat-rating').textContent = trends.genel_ortalama + '/5';
+                document.getElementById('stat-rating-trend').textContent = 'Trend: ' + trends.trend_yon;
+            }
+        } catch (e) { document.getElementById('stat-rating').textContent = '—'; }
+    }
+
+    // ─── Uyarıları render et ──────────────────────────────────────
+    function renderAlerts(alerts) {
+        const container = document.getElementById('alerts-container');
+        if (!alerts || !alerts.length) {
+            container.innerHTML = '<div class="alert-empty">✅ Aktif uyarı bulunmuyor. Her şey yolunda!</div>';
+            return;
+        }
+
+        const seviyeIcon = { KRITIK: '🔴', UYARI: '🟠', DIKKAT: '🟡', BILGI: '🔵' };
+        let html = '';
+        alerts.forEach(a => {
+            html += `<div class="alert-item alert-${a.seviye.toLowerCase()}">
+                <span class="alert-level-icon">${seviyeIcon[a.seviye] || '⚪'}</span>
+                <div class="alert-content">
+                    <div class="alert-badge">${a.seviye}</div>
+                    <div class="alert-msg">${a.mesaj}</div>
+                    <div class="alert-date">${a.tarih}</div>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    // ─── Grafikler ────────────────────────────────────────────────
+    async function loadAdminCharts() {
+        // İsraf trend
+        try {
+            const waste = await apiFetch('/api/waste/weekly');
+            if (waste.success && waste.gunluk_trend.length) {
+                new Chart(document.getElementById('waste-trend-chart').getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: waste.gunluk_trend.map(d => { const dt = new Date(d.tarih); return dt.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }); }),
+                        datasets: [{
+                            label: 'İsraf Skoru (%)',
+                            data: waste.gunluk_trend.map(d => d.israf_skoru),
+                            borderColor: 'rgba(231,76,60,1)', backgroundColor: 'rgba(231,76,60,.12)',
+                            borderWidth: 3, fill: true, tension: 0.3, pointRadius: 5,
+                            pointBackgroundColor: 'rgba(231,76,60,1)', pointBorderColor: '#fff', pointBorderWidth: 2,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { min: 0, max: 100, ticks: { color: '#8892A4', callback: v => v + '%' }, grid: { color: 'rgba(46,134,193,.1)' } },
+                            x: { ticks: { color: '#8892A4' }, grid: { display: false } }
+                        },
+                        plugins: { legend: { labels: { color: '#AED6F1' } } }
+                    }
+                });
+            }
+
+            // En çok israf
+            if (waste.en_cok_israf && waste.en_cok_israf.length) {
+                new Chart(document.getElementById('top-waste-chart').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: waste.en_cok_israf.map(d => d.yemek_adi),
+                        datasets: [{
+                            label: 'İsraf Skoru',
+                            data: waste.en_cok_israf.map(d => d.israf_skoru),
+                            backgroundColor: ['rgba(231,76,60,.8)', 'rgba(230,126,34,.8)', 'rgba(241,196,15,.8)', 'rgba(243,156,18,.8)', 'rgba(211,84,0,.8)'],
+                            borderRadius: 8, borderWidth: 0,
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y', responsive: true,
+                        scales: {
+                            x: { min: 0, max: 100, ticks: { color: '#8892A4' }, grid: { color: 'rgba(46,134,193,.1)' } },
+                            y: { ticks: { color: '#AED6F1', font: { size: 12 } }, grid: { display: false } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+        } catch (e) { }
+
+        // En beğenilen
+        try {
+            const ratings = await apiFetch('/api/ratings/weekly-report');
+            if (ratings.success && ratings.en_begenilen && ratings.en_begenilen.length) {
+                new Chart(document.getElementById('top-rated-admin').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: ratings.en_begenilen.map(d => d.yemek_adi),
+                        datasets: [{
+                            label: 'Ortalama Puan',
+                            data: ratings.en_begenilen.map(d => d.ortalama),
+                            backgroundColor: 'rgba(72,201,176,.8)', borderRadius: 8, borderWidth: 0,
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y', responsive: true,
+                        scales: {
+                            x: { min: 0, max: 5, ticks: { color: '#8892A4' }, grid: { color: 'rgba(46,134,193,.1)' } },
+                            y: { ticks: { color: '#AED6F1', font: { size: 12 } }, grid: { display: false } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+        } catch (e) { }
+
+        // Mevsimsel
+        try {
+            const seasonal = await apiFetch('/api/trends/seasonal');
+            if (seasonal.success && Object.keys(seasonal.mevsimler).length) {
+                const mevsimler = seasonal.mevsimler;
+                const labels = Object.keys(mevsimler);
+                const values = labels.map(m => mevsimler[m].genel_ortalama);
+                new Chart(document.getElementById('seasonal-chart').getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: ['rgba(93,173,226,.8)', 'rgba(72,201,176,.8)', 'rgba(243,156,18,.8)', 'rgba(231,76,60,.8)'],
+                            borderWidth: 2, hoverOffset: 8,
+                        }]
+                    },
+                    options: {
+                        responsive: true, cutout: '55%',
+                        plugins: { legend: { position: 'bottom', labels: { color: '#AED6F1', padding: 12 } } }
+                    }
+                });
+            }
+        } catch (e) { }
+    }
+
+    // ─── Tahminsel Analiz ──────────────────────────────────────────
+    async function loadPredictions() {
+        try {
+            const data = await apiFetch('/api/predictions/weekly');
+            if (!data.success) return;
+
+            document.getElementById('pred-waste').textContent = `%${data.tahmin_israf_skoru}`;
+            document.getElementById('pred-level').textContent = data.tahmin_seviye;
+            document.getElementById('pred-trend').textContent = data.trend_yon_tr;
+            document.getElementById('pred-confidence').textContent = `Güven: ${data.guven}`;
+
+            const riskli = data.riskli_yemekler || [];
+            document.getElementById('pred-risky').textContent = riskli.length.toString();
+            if (riskli.length > 0) {
+                document.getElementById('pred-risky-detail').textContent = riskli[0].yemek_adi;
+            }
+
+            // Öneriler
+            const sugDiv = document.getElementById('pred-suggestions');
+            sugDiv.innerHTML = (data.oneriler || []).map(s => `
+                <div class="alert-item" style="margin-bottom:8px;">
+                    <div class="alert-content"><div class="alert-msg">${s}</div></div>
+                </div>
+            `).join('');
+
+            // Riskli yemekler tablosu
+            if (riskli.length > 0) {
+                const tableDiv = document.getElementById('pred-risky-table');
+                tableDiv.innerHTML = `
+                    <div class="card" style="padding:20px;">
+                        <h3 style="margin-bottom:12px;">⚠️ Riskli Yemekler</h3>
+                        <table class="data-table">
+                            <thead><tr><th>Yemek</th><th>Ort. Puan</th><th>Tahmini İsraf</th><th>Risk</th></tr></thead>
+                            <tbody>
+                                ${riskli.map(r => `
+                                    <tr>
+                                        <td>${r.yemek_adi}</td>
+                                        <td>${r.ort_puan}/5</td>
+                                        <td>%${r.tahmini_israf}</td>
+                                        <td><span class="badge badge-${r.risk === 'Yüksek' ? 'danger' : 'warning'}">${r.risk}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+        } catch (e) { console.error('Prediction error:', e); }
+    }
+
+    // ─── Menü optimizasyonu ───────────────────────────────────────
+    async function runOptimize() {
+        showToast('Menü optimizasyonu çalıştırılıyor...', 'info');
+        try {
+            const data = await apiFetch('/api/predict-menu', { method: 'POST', body: JSON.stringify({}) });
+            if (data.success) {
+                showToast('Menü optimizasyonu tamamlandı! ✅', 'success');
+            } else {
+                showToast(data.message || 'Hata oluştu.', 'error');
+            }
+        } catch (e) { showToast('Optimizasyon hatası.', 'error'); }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadAdminSummary();
+        loadAdminCharts();
+        loadPredictions();
+    });
+</script>
+{% endblock %}

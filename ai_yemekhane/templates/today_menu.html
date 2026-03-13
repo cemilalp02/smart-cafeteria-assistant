@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Günün Menüsü{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container" style="max-width: 700px;">
+        <div class="section-header">
+            <h2 class="section-title">🗓️ Günün Menüsü</h2>
+            <p class="section-desc">Bugünkü yemekhane menüsü</p>
+        </div>
+
+        <div class="menu-today-card">
+            <div class="menu-today-header">
+                <h3>🍽️ Bugünkü Menü</h3>
+                <span class="date-badge" id="today-date">—</span>
+            </div>
+            <div class="menu-today-body" id="menu-body">
+                <div class="menu-empty-state">
+                    <div class="empty-icon">⏳</div>
+                    <p>Menü yükleniyor...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Haftalık Özet -->
+        <div class="card" style="margin-top: 24px; padding: 24px;">
+            <h3 style="margin-bottom: 16px;">📅 Bu Haftanın Menüsü</h3>
+            <div id="weekly-menu-body">
+                <p class="text-dim" style="text-align:center;">Yükleniyor...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function loadTodayMenu() {
+        const dateEl = document.getElementById('today-date');
+        const bodyEl = document.getElementById('menu-body');
+
+        const now = new Date();
+        const gunler = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+        dateEl.textContent = `${gunler[now.getDay()]} - ${now.toLocaleDateString('tr-TR')}`;
+
+        try {
+            const data = await apiFetch('/api/menu/today');
+            if (data.success && data.data) {
+                const m = data.data;
+                bodyEl.innerHTML = `
+                    <div class="menu-item-row">
+                        <span class="menu-item-cat">🥣 Çorba</span>
+                        <span class="menu-item-name">${m.corba || '—'}</span>
+                    </div>
+                    <div class="menu-item-row">
+                        <span class="menu-item-cat">🥩 Ana Yemek</span>
+                        <span class="menu-item-name">${m.ana_yemek || '—'}</span>
+                    </div>
+                    <div class="menu-item-row">
+                        <span class="menu-item-cat">🍚 Yan Yemek</span>
+                        <span class="menu-item-name">${m.pilav || '—'}</span>
+                    </div>
+                    <div class="menu-item-row">
+                        <span class="menu-item-cat">🍰 Tatlı</span>
+                        <span class="menu-item-name">${m.tatli || '—'}</span>
+                    </div>
+                    <div class="menu-item-row">
+                        <span class="menu-item-cat">🥗 Salata</span>
+                        <span class="menu-item-name">${m.salata || '—'}</span>
+                    </div>
+                `;
+            } else {
+                bodyEl.innerHTML = `
+                    <div class="menu-empty-state">
+                        <div class="empty-icon">📋</div>
+                        <p>Bugün için menü verisi bulunamadı.</p>
+                    </div>
+                `;
+            }
+        } catch (e) {
+            bodyEl.innerHTML = `
+                <div class="menu-empty-state">
+                    <div class="empty-icon">⚠️</div>
+                    <p>Menü yüklenemedi.</p>
+                </div>
+            `;
+        }
+    }
+
+    async function loadWeeklyMenu() {
+        const container = document.getElementById('weekly-menu-body');
+        try {
+            const data = await apiFetch('/api/predict-menu', { method: 'POST', body: JSON.stringify({}) });
+            if (data.success && data.data && data.data.length) {
+                const rows = data.data.map(day => `
+                    <div class="menu-item-row" style="padding: 10px 0;">
+                        <span style="font-weight:600; min-width:100px; color:var(--clr-primary-l);">${day.gun}</span>
+                        <span style="font-size:.85rem; color:var(--clr-text-dim);">
+                            ${day.corba || ''} • ${day.ana_yemek || ''} • ${day.pilav || ''} • ${day.tatli || ''}
+                        </span>
+                    </div>
+                `).join('');
+                container.innerHTML = rows;
+            } else {
+                container.innerHTML = '<p class="text-dim" style="text-align:center;padding:20px;">Haftalık menü verisi yok.</p>';
+            }
+        } catch (e) {
+            container.innerHTML = '<p class="text-dim" style="text-align:center;padding:20px;">Menü yüklenemedi.</p>';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadTodayMenu();
+        loadWeeklyMenu();
+    });
+</script>
+{% endblock %}

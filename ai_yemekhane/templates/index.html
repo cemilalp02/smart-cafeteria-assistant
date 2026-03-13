@@ -1,345 +1,195 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="AI Tabanlı Akıllı Yemekhane Asistan Sistemi - Menü optimizasyonu, yemek tanıma ve chatbot asistan">
-    <title>AI Akıllı Yemekhane Asistanı</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-    <!-- ═══ NAVBAR ═══ -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <a href="/" class="nav-logo">
-                <span class="logo-icon">🍽️</span>
-                <span class="logo-text">Akıllı Yemekhane</span>
-            </a>
-            <ul class="nav-links">
-                <li><a href="#features">Özellikler</a></li>
-                <li><a href="#menu">Menü</a></li>
-                <li><a href="#chatbot">Asistan</a></li>
-                <li><a href="/docs" class="nav-btn" target="_blank">API Docs</a></li>
-            </ul>
-        </div>
-    </nav>
+{% extends "base.html" %}
+{% block title %}Ana Sayfa{% endblock %}
 
-    <!-- ═══ HERO ═══ -->
-    <header class="hero" id="hero">
-        <div class="hero-bg-shapes">
-            <div class="shape shape-1"></div>
-            <div class="shape shape-2"></div>
-            <div class="shape shape-3"></div>
-        </div>
-        <div class="hero-content">
-            <div class="hero-badge">🤖 Yapay Zeka Destekli</div>
-            <h1>Akıllı Yemekhane<br><span class="gradient-text">Asistan Sistemi</span></h1>
-            <p class="hero-desc">
+{% block content %}
+<div class="page-wrapper">
+    <!-- ═══ HERO BANNER ═══ -->
+    <section class="hero-banner">
+        <div class="container">
+            <h1 class="hero-title">Akıllı Yemekhane<br><span class="gradient-text">Asistan Sistemi</span></h1>
+            <p class="hero-subtitle">
                 Menü optimizasyonu, fotoğraftan yemek tanıma ve kişiselleştirilmiş
                 beslenme önerilerini tek bir platformda deneyimleyin.
             </p>
-            <div class="hero-actions">
-                <a href="#chatbot" class="btn btn-primary">Chatbot'u Dene</a>
-                <a href="#features" class="btn btn-outline">Keşfet</a>
-            </div>
-            <div class="hero-stats">
-                <div class="stat"><span class="stat-num">30+</span><span class="stat-label">Yemek Verisi</span></div>
-                <div class="stat"><span class="stat-num">3</span><span class="stat-label">AI Modülü</span></div>
-                <div class="stat"><span class="stat-num">6</span><span class="stat-label">API Endpoint</span></div>
-            </div>
-        </div>
-    </header>
-
-    <!-- ═══ FEATURES ═══ -->
-    <section class="features" id="features">
-        <div class="container">
-            <h2 class="section-title">Modüller</h2>
-            <p class="section-desc">Üç güçlü AI modülü ile yemekhane deneyiminizi dönüştürün</p>
-            <div class="features-grid">
-
-                <!-- Modül 1 -->
-                <div class="feature-card" id="feature-menu">
-                    <div class="card-icon">📊</div>
-                    <h3>Menü Optimizasyonu</h3>
-                    <p>Makine öğrenimi ile yemek popülerlik tahmini yaparak dengeli
-                       ve beğenilen haftalık menüler oluşturur.</p>
-                    <ul class="card-tags">
-                        <li>scikit-learn</li>
-                        <li>RandomForest</li>
-                        <li>pandas</li>
-                    </ul>
-                    <button class="btn btn-card" onclick="predictMenu()">Menü Öner</button>
-                </div>
-
-                <!-- Modül 2 -->
-                <div class="feature-card" id="feature-food">
-                    <div class="card-icon">📸</div>
-                    <h3>Yemek Tanıma</h3>
-                    <p>Fotoğraf yükleyerek yemeğini tanıt ve besin değerlerini
-                       anında öğren. YOLO + Food-101 modeli.</p>
-                    <ul class="card-tags">
-                        <li>YOLO</li>
-                        <li>Food-101</li>
-                        <li>Pillow</li>
-                    </ul>
-                    <label class="btn btn-card" for="food-upload">Fotoğraf Yükle</label>
-                    <input type="file" id="food-upload" accept="image/*" style="display:none" onchange="recognizeFood(this)">
-                </div>
-
-                <!-- Modül 3 -->
-                <div class="feature-card" id="feature-chat">
-                    <div class="card-icon">💬</div>
-                    <h3>Chatbot Asistan</h3>
-                    <p>Gemini LLM tabanlı asistanınız menü bilgisi, besin
-                       değerleri ve diyet önerileri sunar.</p>
-                    <ul class="card-tags">
-                        <li>Gemini API</li>
-                        <li>NLP</li>
-                        <li>LLM</li>
-                    </ul>
-                    <a href="#chatbot" class="btn btn-card">Sohbet Başlat</a>
-                </div>
+            <div class="quick-actions">
+                <a href="/recognize" class="quick-action" id="qa-recognize">
+                    <span class="qa-icon">📸</span>
+                    <span class="qa-label">Fotoğraf Çek</span>
+                </a>
+                <a href="/chat" class="quick-action" id="qa-chat">
+                    <span class="qa-icon">💬</span>
+                    <span class="qa-label">Chatbot</span>
+                </a>
+                <a href="/report" class="quick-action" id="qa-report">
+                    <span class="qa-icon">📊</span>
+                    <span class="qa-label">Raporlar</span>
+                </a>
+                <a href="/menu" class="quick-action" id="qa-menu">
+                    <span class="qa-icon">🗓️</span>
+                    <span class="qa-label">Menü Yönetimi</span>
+                </a>
+                <a href="/rate" class="quick-action" id="qa-rate">
+                    <span class="qa-icon">⭐</span>
+                    <span class="qa-label">Menü Puanla</span>
+                </a>
             </div>
         </div>
     </section>
 
-    <!-- ═══ TODAY MENU ═══ -->
-    <section class="menu-section" id="menu">
-        <div class="container">
-            <h2 class="section-title">Bugünün Menüsü</h2>
-            <p class="section-desc">Günlük yemekhane menüsünü buradan takip edin</p>
-            <div class="menu-card" id="today-menu-card">
-                <div class="menu-loading">⏳ Menü yükleniyor...</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ═══ CHATBOT ═══ -->
-    <section class="chatbot-section" id="chatbot">
-        <div class="container">
-            <h2 class="section-title">Yemekhane Asistanı</h2>
-            <p class="section-desc">Menü, besin değeri veya diyet hakkında soru sorun</p>
-            <div class="chat-container">
-                <div class="chat-messages" id="chat-messages">
-                    <div class="message bot-message">
-                        <div class="message-avatar">🤖</div>
-                        <div class="message-body">
-                            <p>Merhaba! 👋 Ben yemekhane asistanıyım. Size menü, besin değerleri
-                            veya diyet önerileri konusunda yardımcı olabilirim.</p>
-                            <div class="suggestions" id="suggestions">
-                                <button onclick="sendSuggestion('Bugünkü menü ne?')">Bugünkü menü ne?</button>
-                                <button onclick="sendSuggestion('Kalori hesapla')">Kalori hesapla</button>
-                                <button onclick="sendSuggestion('Sağlıklı bir öğün öner')">Sağlıklı öğün öner</button>
-                            </div>
-                        </div>
+    <!-- ═══ DASHBOARD ═══ -->
+    <section class="container">
+        <div class="dashboard-grid">
+            <!-- Bugünün Menüsü -->
+            <div class="menu-today-card" id="today-menu-card">
+                <div class="menu-today-header">
+                    <h3>🍽️ Bugünün Menüsü</h3>
+                    <span class="date-badge" id="today-date">Yükleniyor...</span>
+                </div>
+                <div class="menu-today-body" id="menu-body">
+                    <div class="menu-empty-state">
+                        <div class="empty-icon">⏳</div>
+                        <p>Menü yükleniyor...</p>
                     </div>
                 </div>
-                <div class="chat-input-area">
-                    <input type="text" id="chat-input" placeholder="Mesajınızı yazın..."
-                           onkeypress="if(event.key==='Enter') sendMessage()">
-                    <button class="send-btn" onclick="sendMessage()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="22" y1="2" x2="11" y2="13"></line>
-                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                        </svg>
-                    </button>
+            </div>
+
+            <!-- Kalori Takibi -->
+            <div class="calorie-card" id="calorie-card">
+                <h3>🔥 Günlük Kalori Takibi</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="calorie-progress" style="width: 0%"></div>
                 </div>
+                <div class="progress-text">
+                    <span class="current" id="calorie-current">0 kcal</span>
+                    <span id="calorie-target">Hedef: 2000 kcal</span>
+                </div>
+
+                <div class="calorie-stats">
+                    <div class="calorie-stat protein">
+                        <div class="val" id="stat-protein">0g</div>
+                        <div class="lbl">Protein</div>
+                    </div>
+                    <div class="calorie-stat carb">
+                        <div class="val" id="stat-carb">0g</div>
+                        <div class="lbl">Karbonhidrat</div>
+                    </div>
+                    <div class="calorie-stat fat">
+                        <div class="val" id="stat-fat">0g</div>
+                        <div class="lbl">Yağ</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bugünün Puanları -->
+            <div class="rating-summary-card" id="rating-summary-card">
+                <h3>⭐ Bugünün Puanları</h3>
+                <div id="idx-ratings-body">
+                    <p class="text-dim">Yükleniyor...</p>
+                </div>
+                <a href="/rate" class="btn btn-accent"
+                    style="margin-top:12px; display:inline-block; font-size:.85rem; padding:8px 20px;">Puanla →</a>
             </div>
         </div>
     </section>
+</div>
+{% endblock %}
 
-    <!-- ═══ FOOTER ═══ -->
-    <footer class="footer">
-        <div class="container">
-            <p>🎓 AI Tabanlı Akıllı Yemekhane Asistan Sistemi — Üniversite Bitirme Projesi</p>
-            <p class="footer-tech">Python • FastAPI • SQLite • YOLO • Gemini AI</p>
-        </div>
-    </footer>
-
-    <!-- ═══ RESULT MODAL ═══ -->
-    <div class="modal-overlay" id="result-modal" style="display:none">
-        <div class="modal">
-            <button class="modal-close" onclick="closeModal()">✕</button>
-            <h3 id="modal-title">Sonuç</h3>
-            <div id="modal-content"></div>
-        </div>
-    </div>
-
-    <script>
-        // ─── API Base URL ─────────────────────────────────────────
-        const API = '';
-
-        // ─── Bugünün menüsünü yükle ──────────────────────────────
-        async function loadTodayMenu() {
-            const card = document.getElementById('today-menu-card');
-            try {
-                const res = await fetch(`${API}/api/menu/today`);
-                const data = await res.json();
-                if (data.success) {
-                    const m = data.data;
-                    card.innerHTML = `
-                        <div class="menu-header">
-                            <span class="menu-day">${m.gun}</span>
-                            <span class="menu-date">${m.tarih}</span>
-                        </div>
-                        <div class="menu-items">
-                            <div class="menu-item"><span class="item-cat">🥣 Çorba</span><span class="item-name">${m.corba || '-'}</span></div>
-                            <div class="menu-item"><span class="item-cat">🍖 Ana Yemek</span><span class="item-name">${m.ana_yemek || '-'}</span></div>
-                            <div class="menu-item"><span class="item-cat">🍚 Pilav</span><span class="item-name">${m.pilav || '-'}</span></div>
-                            <div class="menu-item"><span class="item-cat">🍰 Tatlı</span><span class="item-name">${m.tatli || '-'}</span></div>
-                            <div class="menu-item"><span class="item-cat">🥗 Salata</span><span class="item-name">${m.salata || '-'}</span></div>
-                        </div>
-                    `;
-                } else {
-                    card.innerHTML = `<div class="menu-empty">📋 ${data.message || 'Bugün için menü bulunamadı.'}</div>`;
-                }
-            } catch (e) {
-                card.innerHTML = `<div class="menu-empty">⚠️ Menü yüklenirken hata oluştu.</div>`;
+{% block scripts %}
+<script>
+    // ─── Bugünün menüsünü yükle ──────────────────────────────────
+    async function loadTodayMenu() {
+        const body = document.getElementById('menu-body');
+        const dateBadge = document.getElementById('today-date');
+        try {
+            const data = await apiFetch('/api/menu/today');
+            if (data.success) {
+                const m = data.data;
+                dateBadge.textContent = `${m.gun} — ${formatDate(m.tarih)}`;
+                body.innerHTML = `
+                    <div class="menu-item-row">
+                        <span class="menu-item-cat">🥣 Çorba</span>
+                        <span class="menu-item-name">${m.corba || '—'}</span>
+                    </div>
+                    <div class="menu-item-row">
+                        <span class="menu-item-cat">🍖 Ana Yemek</span>
+                        <span class="menu-item-name">${m.ana_yemek || '—'}</span>
+                    </div>
+                    <div class="menu-item-row">
+                        <span class="menu-item-cat">🍚 Yan Yemek</span>
+                        <span class="menu-item-name">${m.pilav || '—'}</span>
+                    </div>
+                    <div class="menu-item-row">
+                        <span class="menu-item-cat">🍰 Tatlı</span>
+                        <span class="menu-item-name">${m.tatli || '—'}</span>
+                    </div>
+                    <div class="menu-item-row">
+                        <span class="menu-item-cat">🥗 Salata</span>
+                        <span class="menu-item-name">${m.salata || '—'}</span>
+                    </div>
+                `;
+            } else {
+                dateBadge.textContent = new Date().toLocaleDateString('tr-TR');
+                body.innerHTML = `
+                    <div class="menu-empty-state">
+                        <div class="empty-icon">📋</div>
+                        <p>${data.message || 'Bugün için menü bulunamadı.'}</p>
+                    </div>`;
             }
+        } catch (e) {
+            dateBadge.textContent = new Date().toLocaleDateString('tr-TR');
+            body.innerHTML = `
+                <div class="menu-empty-state">
+                    <div class="empty-icon">⚠️</div>
+                    <p>Menü yüklenirken hata oluştu.</p>
+                </div>`;
         }
+    }
 
-        // ─── Menü Öner ───────────────────────────────────────────
-        async function predictMenu() {
-            try {
-                const res = await fetch(`${API}/api/predict-menu`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({})
-                });
-                const data = await res.json();
-                if (data.success) {
-                    let html = '<div class="weekly-menu">';
-                    data.data.forEach(day => {
-                        html += `
-                            <div class="weekly-day">
-                                <strong>${day.gun} (${day.tarih})</strong>
-                                <ul>
-                                    <li>🥣 ${day.corba}</li>
-                                    <li>🍖 ${day.ana_yemek}</li>
-                                    <li>🍚 ${day.pilav}</li>
-                                    <li>🍰 ${day.tatli}</li>
-                                    <li>🥗 ${day.salata}</li>
-                                </ul>
-                            </div>`;
-                    });
-                    html += '</div>';
-                    showModal('Haftalık Menü Önerisi', html);
-                } else {
-                    showModal('Hata', `<p>${data.message}</p>`);
-                }
-            } catch (e) {
-                showModal('Hata', '<p>Menü önerisi alınamadı.</p>');
+    // ─── Kalori takibi yükle ─────────────────────────────────────
+    async function loadCalorieTracker() {
+        try {
+            const data = await apiFetch('/api/report/1');
+            if (data.success) {
+                const s = data.data.gunluk_ozet;
+                const pct = Math.min(s.hedef_yuzdesi, 100);
+                document.getElementById('calorie-progress').style.width = pct + '%';
+                document.getElementById('calorie-current').textContent = formatNumber(s.toplam_kalori) + ' kcal';
+                document.getElementById('calorie-target').textContent = `Hedef: ${formatNumber(s.kalori_hedefi)} kcal`;
+                document.getElementById('stat-protein').textContent = formatNumber(s.toplam_protein) + 'g';
+                document.getElementById('stat-carb').textContent = formatNumber(s.toplam_karbonhidrat) + 'g';
+                document.getElementById('stat-fat').textContent = formatNumber(s.toplam_yag) + 'g';
             }
+        } catch (e) {
+            // Quietly fail
         }
+    }
 
-        // ─── Yemek Tanıma ────────────────────────────────────────
-        async function recognizeFood(input) {
-            if (!input.files || !input.files[0]) return;
-            const formData = new FormData();
-            formData.append('file', input.files[0]);
-            try {
-                const res = await fetch(`${API}/api/recognize-food`, {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await res.json();
-                if (data.success) {
-                    const items = data.data.taninan_yemekler || [];
-                    let html = '<div class="food-results">';
-                    items.forEach(item => {
-                        html += `
-                            <div class="food-item">
-                                <strong>${item.yemek_adi}</strong>
-                                <span>Güven: %${(item.guven_skoru * 100).toFixed(0)}</span>
-                            </div>`;
-                    });
-                    const n = data.data.toplam_besin_degeri;
-                    html += `
-                        <div class="nutrition-summary">
-                            <h4>Toplam Besin Değeri</h4>
-                            <p>🔥 Kalori: ${n.kalori} kcal</p>
-                            <p>💪 Protein: ${n.protein}g</p>
-                            <p>🌾 Karbonhidrat: ${n.karbonhidrat}g</p>
-                            <p>🧈 Yağ: ${n.yag}g</p>
-                        </div>`;
-                    html += '</div>';
-                    showModal('Yemek Tanıma Sonucu', html);
-                } else {
-                    showModal('Hata', `<p>${data.message}</p>`);
-                }
-            } catch (e) {
-                showModal('Hata', '<p>Yemek tanıma başarısız.</p>');
+    // ─── Bugünün puanlarını yükle ─────────────────────────────────
+    async function loadIndexRatings() {
+        try {
+            const data = await apiFetch('/api/ratings/today');
+            const body = document.getElementById('idx-ratings-body');
+            if (!data.success || Object.keys(data.data).length === 0) {
+                body.innerHTML = '<p class="text-dim">Henüz puanlama yok.</p>';
+                return;
             }
-            input.value = '';
-        }
-
-        // ─── Chatbot ─────────────────────────────────────────────
-        async function sendMessage() {
-            const input = document.getElementById('chat-input');
-            const msg = input.value.trim();
-            if (!msg) return;
-            input.value = '';
-            appendMessage('user', msg);
-
-            try {
-                const res = await fetch(`${API}/api/chat`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message: msg})
-                });
-                const data = await res.json();
-                if (data.success) {
-                    appendMessage('bot', data.data.response, data.data.suggestions);
-                } else {
-                    appendMessage('bot', 'Bir hata oluştu, tekrar deneyin.');
-                }
-            } catch (e) {
-                appendMessage('bot', 'Sunucuya bağlanılamadı.');
+            let html = '';
+            for (const [yemek, info] of Object.entries(data.data)) {
+                const stars = '★'.repeat(Math.round(info.ortalama)) + '☆'.repeat(5 - Math.round(info.ortalama));
+                html += `<div class="idx-rating-row">
+                    <span class="idx-r-name">${yemek}</span>
+                    <span class="idx-r-stars">${stars}</span>
+                    <span class="idx-r-score">${info.ortalama}</span>
+                </div>`;
             }
-        }
+            body.innerHTML = html;
+        } catch (e) { }
+    }
 
-        function sendSuggestion(text) {
-            document.getElementById('chat-input').value = text;
-            sendMessage();
-        }
-
-        function appendMessage(role, text, suggestions) {
-            const container = document.getElementById('chat-messages');
-            const div = document.createElement('div');
-            div.className = `message ${role === 'bot' ? 'bot-message' : 'user-message'}`;
-
-            let avatar = role === 'bot' ? '🤖' : '👤';
-            let suggestionsHtml = '';
-            if (suggestions && suggestions.length > 0) {
-                suggestionsHtml = '<div class="suggestions">' +
-                    suggestions.map(s => `<button onclick="sendSuggestion('${s}')">${s}</button>`).join('') +
-                    '</div>';
-            }
-
-            div.innerHTML = `
-                <div class="message-avatar">${avatar}</div>
-                <div class="message-body"><p>${text}</p>${suggestionsHtml}</div>
-            `;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // ─── Modal ───────────────────────────────────────────────
-        function showModal(title, content) {
-            document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-content').innerHTML = content;
-            document.getElementById('result-modal').style.display = 'flex';
-        }
-
-        function closeModal() {
-            document.getElementById('result-modal').style.display = 'none';
-        }
-
-        // ─── Sayfa yüklendiğinde ─────────────────────────────────
-        document.addEventListener('DOMContentLoaded', loadTodayMenu);
-    </script>
-</body>
-</html>
+    document.addEventListener('DOMContentLoaded', () => {
+        loadTodayMenu();
+        loadCalorieTracker();
+        loadIndexRatings();
+    });
+</script>
+{% endblock %}

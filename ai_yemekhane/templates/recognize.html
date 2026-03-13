@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block title %}Yemek Tanıma{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">📸 Yemek Tanıma</h2>
+            <p class="section-desc">Fotoğraf yükleyerek yemeğinizi tanıtın ve besin değerlerini anında öğrenin</p>
+        </div>
+
+        <!-- Upload Zone -->
+        <div class="upload-zone" id="upload-zone">
+            <div class="upload-icon">📷</div>
+            <h3>Fotoğraf Yükleyin</h3>
+            <p>Dosya sürükleyin veya aşağıdaki butonları kullanın</p>
+            <div class="upload-actions">
+                <label class="btn btn-primary" for="file-input" id="file-label">
+                    📁 Dosya Seç
+                </label>
+                <input type="file" id="file-input" accept="image/*" style="display:none">
+
+                <label class="btn btn-outline" for="camera-input" id="camera-label">
+                    📱 Kameradan Çek
+                </label>
+                <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none">
+            </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="preview-container" id="preview-container">
+            <img id="preview-img" src="" alt="Fotoğraf Önizleme">
+            <p class="preview-name" id="preview-name"></p>
+            <div class="mt-20">
+                <button class="btn btn-primary btn-lg" id="analyze-btn" onclick="analyzePhoto()">
+                    🔍 Yemeği Tanı
+                </button>
+            </div>
+        </div>
+
+        <!-- Result Panel -->
+        <div class="result-panel" id="result-panel">
+            <div class="result-main">
+                <div class="result-main-header">
+                    <span class="result-food-name" id="result-food-name">—</span>
+                    <span class="confidence-badge" id="result-confidence">%0</span>
+                </div>
+                <div class="nutrition-grid" id="nutrition-grid">
+                    <div class="nutrition-item kcal">
+                        <div class="n-icon">🔥</div>
+                        <div class="n-value" id="n-kcal">0</div>
+                        <div class="n-label">Kalori (kcal)</div>
+                    </div>
+                    <div class="nutrition-item protein">
+                        <div class="n-icon">💪</div>
+                        <div class="n-value" id="n-protein">0g</div>
+                        <div class="n-label">Protein</div>
+                    </div>
+                    <div class="nutrition-item carb">
+                        <div class="n-icon">🌾</div>
+                        <div class="n-value" id="n-carb">0g</div>
+                        <div class="n-label">Karbonhidrat</div>
+                    </div>
+                    <div class="nutrition-item fat">
+                        <div class="n-icon">🧈</div>
+                        <div class="n-value" id="n-fat">0g</div>
+                        <div class="n-label">Yağ</div>
+                    </div>
+                </div>
+                <div class="result-actions">
+                    <button class="btn btn-accent" id="save-btn" onclick="saveFood()">
+                        ✅ Bu Yemeği Kaydet
+                    </button>
+                    <button class="btn btn-outline" onclick="resetUpload()">
+                        🔄 Yeni Fotoğraf
+                    </button>
+                </div>
+            </div>
+
+            <!-- Alt tanıma sonuçları -->
+            <div class="mt-20" id="other-results"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let selectedFile = null;
+    let recognizedData = null;
+
+    const uploadZone = document.getElementById('upload-zone');
+    const previewContainer = document.getElementById('preview-container');
+    const previewImg = document.getElementById('preview-img');
+    const previewName = document.getElementById('preview-name');
+    const resultPanel = document.getElementById('result-panel');
+    const fileInput = document.getElementById('file-input');
+    const cameraInput = document.getElementById('camera-input');
+
+    // ─── Drag & Drop ─────────────────────────────────────────────
+    uploadZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadZone.classList.add('dragover');
+    });
+    uploadZone.addEventListener('dragleave', () => {
+        uploadZone.classList.remove('dragover');
+    });
+    uploadZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    // ─── File Input ──────────────────────────────────────────────
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+    cameraInput.addEventListener('change', (e) => {
+        if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+        if (!file.type.startsWith('image/')) {
+            showToast('Lütfen bir resim dosyası seçin.', 'error');
+            return;
+        }
+        selectedFile = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewImg.src = e.target.result;
+            previewName.textContent = file.name;
+            previewContainer.style.display = 'block';
+            resultPanel.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // ─── Analyze ─────────────────────────────────────────────────
+    async function analyzePhoto() {
+        if (!selectedFile) {
+            showToast('Lütfen önce bir fotoğraf seçin.', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('analyze-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Tanınıyor...';
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+
+        const data = await apiUpload('/api/recognize-food', formData);
+
+        btn.disabled = false;
+        btn.innerHTML = '🔍 Yemeği Tanı';
+
+        if (data.success) {
+            recognizedData = data;
+            displayResult(data);
+            showToast('Yemek başarıyla tanındı!', 'success');
+        } else {
+            showToast(data.message || data.detail || 'Tanıma başarısız.', 'error');
+        }
+    }
+
+    function displayResult(data) {
+        const best = data.en_olasi_yemek;
+        if (!best) {
+            showToast('Yemek tanınamadı.', 'error');
+            return;
+        }
+
+        document.getElementById('result-food-name').textContent = best.yemek || best.yemek_adi || '—';
+        const conf = best.guven || best.guven_skoru || 0;
+        document.getElementById('result-confidence').textContent = `%${(conf * 100).toFixed(0)}`;
+        document.getElementById('n-kcal').textContent = best.kalori || 0;
+        document.getElementById('n-protein').textContent = (best.protein || 0) + 'g';
+        document.getElementById('n-carb').textContent = (best.karbonhidrat || 0) + 'g';
+        document.getElementById('n-fat').textContent = (best.yag || 0) + 'g';
+
+        // Other results
+        const others = data.taninan_yemekler || [];
+        const otherDiv = document.getElementById('other-results');
+        if (others.length > 1) {
+            let html = '<div class="card"><h4 style="margin-bottom:12px">Diğer Olasılıklar</h4>';
+            others.slice(1, 5).forEach(item => {
+                const name = item.yemek_adi || item.yemek || '?';
+                const score = item.guven_skoru || item.guven || 0;
+                html += `<div class="menu-item-row">
+                    <span class="menu-item-cat">${name}</span>
+                    <span class="menu-item-name">%${(score * 100).toFixed(0)}</span>
+                </div>`;
+            });
+            html += '</div>';
+            otherDiv.innerHTML = html;
+        } else {
+            otherDiv.innerHTML = '';
+        }
+
+        resultPanel.style.display = 'block';
+        resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ─── Save Food ───────────────────────────────────────────────
+    async function saveFood() {
+        if (!recognizedData || !recognizedData.en_olasi_yemek) return;
+
+        const btn = document.getElementById('save-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Kaydediliyor...';
+
+        const best = recognizedData.en_olasi_yemek;
+        const data = await apiFetch('/api/log-food', {
+            method: 'POST',
+            body: JSON.stringify({
+                yemek_adi: best.yemek || best.yemek_adi,
+                kullanici_id: 1,
+                kaynak_tipi: 'foto'
+            })
+        });
+
+        btn.disabled = false;
+        btn.innerHTML = '✅ Bu Yemeği Kaydet';
+
+        if (data.success) {
+            showToast('Yemek kaydedildi!', 'success');
+        } else {
+            showToast(data.message || 'Kayıt başarısız.', 'error');
+        }
+    }
+
+    // ─── Reset ───────────────────────────────────────────────────
+    function resetUpload() {
+        selectedFile = null;
+        recognizedData = null;
+        previewContainer.style.display = 'none';
+        resultPanel.style.display = 'none';
+        fileInput.value = '';
+        cameraInput.value = '';
+    }
+</script>
+{% endblock %}

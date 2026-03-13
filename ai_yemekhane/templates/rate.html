@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block title %}Menü Puanlama{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">⭐ Bugünün Menüsünü Puanla</h2>
+            <p class="section-desc">Anonim olarak yemekleri puanla, görüşlerini paylaş!</p>
+        </div>
+
+        <!-- Puanlama Formu -->
+        <div id="rating-form-area">
+            <div class="rating-loading" id="rating-loading">
+                <div class="empty-icon">⏳</div>
+                <p>Bugünün menüsü yükleniyor...</p>
+            </div>
+        </div>
+
+        <!-- Bugünün Ortalama Puanları -->
+        <div class="section-header" style="margin-top: 48px;">
+            <h2 class="section-title">📊 Bugünün Ortalama Puanları</h2>
+            <p class="section-desc">Diğer öğrencilerin puanlarını canlı takip edin</p>
+        </div>
+
+        <div class="grid-responsive" id="today-avg-container">
+            <div class="rating-loading">
+                <div class="empty-icon">📋</div>
+                <p>Henüz puanlama yapılmamış.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const KATEGORI_ICON = {
+        corba: '🥣',
+        ana_yemek: '🍖',
+        pilav: '🍚',
+        tatli: '🍰',
+        salata: '🥗'
+    };
+
+    const KATEGORI_LABEL = {
+        corba: 'Çorba',
+        ana_yemek: 'Ana Yemek',
+        pilav: 'Yan Yemek',
+        tatli: 'Tatlı',
+        salata: 'Salata'
+    };
+
+    // ─── Menüyü yükleyip puanlama kartlarını oluştur ──────────────
+    async function loadMenuForRating() {
+        const area = document.getElementById('rating-form-area');
+        try {
+            const data = await apiFetch('/api/menu/today');
+            if (!data.success) {
+                area.innerHTML = `
+                    <div class="rating-loading">
+                        <div class="empty-icon">📋</div>
+                        <p>${data.message || 'Bugün için menü bulunamadı.'}</p>
+                    </div>`;
+                return;
+            }
+
+            const menu = data.data;
+            const bugun = menu.tarih;
+            const kategoriler = ['corba', 'ana_yemek', 'pilav', 'tatli', 'salata'];
+            let html = '<div class="rating-cards-grid">';
+
+            kategoriler.forEach(kat => {
+                const yemek = menu[kat];
+                if (!yemek || yemek === 'Belirtilmemiş') return;
+
+                html += `
+                <div class="rating-card" id="card-${kat}">
+                    <div class="rating-card-header">
+                        <span class="rating-cat-icon">${KATEGORI_ICON[kat] || '🍽️'}</span>
+                        <div>
+                            <div class="rating-cat-label">${KATEGORI_LABEL[kat] || kat}</div>
+                            <div class="rating-yemek-adi">${yemek}</div>
+                        </div>
+                    </div>
+                    <div class="rating-stars" id="stars-${kat}">
+                        ${[1, 2, 3, 4, 5].map(i => `
+                            <span class="star" data-kat="${kat}" data-yemek="${yemek}" data-puan="${i}" onclick="selectStar(this)">☆</span>
+                        `).join('')}
+                    </div>
+                    <div class="rating-puan-text" id="puan-text-${kat}">Puan seçin</div>
+                    <textarea class="rating-yorum" id="yorum-${kat}" placeholder="Yorumunuz (opsiyonel)..." maxlength="500"></textarea>
+                    <button class="btn btn-primary rating-btn" onclick="submitRating('${kat}', '${yemek}', '${bugun}')">
+                        ⭐ Puanla
+                    </button>
+                    <div class="rating-success" id="success-${kat}" style="display:none;">
+                        ✅ Teşekkürler! Puanınız kaydedildi.
+                    </div>
+                </div>`;
+            });
+
+            html += '</div>';
+            area.innerHTML = html;
+
+        } catch (e) {
+            area.innerHTML = `
+                <div class="rating-loading">
+                    <div class="empty-icon">⚠️</div>
+                    <p>Menü yüklenirken hata oluştu.</p>
+                </div>`;
+        }
+    }
+
+    // ─── Yıldız seçimi ────────────────────────────────────────────
+    let selectedPuanlar = {};
+
+    function selectStar(el) {
+        const kat = el.dataset.kat;
+        const puan = parseInt(el.dataset.puan);
+        selectedPuanlar[kat] = puan;
+
+        // Yıldızları güncelle
+        const stars = document.querySelectorAll(`#stars-${kat} .star`);
+        stars.forEach(s => {
+            const sp = parseInt(s.dataset.puan);
+            s.textContent = sp <= puan ? '★' : '☆';
+            s.classList.toggle('active', sp <= puan);
+        });
+
+        const puanLabels = ['', 'Çok Kötü', 'Kötü', 'Orta', 'İyi', 'Mükemmel'];
+        document.getElementById(`puan-text-${kat}`).textContent = `${puan}/5 — ${puanLabels[puan]}`;
+    }
+
+    // ─── Puan gönder ──────────────────────────────────────────────
+    async function submitRating(kat, yemek, tarih) {
+        const puan = selectedPuanlar[kat];
+        if (!puan) {
+            showToast('Lütfen önce yıldız seçin!', 'error');
+            return;
+        }
+
+        const yorum = document.getElementById(`yorum-${kat}`).value.trim();
+        const btn = document.querySelector(`#card-${kat} .rating-btn`);
+        btn.disabled = true;
+        btn.textContent = '⏳ Gönderiliyor...';
+
+        const data = await apiFetch('/api/rate-meal', {
+            method: 'POST',
+            body: JSON.stringify({
+                tarih: tarih,
+                yemek_adi: yemek,
+                kategori: kat,
+                puan: puan,
+                yorum: yorum || null
+            })
+        });
+
+        if (data.success) {
+            document.getElementById(`success-${kat}`).style.display = 'block';
+            btn.style.display = 'none';
+            document.getElementById(`stars-${kat}`).style.pointerEvents = 'none';
+            document.getElementById(`yorum-${kat}`).disabled = true;
+            showToast(data.message, 'success');
+            // Ortalama puanları yenile
+            loadTodayAverages();
+        } else {
+            showToast(data.message || 'Bir hata oluştu.', 'error');
+            btn.disabled = false;
+            btn.textContent = '⭐ Puanla';
+        }
+    }
+
+    // ─── Bugünün ortalama puanlarını yükle ─────────────────────────
+    async function loadTodayAverages() {
+        const container = document.getElementById('today-avg-container');
+        try {
+            const data = await apiFetch('/api/ratings/today');
+            if (!data.success) return;
+
+            const ratings = data.data;
+            const keys = Object.keys(ratings);
+
+            if (keys.length === 0) {
+                container.innerHTML = `
+                    <div class="rating-loading" style="grid-column: 1/-1;">
+                        <div class="empty-icon">📋</div>
+                        <p>Bugün henüz puanlama yapılmamış. İlk puanlayan siz olun!</p>
+                    </div>`;
+                return;
+            }
+
+            let html = '';
+            keys.forEach(yemek => {
+                const r = ratings[yemek];
+                const icon = KATEGORI_ICON[r.kategori] || '🍽️';
+                const starsFull = '★'.repeat(Math.round(r.ortalama));
+                const starsEmpty = '☆'.repeat(5 - Math.round(r.ortalama));
+                html += `
+                    <div class="avg-rating-card">
+                        <div class="avg-rating-header">
+                            <span>${icon}</span>
+                            <span class="avg-rating-name">${yemek}</span>
+                        </div>
+                        <div class="avg-rating-stars">${starsFull}${starsEmpty}</div>
+                        <div class="avg-rating-score">${r.ortalama}/5</div>
+                        <div class="avg-rating-votes">${r.toplam_oy} oy</div>
+                    </div>`;
+            });
+
+            container.innerHTML = html;
+        } catch (e) {
+            // Quietly fail
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadMenuForRating();
+        loadTodayAverages();
+    });
+</script>
+{% endblock %}

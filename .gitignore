@@ -1,0 +1,44 @@
+﻿# API Keys
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+env/
+
+# Model files
+*.pt
+*.pth
+
+# Dataset
+food-101/
+datasets/
+archive/
+Turkish Food/
+
+# Excel source data (large files)
+aylara göre yemek listeleri/
+
+# Database
+*.db
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp files
+temp_*.py
+temp_*.json
+temp_*.txt
+
+# ML model data
+ai_yemekhane/models_data/
+
+# Kaggle
+*.kaggle/

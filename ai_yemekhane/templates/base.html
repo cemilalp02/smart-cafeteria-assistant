@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="AI Tabanlı Akıllı Yemekhane Asistan Sistemi - Menü optimizasyonu, yemek tanıma ve chatbot asistan">
+    <title>{% block title %}Akıllı Yemekhane{% endblock %} | AI Yemekhane Asistanı</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <!-- ═══ NAVBAR ═══ -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <span class="logo-icon">🍽️</span>
+                <span class="logo-text">Akıllı Yemekhane</span>
+            </a>
+            <button class="hamburger" aria-label="Menü">
+                <span></span><span></span><span></span>
+            </button>
+            <ul class="nav-links">
+                <li><a href="/">Ana Sayfa</a></li>
+                <li><a href="/recognize">Yemek Tanıma</a></li>
+                <li><a href="/chat">Chatbot</a></li>
+                <li><a href="/today-menu">Günün Menüsü</a></li>
+                <li><a href="/rate">Puanlama</a></li>
+                <li><a href="/admin/login" class="nav-btn">🔐 Yetkili Girişi</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- ═══ MAIN CONTENT ═══ -->
+    {% block content %}{% endblock %}
+
+    <!-- ═══ FOOTER ═══ -->
+    <footer class="footer">
+        <div class="container">
+            <p>🎓 AI Tabanlı Akıllı Yemekhane Asistan Sistemi — Üniversite Bitirme Projesi</p>
+            <p class="footer-tech">Python • FastAPI • SQLite • YOLO • Gemini AI • Chart.js</p>
+        </div>
+    </footer>
+
+    <!-- ═══ SCRIPTS ═══ -->
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

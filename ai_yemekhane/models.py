@@ -6,6 +6,8 @@ Tablolar:
   - Menu: Günlük menü planları
   - Kullanici: Kullanıcı profilleri
   - KullaniciYemekLog: Kullanıcı yemek tüketim kayıtları
+  - MenuPuanlama: Anonim günlük menü puanlama kayıtları
+  - Alert: Otomatik israf uyarı kayıtları
 """
 
 from datetime import date, datetime
@@ -17,6 +19,7 @@ from sqlalchemy import (
     Float,
     Date,
     DateTime,
+    Boolean,
     ForeignKey,
     Enum,
     create_engine,
@@ -196,6 +199,86 @@ class KullaniciYemekLog(Base):
             "tarih": str(self.tarih),
             "miktar": self.miktar,
             "kaynak_tipi": self.kaynak_tipi,
+        }
+
+
+# ═══════════════════════════════════════════════════════════════════
+# MODEL: MenuPuanlama (Anonim)
+# ═══════════════════════════════════════════════════════════════════
+class MenuPuanlama(Base):
+    """Anonim günlük menü puanlama tablosu.
+    Kullanıcı bilgisi tutulmaz, puanlama tamamen anonimdir.
+    """
+
+    __tablename__ = "menu_puanlama"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tarih = Column(Date, nullable=False, default=date.today)
+    yemek_adi = Column(String(100), nullable=False)
+    kategori = Column(
+        String(50),
+        nullable=False,
+        comment="corba | ana_yemek | pilav | tatli | salata",
+    )
+    puan = Column(Integer, nullable=False, comment="1-5 arası yıldız puanı")
+    yorum = Column(String(500), nullable=True, default=None)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    def __repr__(self):
+        return (
+            f"<MenuPuanlama(id={self.id}, tarih={self.tarih}, "
+            f"yemek='{self.yemek_adi}', puan={self.puan})>"
+        )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "tarih": str(self.tarih),
+            "yemek_adi": self.yemek_adi,
+            "kategori": self.kategori,
+            "puan": self.puan,
+            "yorum": self.yorum,
+            "created_at": str(self.created_at),
+        }
+
+
+# ═══════════════════════════════════════════════════════════════════
+# MODEL: Alert (Otomatik Uyarı)
+# ═══════════════════════════════════════════════════════════════════
+class Alert(Base):
+    """Otomatik israf ve kalite uyarıları tablosu."""
+
+    __tablename__ = "alerts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tarih = Column(Date, nullable=False, default=date.today)
+    seviye = Column(
+        String(20),
+        nullable=False,
+        comment="KRITIK | UYARI | DIKKAT | BILGI",
+    )
+    yemek_adi = Column(String(100), nullable=True)
+    kategori = Column(String(50), nullable=True)
+    mesaj = Column(String(500), nullable=False)
+    aktif = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    def __repr__(self):
+        return (
+            f"<Alert(id={self.id}, seviye='{self.seviye}', "
+            f"yemek='{self.yemek_adi}', aktif={self.aktif})>"
+        )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "tarih": str(self.tarih),
+            "seviye": self.seviye,
+            "yemek_adi": self.yemek_adi,
+            "kategori": self.kategori,
+            "mesaj": self.mesaj,
+            "aktif": self.aktif,
+            "created_at": str(self.created_at),
         }
 
 

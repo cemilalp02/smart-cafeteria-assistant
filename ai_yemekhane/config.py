@@ -26,6 +26,9 @@ class Config:
     # API anahtarları
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
+    # Admin şifresi
+    ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+
     # Dosya yükleme ayarları
     UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
@@ -34,7 +37,9 @@ class Config:
     # YOLO model ayarları
     YOLO_MODEL_PATH = os.getenv(
         "YOLO_MODEL_PATH",
-        os.path.join(BASE_DIR, "models_data", "yolov8n.pt")
+        # combined model eğitilince otomatik o kullanılır (load_model sırası)
+        # Şimdilik çalışan Food101 modeli varsayılan
+        os.path.join(BASE_DIR, "models_data", "food_yolov8s_best.pt")
     )
 
     # Uygulama ayarları

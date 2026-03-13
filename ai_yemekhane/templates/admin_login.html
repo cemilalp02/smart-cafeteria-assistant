@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Yetkili Girişi{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container" style="max-width: 440px; margin-top: 60px;">
+        <div class="section-header" style="text-align: center;">
+            <h2 class="section-title">🔐 Yetkili Girişi</h2>
+            <p class="section-desc">Yönetici paneline erişmek için şifrenizi girin</p>
+        </div>
+
+        {% if error %}
+        <div class="alert-item alert-kritik" style="margin-bottom: 20px;">
+            <span class="alert-level-icon">🔴</span>
+            <div class="alert-content">
+                <div class="alert-msg">{{ error }}</div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card" style="padding: 32px;">
+            <form method="POST" action="/admin/login" id="admin-login-form">
+                <div style="margin-bottom: 20px;">
+                    <label for="admin-password"
+                        style="display: block; margin-bottom: 8px; color: var(--text-primary); font-weight: 500;">
+                        Yönetici Şifresi
+                    </label>
+                    <input type="password" id="admin-password" name="password" placeholder="Şifrenizi girin..." required
+                        autofocus style="width: 100%; padding: 14px 16px; border-radius: 12px; border: 2px solid var(--glass-border);
+                               background: var(--glass-bg); color: var(--text-primary); font-size: 1rem;
+                               outline: none; transition: border-color 0.3s;"
+                        onfocus="this.style.borderColor='var(--primary)'"
+                        onblur="this.style.borderColor='var(--glass-border)'">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 1.05rem;">
+                    🚀 Giriş Yap
+                </button>
+            </form>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="/" style="color: var(--text-dim); font-size: 0.9rem;">← Ana Sayfaya Dön</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
