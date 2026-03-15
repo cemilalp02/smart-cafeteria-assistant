@@ -10,9 +10,13 @@ Kurallar:
 Seviyeler: KRİTİK (kırmızı), UYARI (turuncu), DİKKAT (sarı), BİLGİ (mavi)
 """
 
-from datetime import date, timedelta
+from __future__ import annotations
 
-from sqlalchemy import func as sqla_func
+from datetime import date, timedelta
+from typing import Any, Optional
+
+from sqlalchemy import case, func as sqla_func
+from sqlalchemy.orm import Session
 
 from models import SessionLocal, MenuPuanlama, Alert
 
@@ -25,7 +29,7 @@ SEVIYE_RENK = {
 }
 
 
-def _get_weekly_averages(yemek_adi: str, hafta_sayisi: int, db) -> list:
+def _get_weekly_averages(yemek_adi: str, hafta_sayisi: int, db: Session) -> list[Optional[float]]:
     """Son N hafta için yemek bazında haftalık ortalama puanları döndürür."""
     bugun = date.today()
     hafta_ortalamalari = []
@@ -43,13 +47,13 @@ def _get_weekly_averages(yemek_adi: str, hafta_sayisi: int, db) -> list:
             )
             .scalar()
         )
-
-        hafta_ortalamalari.append(float(result) if result else None)
+        avg_val: Any = result
+        hafta_ortalamalari.append(float(avg_val) if avg_val else None)
 
     return hafta_ortalamalari  # [bu_hafta, geçen_hafta, 2_hafta_önce, ...]
 
 
-def _get_unique_meals(gun: int, db) -> list:
+def _get_unique_meals(gun: int, db: Session) -> list[str]:
     """Son N gün içinde puanlanan benzersiz yemek isimlerini döndürür."""
     baslangic = date.today() - timedelta(days=gun)
     result = (
@@ -61,7 +65,7 @@ def _get_unique_meals(gun: int, db) -> list:
     return [row.yemek_adi for row in result]
 
 
-def check_and_generate_alerts(db=None) -> list:
+def check_and_generate_alerts(db: Optional[Session] = None) -> list[dict[str, Any]]:
     """
     Tüm uyarı kurallarını çalıştırır, yeni uyarılar oluşturur.
     Mevcut aktif uyarıları günceller.
@@ -125,7 +129,7 @@ def check_and_generate_alerts(db=None) -> list:
 
         for kat in kategoriler:
             # Bu hafta vs geçen hafta
-            bu_hafta_ort = (
+            bu_hafta_ort: Any = (
                 db.query(sqla_func.avg(MenuPuanlama.puan))
                 .filter(
                     MenuPuanlama.kategori == kat,
@@ -133,7 +137,7 @@ def check_and_generate_alerts(db=None) -> list:
                 )
                 .scalar()
             )
-            gecen_hafta_ort = (
+            gecen_hafta_ort: Any = (
                 db.query(sqla_func.avg(MenuPuanlama.puan))
                 .filter(
                     MenuPuanlama.kategori == kat,
@@ -162,7 +166,7 @@ def check_and_generate_alerts(db=None) -> list:
             db.close()
 
 
-def _create_alert_if_new(db, seviye: str, yemek_adi: str, mesaj: str, tarih, kategori: str = None):
+def _create_alert_if_new(db: Session, seviye: str, yemek_adi: Optional[str], mesaj: str, tarih: date, kategori: Optional[str] = None) -> None:
     """Aynı uyarı bugün oluşturulmadıysa yeni uyarı ekler."""
     mevcut = (
         db.query(Alert)
@@ -190,7 +194,7 @@ def _create_alert_if_new(db, seviye: str, yemek_adi: str, mesaj: str, tarih, kat
     db.add(yeni)
 
 
-def get_active_alerts(db=None) -> dict:
+def get_active_alerts(db: Optional[Session] = None) -> dict[str, Any]:
     """Aktif uyarıları döndürür."""
     close_db = False
     if db is None:
@@ -203,10 +207,10 @@ def get_active_alerts(db=None) -> dict:
 
         alerts = (
             db.query(Alert)
-            .filter(Alert.aktif == True)
+            .filter(Alert.aktif.is_(True))
             .order_by(
                 # KRİTİK en üstte
-                sqla_func.case(
+                case(
                     (Alert.seviye == "KRITIK", 1),
                     (Alert.seviye == "UYARI", 2),
                     (Alert.seviye == "DIKKAT", 3),
@@ -234,7 +238,7 @@ def get_active_alerts(db=None) -> dict:
             db.close()
 
 
-def get_alert_history(limit: int = 50, db=None) -> dict:
+def get_alert_history(limit: int = 50, db: Optional[Session] = None) -> dict[str, Any]:
     """Geçmiş uyarıları döndürür."""
     close_db = False
     if db is None:

@@ -31,6 +31,7 @@ from models import (
     KullaniciYemekLog,
     MenuPuanlama,
     Alert,
+    UretimLog,
 )
 from modules.menu_optimizer import generate_weekly_menu, load_trained_model, calculate_menu_score
 from modules.food_recognizer import (
@@ -59,6 +60,18 @@ from modules.predictive_analyzer import (
     predict_dish_risk,
     generate_predictive_alerts,
 )
+from modules.consumption_tracker import (
+    save_production_log,
+    save_bulk_production_log,
+    get_daily_consumption,
+    get_weekly_consumption,
+    get_dish_consumption_history,
+)
+from modules.production_planner import (
+    get_dish_recommendation,
+    generate_production_plan,
+)
+from modules.feedback_analyzer import analyze_feedback
 
 # ─── Uygulama Başlatma ────────────────────────────────────────────
 app = FastAPI(
@@ -258,6 +271,30 @@ async def report_page(request: Request):
     if not _is_admin(request):
         return RedirectResponse(url="/admin/login", status_code=302)
     return templates.TemplateResponse("report.html", {"request": request})
+
+
+@app.get("/production", response_class=HTMLResponse)
+async def production_entry_page(request: Request):
+    """Günlük üretim & tüketim veri girişi sayfası (şifre korumalı)."""
+    if not _is_admin(request):
+        return RedirectResponse(url="/admin/login", status_code=302)
+    return templates.TemplateResponse("production_entry.html", {"request": request})
+
+
+@app.get("/production-plan", response_class=HTMLResponse)
+async def production_plan_page(request: Request):
+    """Üretim planlama sayfası (şifre korumalı)."""
+    if not _is_admin(request):
+        return RedirectResponse(url="/admin/login", status_code=302)
+    return templates.TemplateResponse("production_plan.html", {"request": request})
+
+
+@app.get("/feedback-analysis", response_class=HTMLResponse)
+async def feedback_analysis_page(request: Request):
+    """Geri bildirim analizi sayfası (şifre korumalı)."""
+    if not _is_admin(request):
+        return RedirectResponse(url="/admin/login", status_code=302)
+    return templates.TemplateResponse("feedback_analysis.html", {"request": request})
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -1034,6 +1071,141 @@ async def alerts_history(
 ):
     """Geçmiş uyarıları döndürür."""
     return get_alert_history(limit=limit, db=db)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# TÜKETİM TAKİP — MANUEL ÜRETİM VERİ GİRİŞİ
+# ═══════════════════════════════════════════════════════════════════
+
+class ProductionLogRequest(BaseModel):
+    tarih: str
+    yemek_adi: str
+    kategori: str
+    uretilen: float = Field(..., gt=0)
+    kalan: float = Field(..., ge=0)
+    notlar: str | None = None
+
+
+class BulkProductionLogRequest(BaseModel):
+    tarih: str
+    girisler: list[dict]
+
+
+@app.post("/api/production-log")
+async def add_production_log(
+    request_body: ProductionLogRequest,
+    db: Session = Depends(get_db),
+):
+    """Tek bir yemek için üretim/kalan verisi kaydeder."""
+    try:
+        tarih = date.fromisoformat(request_body.tarih)
+    except ValueError:
+        return JSONResponse(status_code=400, content={"success": False, "message": "Geçersiz tarih."})
+
+    result = save_production_log(
+        tarih=tarih,
+        yemek_adi=request_body.yemek_adi,
+        kategori=request_body.kategori,
+        uretilen=request_body.uretilen,
+        kalan=request_body.kalan,
+        notlar=request_body.notlar,
+        db=db,
+    )
+    return result
+
+
+@app.post("/api/production-log/bulk")
+async def add_bulk_production_log(
+    request_body: BulkProductionLogRequest,
+    db: Session = Depends(get_db),
+):
+    """Birden fazla yemek için toplu üretim verisi kaydeder."""
+    try:
+        tarih = date.fromisoformat(request_body.tarih)
+    except ValueError:
+        return JSONResponse(status_code=400, content={"success": False, "message": "Geçersiz tarih."})
+
+    result = save_bulk_production_log(tarih=tarih, girisler=request_body.girisler, db=db)
+    return result
+
+
+@app.get("/api/production-log/today")
+async def get_today_production(db: Session = Depends(get_db)):
+    """Bugün için girilmiş üretim verilerini döndürür."""
+    bugun = date.today()
+    kayitlar = (
+        db.query(UretimLog)
+        .filter(UretimLog.tarih == bugun)
+        .order_by(UretimLog.kategori)
+        .all()
+    )
+    return {
+        "success": True,
+        "tarih": str(bugun),
+        "kayitlar": [k.to_dict() for k in kayitlar],
+    }
+
+
+@app.get("/api/consumption/daily")
+async def consumption_daily(
+    tarih: str = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    """Günlük tüketim/israf raporu."""
+    t = date.fromisoformat(tarih) if tarih else None
+    return get_daily_consumption(tarih=t, db=db)
+
+
+@app.get("/api/consumption/weekly")
+async def consumption_weekly(db: Session = Depends(get_db)):
+    """Haftalık tüketim özeti."""
+    return get_weekly_consumption(db=db)
+
+
+@app.get("/api/consumption/by-dish/{yemek_adi}")
+async def consumption_by_dish(
+    yemek_adi: str,
+    gun: int = Query(default=30, ge=1, le=365),
+    db: Session = Depends(get_db),
+):
+    """Belirli bir yemeğin tüketim geçmişi."""
+    return get_dish_consumption_history(yemek_adi, gun=gun, db=db)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# ÜRETİM PLANLAMA
+# ═══════════════════════════════════════════════════════════════════
+
+@app.get("/api/production/plan")
+async def production_plan(db: Session = Depends(get_db)):
+    """Geçmiş verilere dayalı üretim planı önerisi."""
+    return generate_production_plan(db=db)
+
+
+@app.get("/api/production/dish-recommendation/{yemek_adi}")
+async def dish_recommendation(
+    yemek_adi: str,
+    db: Session = Depends(get_db),
+):
+    """Belirli bir yemek için üretim önerisi."""
+    return get_dish_recommendation(yemek_adi, db=db)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# GERİ BİLDİRİM ANALİZİ
+# ═══════════════════════════════════════════════════════════════════
+
+@app.get("/api/feedback/analysis")
+async def feedback_analysis(
+    gun: int = Query(default=30, ge=7, le=365),
+    db: Session = Depends(get_db),
+):
+    """Öğrenci geri bildirimlerinin AI destekli analizi ve menü önerileri."""
+    try:
+        result = analyze_feedback(db=db, gun=gun)
+        return result
+    except Exception as e:
+        return {"success": False, "message": str(e)}
 
 
 # ─── Sunucuyu Başlat ──────────────────────────────────────────────

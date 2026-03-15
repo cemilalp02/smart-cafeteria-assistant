@@ -9,8 +9,8 @@
 <div class="page-wrapper">
     <div class="container">
         <div class="section-header">
-            <h2 class="section-title">📊 Beslenme Raporları</h2>
-            <p class="section-desc">Günlük ve haftalık beslenme takibinizi grafiklerle inceleyin</p>
+            <h2 class="section-title">📊 Yemekhane Raporları</h2>
+            <p class="section-desc">Günlük ve haftalık israf analizi, puanlama istatistikleri ve trendler</p>
             <div style="margin-top: 16px; display: flex; gap: 12px; justify-content: center;">
                 <a href="/api/report/pdf?period=weekly" class="btn btn-primary btn-sm" download>
                     📄 Haftalık PDF
@@ -24,74 +24,74 @@
         <!-- Summary Stats Row -->
         <div class="grid-4 mb-32" id="summary-stats">
             <div class="stat-card">
-                <div class="stat-value" id="s-kalori">—</div>
-                <div class="stat-label">Bugünkü Kalori</div>
+                <div class="stat-value" id="s-israf">—</div>
+                <div class="stat-label">Bugünün İsraf Skoru</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="s-protein">—</div>
-                <div class="stat-label">Protein (g)</div>
+                <div class="stat-value" id="s-puan">—</div>
+                <div class="stat-label">Bugünün Ort. Puanı</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="s-karb">—</div>
-                <div class="stat-label">Karbonhidrat (g)</div>
+                <div class="stat-value" id="s-oy">—</div>
+                <div class="stat-label">Toplam Oy</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="s-yag">—</div>
-                <div class="stat-label">Yağ (g)</div>
+                <div class="stat-value" id="s-yemek">—</div>
+                <div class="stat-label">Puanlanan Yemek</div>
             </div>
         </div>
 
         <!-- Charts Row -->
         <div class="report-grid">
             <div>
-                <!-- Weekly Calorie Chart -->
+                <!-- Haftalık İsraf Trendi -->
                 <div class="chart-card mb-20">
-                    <h3>📈 Son 7 Gün — Kalori Takibi</h3>
+                    <h3>📉 Haftalık İsraf Trendi</h3>
                     <div class="chart-canvas-wrap">
                         <canvas id="weekly-chart"></canvas>
                     </div>
                 </div>
 
-                <!-- Top Foods -->
+                <!-- En Çok İsraf Edilen -->
                 <div class="chart-card">
-                    <h3>🏆 En Çok Yenen Yemekler</h3>
-                    <div class="top-foods-list" id="top-foods">
+                    <h3>🗑️ En Çok İsraf Edilen Yemekler</h3>
+                    <div class="top-foods-list" id="top-waste-foods">
                         <p class="text-dim">Veri yükleniyor...</p>
                     </div>
                 </div>
             </div>
 
             <div>
-                <!-- Macro Distribution -->
+                <!-- Kategori Bazında İsraf -->
                 <div class="chart-card mb-20">
-                    <h3>🥧 Makro Besin Dağılımı</h3>
+                    <h3>🥧 Kategori Bazında İsraf</h3>
                     <div class="chart-canvas-wrap">
-                        <canvas id="macro-chart"></canvas>
+                        <canvas id="category-waste-chart"></canvas>
                     </div>
                 </div>
 
-                <!-- Weekly Summary Card -->
+                <!-- Haftalık Özet -->
                 <div class="summary-card">
                     <h3>📋 Haftalık Özet</h3>
                     <div class="summary-item">
-                        <span>Kalori Hedefi</span>
-                        <span class="s-value" id="w-hedef">—</span>
+                        <span>Genel İsraf Skoru</span>
+                        <span class="s-value" id="w-israf">—</span>
                     </div>
                     <div class="summary-item">
-                        <span>Bugün Alınan</span>
-                        <span class="s-value" id="w-alinan">—</span>
+                        <span>İsraf Seviyesi</span>
+                        <span class="s-value" id="w-seviye">—</span>
                     </div>
                     <div class="summary-item">
-                        <span>Kalan</span>
-                        <span class="s-value" id="w-kalan">—</span>
+                        <span>En Çok İsraf</span>
+                        <span class="s-value" id="w-en-cok">—</span>
                     </div>
                     <div class="summary-item">
-                        <span>Hedef Yüzdesi</span>
-                        <span class="s-value" id="w-yuzde">—</span>
+                        <span>En Az İsraf</span>
+                        <span class="s-value" id="w-en-az">—</span>
                     </div>
                     <div class="summary-item">
-                        <span>Yenen Öğün</span>
-                        <span class="s-value" id="w-ogun">—</span>
+                        <span>Toplam Yemek</span>
+                        <span class="s-value" id="w-toplam">—</span>
                     </div>
                 </div>
             </div>
@@ -153,116 +153,108 @@
 {% block scripts %}
 <script>
     let weeklyChart = null;
-    let macroChart = null;
+    let categoryWasteChart = null;
 
     async function loadReport() {
-        const data = await apiFetch('/api/report/1');
+        try {
+            // Bugünün israf raporu
+            const daily = await apiFetch('/api/waste/daily');
+            if (daily.success) {
+                document.getElementById('s-israf').textContent = `%${daily.genel_israf_skoru}`;
 
-        if (!data.success) {
-            showToast('Rapor verisi yüklenemedi.', 'error');
-            return;
+                // En çok israf edilen yemekler
+                const foods = daily.yemekler || [];
+                const container = document.getElementById('top-waste-foods');
+                if (foods.length > 0) {
+                    container.innerHTML = foods.slice(0, 5).map((f, i) => `
+                        <div class="top-food-item">
+                            <div class="top-food-rank">${i + 1}</div>
+                            <div class="top-food-name">${f.yemek_adi}</div>
+                            <div class="top-food-count" style="color: ${f.israf_skoru >= 50 ? '#e74c3c' : f.israf_skoru >= 25 ? '#f39c12' : '#48c9b0'}">%${f.israf_skoru}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p class="text-dim" style="padding:20px 0;text-align:center">Bugün için israf verisi yok.</p>';
+                }
+            }
+
+            // Bugünün puanları
+            const ratings = await apiFetch('/api/ratings/today');
+            if (ratings.success && ratings.data) {
+                const entries = Object.entries(ratings.data);
+                if (entries.length > 0) {
+                    const toplamOy = entries.reduce((s, [k, e]) => s + (e.toplam_oy || 0), 0);
+                    const ortPuan = entries.reduce((s, [k, e]) => s + (e.ortalama || 0), 0) / entries.length;
+                    document.getElementById('s-puan').textContent = `${ortPuan.toFixed(1)}/5`;
+                    document.getElementById('s-oy').textContent = toplamOy;
+                    document.getElementById('s-yemek').textContent = entries.length;
+                }
+            }
+
+            // Haftalık israf raporu
+            const weekly = await apiFetch('/api/waste/weekly');
+            if (weekly.success) {
+                document.getElementById('w-israf').textContent = `%${weekly.genel_israf_skoru}`;
+                const skor = weekly.genel_israf_skoru;
+                document.getElementById('w-seviye').textContent = skor >= 50 ? '🔴 Yüksek' : skor >= 25 ? '🟠 Orta' : '🟢 Düşük';
+                document.getElementById('w-toplam').textContent = (weekly.tum_yemekler || []).length;
+
+                const enCok = (weekly.en_cok_israf || [])[0];
+                document.getElementById('w-en-cok').textContent = enCok ? `${enCok.yemek_adi} (%${enCok.israf_skoru})` : '—';
+
+                const enAz = (weekly.en_az_israf || [])[0];
+                document.getElementById('w-en-az').textContent = enAz ? `${enAz.yemek_adi} (%${enAz.israf_skoru})` : '—';
+
+                // Haftalık trend grafiği
+                drawWeeklyWasteChart(weekly.gunluk_trend || []);
+
+                // Kategori israf grafiği
+                drawCategoryWasteChart(weekly.kategori_israf || {});
+            }
+        } catch (e) {
+            console.error('Report load error:', e);
         }
-
-        const report = data.data;
-        const s = report.gunluk_ozet;
-
-        // Summary Stats
-        document.getElementById('s-kalori').textContent = formatNumber(s.toplam_kalori);
-        document.getElementById('s-protein').textContent = formatNumber(s.toplam_protein);
-        document.getElementById('s-karb').textContent = formatNumber(s.toplam_karbonhidrat);
-        document.getElementById('s-yag').textContent = formatNumber(s.toplam_yag);
-
-        // Weekly Summary
-        document.getElementById('w-hedef').textContent = formatNumber(s.kalori_hedefi) + ' kcal';
-        document.getElementById('w-alinan').textContent = formatNumber(s.toplam_kalori) + ' kcal';
-        document.getElementById('w-kalan').textContent = formatNumber(s.kalan_kalori) + ' kcal';
-        document.getElementById('w-yuzde').textContent = `%${s.hedef_yuzdesi}`;
-        document.getElementById('w-ogun').textContent = (report.yenen_yemekler || []).length;
-
-        // Top Foods
-        displayTopFoods(report.yenen_yemekler || []);
-
-        // Charts
-        drawWeeklyChart(s);
-        drawMacroChart(s);
     }
 
-    function displayTopFoods(yemekler) {
-        const container = document.getElementById('top-foods');
-        if (yemekler.length === 0) {
-            container.innerHTML = '<p class="text-dim" style="padding:20px 0;text-align:center">Henüz yemek kaydı bulunmuyor.</p>';
-            return;
-        }
-
-        // Count food occurrences
-        const counts = {};
-        yemekler.forEach(y => {
-            const name = y.yemek;
-            counts[name] = (counts[name] || 0) + 1;
-        });
-
-        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
-
-        container.innerHTML = sorted.map(([name, count], i) => `
-            <div class="top-food-item">
-                <div class="top-food-rank">${i + 1}</div>
-                <div class="top-food-name">${name}</div>
-                <div class="top-food-count">${count}x</div>
-            </div>
-        `).join('');
-    }
-
-    function drawWeeklyChart(todaySummary) {
+    function drawWeeklyWasteChart(trend) {
         const ctx = document.getElementById('weekly-chart').getContext('2d');
         if (weeklyChart) weeklyChart.destroy();
-
-        // Generate demo data for 7 days (today + 6 past days)
-        const labels = [];
-        const values = [];
-        const gunler = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
-        const today = new Date();
-
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date(today);
-            d.setDate(d.getDate() - i);
-            labels.push(gunler[d.getDay()]);
-
-            if (i === 0) {
-                values.push(todaySummary.toplam_kalori);
-            } else {
-                // Demo data for past days
-                values.push(Math.round(1200 + Math.random() * 800));
-            }
-        }
-
-        const target = todaySummary.kalori_hedefi;
+        if (!trend.length) return;
 
         weeklyChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: labels,
+                labels: trend.map(t => {
+                    const d = new Date(t.tarih);
+                    return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+                }),
                 datasets: [
                     {
-                        label: 'Kalori (kcal)',
-                        data: values,
-                        backgroundColor: values.map(v =>
-                            v > target ? 'rgba(231,76,60,.7)' : 'rgba(46,134,193,.7)'
+                        label: 'İsraf Skoru (%)',
+                        data: trend.map(t => t.israf_skoru),
+                        backgroundColor: trend.map(t =>
+                            t.israf_skoru >= 50 ? 'rgba(231,76,60,.7)' :
+                            t.israf_skoru >= 25 ? 'rgba(243,156,18,.7)' :
+                            'rgba(72,201,176,.7)'
                         ),
-                        borderColor: values.map(v =>
-                            v > target ? 'rgba(231,76,60,1)' : 'rgba(46,134,193,1)'
+                        borderColor: trend.map(t =>
+                            t.israf_skoru >= 50 ? 'rgba(231,76,60,1)' :
+                            t.israf_skoru >= 25 ? 'rgba(243,156,18,1)' :
+                            'rgba(72,201,176,1)'
                         ),
                         borderWidth: 2,
                         borderRadius: 8,
                     },
                     {
-                        label: 'Hedef',
-                        data: Array(7).fill(target),
+                        label: 'Ort. Puan',
+                        data: trend.map(t => t.ortalama_puan * 20), // Puanı %'ye çevir (1-5 → 20-100)
                         type: 'line',
-                        borderColor: 'rgba(243,156,18,.8)',
-                        borderDash: [8, 4],
+                        borderColor: 'rgba(93,173,226,.8)',
                         borderWidth: 2,
-                        pointRadius: 0,
+                        pointRadius: 4,
+                        pointBackgroundColor: 'rgba(93,173,226,1)',
                         fill: false,
+                        yAxisID: 'y1',
                     }
                 ]
             },
@@ -271,13 +263,30 @@
                 plugins: {
                     legend: {
                         labels: { color: '#AED6F1', font: { family: 'Inter' } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                if (ctx.datasetIndex === 1) {
+                                    return ` Ort. Puan: ${trend[ctx.dataIndex].ortalama_puan}/5`;
+                                }
+                                return ` İsraf: %${ctx.parsed.y}`;
+                            }
+                        }
                     }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
+                        max: 100,
+                        title: { display: true, text: 'İsraf %', color: '#8892A4' },
                         ticks: { color: '#8892A4', font: { family: 'Inter' } },
                         grid: { color: 'rgba(46,134,193,.1)' }
+                    },
+                    y1: {
+                        display: false,
+                        min: 0,
+                        max: 100,
                     },
                     x: {
                         ticks: { color: '#8892A4', font: { family: 'Inter' } },
@@ -288,32 +297,40 @@
         });
     }
 
-    function drawMacroChart(s) {
-        const ctx = document.getElementById('macro-chart').getContext('2d');
-        if (macroChart) macroChart.destroy();
+    function drawCategoryWasteChart(data) {
+        const ctx = document.getElementById('category-waste-chart').getContext('2d');
+        if (categoryWasteChart) categoryWasteChart.destroy();
 
-        const protein = s.toplam_protein || 0;
-        const karb = s.toplam_karbonhidrat || 0;
-        const yag = s.toplam_yag || 0;
+        const KAT_LABELS2 = {
+            corba: 'Çorbalar', ana_yemek: 'Ana Yemekler', pilav: 'Yan Yemek',
+            tatli: 'Tatlılar', salata: 'Salatalar', pilav_makarna: 'Pilav/Makarna'
+        };
 
-        const total = protein + karb + yag;
-        const hasData = total > 0;
+        const keys = Object.keys(data);
+        if (!keys.length) return;
 
-        macroChart = new Chart(ctx, {
+        const labels = keys.map(k => KAT_LABELS2[k] || k);
+        const values = keys.map(k => data[k].israf_skoru);
+
+        categoryWasteChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['Protein', 'Karbonhidrat', 'Yağ'],
+                labels: labels,
                 datasets: [{
-                    data: hasData ? [protein, karb, yag] : [33, 33, 34],
+                    data: values,
                     backgroundColor: [
-                        'rgba(93,173,226,.8)',
                         'rgba(243,156,18,.8)',
+                        'rgba(231,76,60,.8)',
+                        'rgba(93,173,226,.8)',
                         'rgba(72,201,176,.8)',
+                        'rgba(155,89,182,.8)',
                     ],
                     borderColor: [
-                        'rgba(93,173,226,1)',
                         'rgba(243,156,18,1)',
+                        'rgba(231,76,60,1)',
+                        'rgba(93,173,226,1)',
                         'rgba(72,201,176,1)',
+                        'rgba(155,89,182,1)',
                     ],
                     borderWidth: 2,
                     hoverOffset: 8,
@@ -321,24 +338,15 @@
             },
             options: {
                 responsive: true,
-                cutout: '60%',
+                cutout: '55%',
                 plugins: {
                     legend: {
                         position: 'bottom',
-                        labels: {
-                            color: '#AED6F1',
-                            font: { family: 'Inter', size: 13 },
-                            padding: 16,
-                            usePointStyle: true,
-                        }
+                        labels: { color: '#AED6F1', font: { family: 'Inter', size: 13 }, padding: 16, usePointStyle: true }
                     },
                     tooltip: {
                         callbacks: {
-                            label: function (context) {
-                                const val = context.parsed;
-                                const pct = total > 0 ? ((val / total) * 100).toFixed(1) : '—';
-                                return ` ${context.label}: ${val}g (${pct}%)`;
-                            }
+                            label: ctx => ` ${ctx.label}: İsraf %${ctx.parsed} (Puan: ${data[keys[ctx.dataIndex]].ortalama_puan}/5)`
                         }
                     }
                 }

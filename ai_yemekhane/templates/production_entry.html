@@ -1,0 +1,491 @@
+{% extends "base_admin.html" %}
+{% block title %}Üretim & Tüketim Girişi{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+    /* ─── Production Entry Specific ──────────────────────── */
+    .prod-date-bar {
+        display: flex; align-items: center; gap: 16px;
+        margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .prod-date-bar input[type="date"] {
+        background: rgba(46,134,193,.12); border: 1px solid rgba(93,173,226,.3);
+        color: #E8F0FE; padding: 10px 16px; border-radius: 10px;
+        font-family: 'Inter', sans-serif; font-size: .95rem;
+    }
+    .prod-date-bar input[type="date"]:focus {
+        outline: none; border-color: rgba(93,173,226,.7);
+        box-shadow: 0 0 0 3px rgba(93,173,226,.15);
+    }
+    .prod-date-bar .date-label {
+        font-size: .9rem; color: #8892A4;
+    }
+
+    .prod-form-card {
+        background: rgba(17,24,39,.6); border: 1px solid rgba(93,173,226,.15);
+        border-radius: 16px; padding: 28px; margin-bottom: 24px;
+        backdrop-filter: blur(10px);
+    }
+    .prod-form-card h3 { margin-bottom: 20px; color: #AED6F1; font-size: 1.1rem; }
+
+    .prod-table { width: 100%; border-collapse: collapse; }
+    .prod-table th {
+        text-align: left; padding: 12px 16px; color: #8892A4;
+        font-size: .8rem; text-transform: uppercase; letter-spacing: .5px;
+        border-bottom: 1px solid rgba(93,173,226,.15);
+    }
+    .prod-table td {
+        padding: 10px 16px; border-bottom: 1px solid rgba(93,173,226,.08);
+        vertical-align: middle;
+    }
+    .prod-table .yemek-name {
+        font-weight: 600; color: #E8F0FE; font-size: .95rem;
+    }
+    .prod-table .kategori-badge {
+        display: inline-block; padding: 3px 10px; border-radius: 6px;
+        font-size: .75rem; font-weight: 600; text-transform: uppercase;
+    }
+    .kategori-badge.corba { background: rgba(243,156,18,.15); color: #F39C12; }
+    .kategori-badge.ana_yemek { background: rgba(231,76,60,.15); color: #E74C3C; }
+    .kategori-badge.pilav { background: rgba(155,89,182,.15); color: #9B59B6; }
+    .kategori-badge.tatli { background: rgba(72,201,176,.15); color: #48C9B0; }
+    .kategori-badge.salata { background: rgba(46,204,113,.15); color: #2ECC71; }
+
+    .prod-input {
+        background: rgba(46,134,193,.08); border: 1px solid rgba(93,173,226,.2);
+        color: #E8F0FE; padding: 8px 12px; border-radius: 8px;
+        font-family: 'Inter', sans-serif; font-size: .9rem;
+        width: 100px; text-align: center; transition: all .2s;
+    }
+    .prod-input:focus {
+        outline: none; border-color: rgba(93,173,226,.6);
+        box-shadow: 0 0 0 3px rgba(93,173,226,.12);
+    }
+    .prod-input::placeholder { color: #5D6D7E; }
+
+    .result-cell {
+        font-weight: 700; font-size: .95rem;
+    }
+    .result-cell.good { color: #48C9B0; }
+    .result-cell.warn { color: #F39C12; }
+    .result-cell.danger { color: #E74C3C; }
+
+    .prod-actions {
+        display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap;
+    }
+    .btn-save-prod {
+        background: linear-gradient(135deg, #2E86C1 0%, #48C9B0 100%);
+        border: none; color: #fff; padding: 12px 32px; border-radius: 12px;
+        font-family: 'Inter', sans-serif; font-weight: 600; font-size: .95rem;
+        cursor: pointer; transition: all .3s;
+    }
+    .btn-save-prod:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(46,134,193,.3);
+    }
+    .btn-save-prod:disabled {
+        opacity: .5; transform: none; cursor: not-allowed;
+    }
+
+    /* Report Section */
+    .prod-report-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px; margin-bottom: 24px;
+    }
+    .prod-stat-card {
+        background: rgba(17,24,39,.5); border: 1px solid rgba(93,173,226,.12);
+        border-radius: 14px; padding: 20px; text-align: center;
+    }
+    .prod-stat-card .p-icon { font-size: 1.5rem; margin-bottom: 8px; }
+    .prod-stat-card .p-value {
+        font-size: 1.6rem; font-weight: 800; color: #E8F0FE;
+    }
+    .prod-stat-card .p-label {
+        font-size: .8rem; color: #8892A4; margin-top: 4px;
+    }
+
+    .saved-badge {
+        display: inline-block; padding: 2px 8px; border-radius: 6px;
+        font-size: .7rem; font-weight: 700; background: rgba(72,201,176,.15);
+        color: #48C9B0;
+    }
+
+    @media (max-width: 768px) {
+        .prod-table { font-size: .85rem; }
+        .prod-input { width: 70px; padding: 6px 8px; }
+        .prod-table th, .prod-table td { padding: 8px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">📋 Günlük Üretim & Tüketim Girişi</h2>
+            <p class="section-desc">Bugünün üretim ve artık (kalan) verilerini girin — sistem tüketim oranını otomatik hesaplar</p>
+        </div>
+
+        <!-- Tarih Seçici -->
+        <div class="prod-date-bar">
+            <span class="date-label">📅 Tarih:</span>
+            <input type="date" id="prod-date" />
+            <button class="btn btn-primary" onclick="loadMenuForDate()" style="padding:8px 20px; font-size:.85rem;">Menüyü Yükle</button>
+        </div>
+
+        <!-- Veri Giriş Formu -->
+        <div class="prod-form-card" id="prod-form-card">
+            <h3>🍽️ Bugünün Menüsü — Üretim Verisi Girişi</h3>
+            <div id="prod-form-body">
+                <p class="text-dim">Tarih seçip "Menüyü Yükle" butonuna basın veya sayfa yüklenirken bugünün menüsü otomatik getirilecek...</p>
+            </div>
+        </div>
+
+        <!-- Günlük Rapor Özeti -->
+        <div class="prod-form-card" id="daily-report" style="display:none;">
+            <h3>📊 Günlük Tüketim Raporu</h3>
+            <div class="prod-report-grid" id="daily-stats"></div>
+            <div class="chart-canvas-wrap" style="max-height:320px;">
+                <canvas id="daily-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Haftalık Trend -->
+        <div class="prod-form-card" id="weekly-report" style="display:none;">
+            <h3>📈 Haftalık İsraf Trendi</h3>
+            <div class="prod-report-grid" id="weekly-stats"></div>
+            <div class="chart-canvas-wrap" style="max-height:320px;">
+                <canvas id="weekly-chart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let dailyChart = null;
+    let weeklyChart = null;
+
+    // ─── Bugünün tarihini set et ──────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        const dateInput = document.getElementById('prod-date');
+        dateInput.value = new Date().toISOString().split('T')[0];
+        loadMenuForDate();
+        loadWeeklyReport();
+    });
+
+    // ─── Seçili tarih için menüyü ve mevcut verileri yükle ───────
+    async function loadMenuForDate() {
+        const tarih = document.getElementById('prod-date').value;
+        const body = document.getElementById('prod-form-body');
+
+        body.innerHTML = '<p class="text-dim">⏳ Yükleniyor...</p>';
+
+        // Bugünün menüsünü çek
+        const menuData = await apiFetch('/api/menu/today');
+        // Mevcut üretim verilerini çek
+        const existingData = await apiFetch(`/api/consumption/daily?tarih=${tarih}`);
+
+        // Mevcut kayıtları index'le
+        const mevcutKayitlar = {};
+        if (existingData.success && existingData.veri_var) {
+            existingData.yemekler.forEach(k => {
+                mevcutKayitlar[k.yemek_adi] = k;
+            });
+        }
+
+        // Menü varsa yemekleri çek, yoksa boş form göster
+        let yemekler = [];
+        if (menuData.success) {
+            const m = menuData.data;
+            if (m.corba) yemekler.push({ ad: m.corba, kategori: 'corba' });
+            if (m.ana_yemek) yemekler.push({ ad: m.ana_yemek, kategori: 'ana_yemek' });
+            if (m.pilav) yemekler.push({ ad: m.pilav, kategori: 'pilav' });
+            if (m.tatli) yemekler.push({ ad: m.tatli, kategori: 'tatli' });
+            if (m.salata) yemekler.push({ ad: m.salata, kategori: 'salata' });
+        }
+
+        if (yemekler.length === 0) {
+            body.innerHTML = `
+                <div style="text-align:center; padding:40px;">
+                    <div style="font-size:2rem; margin-bottom:12px;">📋</div>
+                    <p class="text-dim">Bu tarih için menü bulunamadı.</p>
+                    <p class="text-dim" style="font-size:.85rem;">Menü Yönetimi sayfasından menü oluşturabilirsiniz.</p>
+                </div>`;
+            return;
+        }
+
+        // Tablo oluştur
+        let html = `
+            <table class="prod-table">
+                <thead>
+                    <tr>
+                        <th>Yemek</th>
+                        <th>Kategori</th>
+                        <th>Üretilen (porsiyon)</th>
+                        <th>Kalan (porsiyon)</th>
+                        <th>Tüketim</th>
+                        <th>İsraf</th>
+                        <th>Durum</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+        yemekler.forEach((yemek, i) => {
+            const mevcut = mevcutKayitlar[yemek.ad];
+            const uretilen = mevcut ? mevcut.uretilen_porsiyon : '';
+            const kalan = mevcut ? mevcut.kalan_porsiyon : '';
+            const tuketim = mevcut ? mevcut.tuketim_orani : null;
+            const israf = mevcut ? mevcut.israf_orani : null;
+            const saved = mevcut ? true : false;
+
+            let tuketimClass = '';
+            let israfClass = '';
+            if (israf !== null) {
+                if (israf >= 30) israfClass = 'danger';
+                else if (israf >= 15) israfClass = 'warn';
+                else israfClass = 'good';
+                tuketimClass = israf < 15 ? 'good' : (israf < 30 ? 'warn' : 'danger');
+            }
+
+            html += `
+                <tr data-idx="${i}" data-yemek="${yemek.ad}" data-kategori="${yemek.kategori}">
+                    <td class="yemek-name">${yemek.ad}</td>
+                    <td><span class="kategori-badge ${yemek.kategori}">${formatKategori(yemek.kategori)}</span></td>
+                    <td><input type="number" class="prod-input uretilen-input" value="${uretilen}" placeholder="0" min="0" step="1" oninput="calcRow(${i})" /></td>
+                    <td><input type="number" class="prod-input kalan-input" value="${kalan}" placeholder="0" min="0" step="1" oninput="calcRow(${i})" /></td>
+                    <td class="result-cell ${tuketimClass}" id="tuketim-${i}">${tuketim !== null ? '%' + tuketim : '—'}</td>
+                    <td class="result-cell ${israfClass}" id="israf-${i}">${israf !== null ? '%' + israf : '—'}</td>
+                    <td id="status-${i}">${saved ? '<span class="saved-badge">✅ Kayıtlı</span>' : ''}</td>
+                </tr>`;
+        });
+
+        html += `</tbody></table>
+            <div class="prod-actions">
+                <button class="btn-save-prod" id="save-btn" onclick="saveAll()">💾 Tümünü Kaydet</button>
+            </div>`;
+
+        body.innerHTML = html;
+
+        // Mevcut veri varsa raporu göster
+        if (existingData.success && existingData.veri_var) {
+            showDailyReport(existingData);
+        }
+    }
+
+    // ─── Satırdaki hesaplama ─────────────────────────────────────
+    function calcRow(idx) {
+        const row = document.querySelector(`tr[data-idx="${idx}"]`);
+        const uretilen = parseFloat(row.querySelector('.uretilen-input').value) || 0;
+        const kalan = parseFloat(row.querySelector('.kalan-input').value) || 0;
+
+        const tuketimEl = document.getElementById(`tuketim-${idx}`);
+        const israfEl = document.getElementById(`israf-${idx}`);
+
+        if (uretilen > 0 && kalan >= 0 && kalan <= uretilen) {
+            const tuketim = ((uretilen - kalan) / uretilen * 100).toFixed(1);
+            const israf = (kalan / uretilen * 100).toFixed(1);
+
+            tuketimEl.textContent = `%${tuketim}`;
+            israfEl.textContent = `%${israf}`;
+
+            // Renklendirme
+            tuketimEl.className = `result-cell ${israf < 15 ? 'good' : (israf < 30 ? 'warn' : 'danger')}`;
+            israfEl.className = `result-cell ${israf >= 30 ? 'danger' : (israf >= 15 ? 'warn' : 'good')}`;
+        } else {
+            tuketimEl.textContent = '—';
+            israfEl.textContent = '—';
+            tuketimEl.className = 'result-cell';
+            israfEl.className = 'result-cell';
+        }
+    }
+
+    // ─── Toplu Kaydetme ──────────────────────────────────────────
+    async function saveAll() {
+        const btn = document.getElementById('save-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Kaydediliyor...';
+
+        const tarih = document.getElementById('prod-date').value;
+        const rows = document.querySelectorAll('tr[data-idx]');
+        const girisler = [];
+
+        rows.forEach(row => {
+            const yemek_adi = row.dataset.yemek;
+            const kategori = row.dataset.kategori;
+            const uretilen = parseFloat(row.querySelector('.uretilen-input').value) || 0;
+            const kalan = parseFloat(row.querySelector('.kalan-input').value) || 0;
+
+            if (uretilen > 0) {
+                girisler.push({ yemek_adi, kategori, uretilen, kalan });
+            }
+        });
+
+        if (girisler.length === 0) {
+            showToast('En az bir yemek için üretim verisi girin.', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '💾 Tümünü Kaydet';
+            return;
+        }
+
+        const result = await apiFetch('/api/production-log/bulk', {
+            method: 'POST',
+            body: JSON.stringify({ tarih, girisler }),
+        });
+
+        btn.disabled = false;
+        btn.innerHTML = '💾 Tümünü Kaydet';
+
+        if (result.success) {
+            showToast(`${result.kaydedilen} yemek başarıyla kaydedildi! ✅`, 'success');
+            // Status badge'leri güncelle
+            rows.forEach(row => {
+                const idx = row.dataset.idx;
+                const uretilen = parseFloat(row.querySelector('.uretilen-input').value) || 0;
+                if (uretilen > 0) {
+                    document.getElementById(`status-${idx}`).innerHTML = '<span class="saved-badge">✅ Kayıtlı</span>';
+                }
+            });
+            // Raporu yenile
+            const reportData = await apiFetch(`/api/consumption/daily?tarih=${tarih}`);
+            if (reportData.success && reportData.veri_var) {
+                showDailyReport(reportData);
+            }
+            loadWeeklyReport();
+        } else {
+            showToast(result.message || 'Kayıt hatası.', 'error');
+        }
+    }
+
+    // ─── Günlük Rapor ────────────────────────────────────────────
+    function showDailyReport(data) {
+        const container = document.getElementById('daily-report');
+        container.style.display = 'block';
+
+        const oz = data.ozet;
+        const statsDiv = document.getElementById('daily-stats');
+        statsDiv.innerHTML = `
+            <div class="prod-stat-card">
+                <div class="p-icon">🍽️</div>
+                <div class="p-value">${oz.toplam_uretilen}</div>
+                <div class="p-label">Toplam Üretilen</div>
+            </div>
+            <div class="prod-stat-card">
+                <div class="p-icon">✅</div>
+                <div class="p-value">${oz.toplam_tuketilen}</div>
+                <div class="p-label">Tüketilen</div>
+            </div>
+            <div class="prod-stat-card">
+                <div class="p-icon">🗑️</div>
+                <div class="p-value">${oz.toplam_kalan}</div>
+                <div class="p-label">Kalan (İsraf)</div>
+            </div>
+            <div class="prod-stat-card">
+                <div class="p-icon">${oz.israf_orani >= 25 ? '⚠️' : '✅'}</div>
+                <div class="p-value" style="color:${oz.israf_orani >= 30 ? '#E74C3C' : oz.israf_orani >= 15 ? '#F39C12' : '#48C9B0'}">%${oz.israf_orani}</div>
+                <div class="p-label">İsraf Oranı (${oz.israf_seviye})</div>
+            </div>
+        `;
+
+        // Chart
+        const ctx = document.getElementById('daily-chart').getContext('2d');
+        if (dailyChart) dailyChart.destroy();
+
+        const yemekler = data.yemekler;
+        dailyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: yemekler.map(y => y.yemek_adi),
+                datasets: [
+                    {
+                        label: 'Tüketim %',
+                        data: yemekler.map(y => y.tuketim_orani),
+                        backgroundColor: 'rgba(72,201,176,.7)',
+                        borderRadius: 6,
+                    },
+                    {
+                        label: 'İsraf %',
+                        data: yemekler.map(y => y.israf_orani),
+                        backgroundColor: 'rgba(231,76,60,.7)',
+                        borderRadius: 6,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#AED6F1' } } },
+                scales: {
+                    y: { min: 0, max: 100, ticks: { color: '#8892A4', callback: v => v + '%' }, grid: { color: 'rgba(46,134,193,.1)' } },
+                    x: { ticks: { color: '#AED6F1', maxRotation: 45 }, grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // ─── Haftalık Rapor ──────────────────────────────────────────
+    async function loadWeeklyReport() {
+        const data = await apiFetch('/api/consumption/weekly');
+        if (!data.success || !data.veri_var) return;
+
+        const container = document.getElementById('weekly-report');
+        container.style.display = 'block';
+
+        const oz = data.ozet;
+        const statsDiv = document.getElementById('weekly-stats');
+        statsDiv.innerHTML = `
+            <div class="prod-stat-card">
+                <div class="p-icon">📅</div>
+                <div class="p-value">${oz.kayit_gun_sayisi}</div>
+                <div class="p-label">Veri Girilen Gün</div>
+            </div>
+            <div class="prod-stat-card">
+                <div class="p-icon">🍽️</div>
+                <div class="p-value">${oz.toplam_uretilen}</div>
+                <div class="p-label">Haftalık Üretim</div>
+            </div>
+            <div class="prod-stat-card">
+                <div class="p-icon">🗑️</div>
+                <div class="p-value" style="color:${oz.genel_israf_orani >= 25 ? '#E74C3C' : '#48C9B0'}">%${oz.genel_israf_orani}</div>
+                <div class="p-label">Haftalık İsraf</div>
+            </div>
+        `;
+
+        // Weekly trend chart
+        const trend = data.gunluk_trend;
+        const ctx = document.getElementById('weekly-chart').getContext('2d');
+        if (weeklyChart) weeklyChart.destroy();
+
+        weeklyChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: trend.map(d => { const dt = new Date(d.tarih); return dt.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }); }),
+                datasets: [{
+                    label: 'İsraf Oranı (%)',
+                    data: trend.map(d => d.israf_orani),
+                    borderColor: 'rgba(231,76,60,1)',
+                    backgroundColor: 'rgba(231,76,60,.12)',
+                    borderWidth: 3, fill: true, tension: 0.3,
+                    pointRadius: 6, pointBackgroundColor: 'rgba(231,76,60,1)',
+                    pointBorderColor: '#fff', pointBorderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#AED6F1' } } },
+                scales: {
+                    y: { min: 0, max: 100, ticks: { color: '#8892A4', callback: v => v + '%' }, grid: { color: 'rgba(46,134,193,.1)' } },
+                    x: { ticks: { color: '#8892A4' }, grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // ─── Helpers ─────────────────────────────────────────────────
+    function formatKategori(k) {
+        const map = { corba: 'Çorba', ana_yemek: 'Ana Yemek', pilav: 'Yan Yemek', tatli: 'Tatlı', salata: 'Salata' };
+        return map[k] || k;
+    }
+</script>
+{% endblock %}

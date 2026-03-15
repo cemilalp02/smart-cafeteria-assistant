@@ -7,9 +7,13 @@ Anonim puanlama ve tüketim verilerinden israf oranı türetir.
   - Puan 4-5 → düşük israf (%0-15 artık)
 """
 
+from __future__ import annotations
+
 from datetime import date, timedelta
+from typing import Any, Optional
 
 from sqlalchemy import func as sqla_func
+from sqlalchemy.orm import Session
 
 from models import SessionLocal, MenuPuanlama, KullaniciYemekLog, Yemek
 
@@ -38,7 +42,7 @@ def puan_to_israf_orani(puan: float) -> float:
         return max(0, 5.0 + (5 - puan) * 7)  # 0-12
 
 
-def calculate_waste_score(yemek_adi: str, db=None) -> dict:
+def calculate_waste_score(yemek_adi: str, db: Optional[Session] = None) -> dict[str, Any]:
     """
     Belirli bir yemeğin israf skorunu hesaplar (0-100).
     100 = en çok israf edilen.
@@ -85,7 +89,7 @@ def calculate_waste_score(yemek_adi: str, db=None) -> dict:
             db.close()
 
 
-def get_daily_waste_report(db=None) -> dict:
+def get_daily_waste_report(db: Optional[Session] = None) -> dict[str, Any]:
     """Bugünün tahmini israf raporunu döndürür."""
     close_db = False
     if db is None:
@@ -110,7 +114,7 @@ def get_daily_waste_report(db=None) -> dict:
         yemekler = []
         toplam_israf = 0
         for row in sonuclar:
-            ort = float(row.ortalama)
+            ort = float(row.ortalama)  # type: ignore[attr-defined]
             israf = puan_to_israf_orani(ort)
             yemekler.append({
                 "yemek_adi": row.yemek_adi,
@@ -144,7 +148,7 @@ def get_daily_waste_report(db=None) -> dict:
             db.close()
 
 
-def get_weekly_waste_report(db=None) -> dict:
+def get_weekly_waste_report(db: Optional[Session] = None) -> dict[str, Any]:
     """Haftalık israf özetini döndürür."""
     close_db = False
     if db is None:
@@ -170,7 +174,7 @@ def get_weekly_waste_report(db=None) -> dict:
 
         yemekler = []
         for row in sonuclar:
-            ort = float(row.ortalama)
+            ort = float(row.ortalama)  # type: ignore[attr-defined]
             israf = puan_to_israf_orani(ort)
             yemekler.append({
                 "yemek_adi": row.yemek_adi,
@@ -239,7 +243,7 @@ def get_weekly_waste_report(db=None) -> dict:
             db.close()
 
 
-def get_dish_waste_history(yemek_adi: str, gun: int = 30, db=None) -> dict:
+def get_dish_waste_history(yemek_adi: str, gun: int = 30, db: Optional[Session] = None) -> dict[str, Any]:
     """Belirli bir yemeğin israf geçmişini döndürür."""
     close_db = False
     if db is None:

@@ -1,0 +1,346 @@
+{% extends "base_admin.html" %}
+{% block title %}Üretim Planlama{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+    /* ─── Production Plan Specific ───────────────────────── */
+    .plan-summary-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px; margin-bottom: 32px;
+    }
+    .plan-stat {
+        background: rgba(17,24,39,.6); border: 1px solid rgba(93,173,226,.15);
+        border-radius: 14px; padding: 24px; text-align: center;
+        backdrop-filter: blur(10px);
+    }
+    .plan-stat .ps-icon { font-size: 1.5rem; margin-bottom: 8px; }
+    .plan-stat .ps-value { font-size: 1.8rem; font-weight: 800; color: #E8F0FE; }
+    .plan-stat .ps-label { font-size: .8rem; color: #8892A4; margin-top: 4px; }
+    .plan-stat.highlight {
+        border-color: rgba(72,201,176,.4);
+        background: rgba(72,201,176,.08);
+    }
+
+    .plan-card {
+        background: rgba(17,24,39,.6); border: 1px solid rgba(93,173,226,.15);
+        border-radius: 16px; padding: 28px; margin-bottom: 24px;
+        backdrop-filter: blur(10px);
+    }
+    .plan-card h3 { margin-bottom: 20px; color: #AED6F1; font-size: 1.1rem; }
+
+    .plan-table { width: 100%; border-collapse: collapse; }
+    .plan-table th {
+        text-align: left; padding: 12px 14px; color: #8892A4;
+        font-size: .75rem; text-transform: uppercase; letter-spacing: .5px;
+        border-bottom: 2px solid rgba(93,173,226,.2);
+        white-space: nowrap;
+    }
+    .plan-table td {
+        padding: 14px; border-bottom: 1px solid rgba(93,173,226,.08);
+        vertical-align: middle; font-size: .9rem;
+    }
+    .plan-table tr:hover { background: rgba(93,173,226,.04); }
+
+    .yemek-name { font-weight: 600; color: #E8F0FE; }
+    .kategori-badge {
+        display: inline-block; padding: 3px 10px; border-radius: 6px;
+        font-size: .7rem; font-weight: 600; text-transform: uppercase;
+    }
+    .kategori-badge.corba { background: rgba(243,156,18,.15); color: #F39C12; }
+    .kategori-badge.ana_yemek { background: rgba(231,76,60,.15); color: #E74C3C; }
+    .kategori-badge.pilav { background: rgba(155,89,182,.15); color: #9B59B6; }
+    .kategori-badge.tatli { background: rgba(72,201,176,.15); color: #48C9B0; }
+    .kategori-badge.salata { background: rgba(46,204,113,.15); color: #2ECC71; }
+
+    .aksiyon-badge {
+        display: inline-block; padding: 4px 12px; border-radius: 8px;
+        font-size: .78rem; font-weight: 700; white-space: nowrap;
+    }
+    .aksiyon-badge.ciddi_azalt { background: rgba(231,76,60,.15); color: #E74C3C; }
+    .aksiyon-badge.azalt { background: rgba(243,156,18,.15); color: #F39C12; }
+    .aksiyon-badge.koru { background: rgba(72,201,176,.15); color: #48C9B0; }
+    .aksiyon-badge.artir { background: rgba(46,134,193,.15); color: #5DADE2; }
+    .aksiyon-badge.cikar { background: rgba(231,76,60,.25); color: #E74C3C; border: 1px solid rgba(231,76,60,.3); }
+
+    .trend-tag { font-size: .8rem; font-weight: 600; }
+    .trend-tag.up { color: #48C9B0; }
+    .trend-tag.down { color: #E74C3C; }
+    .trend-tag.stable { color: #8892A4; }
+
+    .porsiyon-compare {
+        display: flex; align-items: center; gap: 8px; font-size: .9rem;
+    }
+    .porsiyon-compare .old {
+        color: #8892A4; text-decoration: line-through; font-weight: 400;
+    }
+    .porsiyon-compare .arrow { color: #5DADE2; font-weight: 700; }
+    .porsiyon-compare .new { color: #48C9B0; font-weight: 700; }
+
+    .tasarruf-badge {
+        display: inline-block; padding: 3px 10px; border-radius: 6px;
+        font-size: .78rem; font-weight: 700;
+        background: rgba(72,201,176,.12); color: #48C9B0;
+    }
+    .tasarruf-badge.negative {
+        background: rgba(231,76,60,.12); color: #E74C3C;
+    }
+
+    .guven-badge {
+        font-size: .72rem; padding: 2px 8px; border-radius: 4px;
+        font-weight: 600;
+    }
+    .guven-badge.high { background: rgba(72,201,176,.12); color: #48C9B0; }
+    .guven-badge.mid { background: rgba(243,156,18,.12); color: #F39C12; }
+    .guven-badge.low { background: rgba(231,76,60,.12); color: #E74C3C; }
+
+    .empty-plan {
+        text-align: center; padding: 60px 20px; color: #8892A4;
+    }
+    .empty-plan .empty-icon { font-size: 3rem; margin-bottom: 16px; }
+
+    .plan-refresh-btn {
+        background: linear-gradient(135deg, #2E86C1 0%, #48C9B0 100%);
+        border: none; color: #fff; padding: 12px 32px; border-radius: 12px;
+        font-family: 'Inter', sans-serif; font-weight: 600; font-size: .95rem;
+        cursor: pointer; transition: all .3s;
+    }
+    .plan-refresh-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(46,134,193,.3);
+    }
+
+    @media (max-width: 768px) {
+        .plan-table { font-size: .8rem; }
+        .plan-table th, .plan-table td { padding: 8px 6px; }
+        .porsiyon-compare { flex-direction: column; gap: 2px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">📦 Üretim Planlama</h2>
+            <p class="section-desc">Geçmiş tüketim verilerine dayalı akıllı üretim miktarı önerileri</p>
+        </div>
+
+        <!-- Yenile Butonu -->
+        <div style="margin-bottom: 24px;">
+            <button class="plan-refresh-btn" id="refresh-btn" onclick="loadPlan()">
+                🔄 Üretim Planı Oluştur
+            </button>
+        </div>
+
+        <!-- Özet Kartlar -->
+        <div class="plan-summary-grid" id="plan-summary" style="display:none;"></div>
+
+        <!-- Aksiyon Dağılımı Chart -->
+        <div class="plan-card" id="chart-section" style="display:none;">
+            <h3>📊 İsraf Oranı Dağılımı</h3>
+            <div class="chart-canvas-wrap" style="max-height:340px;">
+                <canvas id="plan-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Plan Tablosu -->
+        <div class="plan-card" id="plan-table-section" style="display:none;">
+            <h3>📋 Yemek Bazlı Üretim Önerileri</h3>
+            <div id="plan-body"></div>
+        </div>
+
+        <!-- Boş Durum -->
+        <div id="empty-state">
+            <div class="empty-plan">
+                <div class="empty-icon">📦</div>
+                <h3 style="color:#AED6F1; margin-bottom:12px;">Üretim Planı Oluşturun</h3>
+                <p>Yukarıdaki butona basarak geçmiş verilerinize dayalı<br>akıllı üretim önerileri alın.</p>
+                <p style="margin-top:12px; font-size:.85rem;">⚠️ Önce "Veri Girişi" sayfasından birkaç gün üretim verisi girmeniz gerekir.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let planChart = null;
+
+    async function loadPlan() {
+        const btn = document.getElementById('refresh-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Analiz ediliyor...';
+
+        const data = await apiFetch('/api/production/plan');
+
+        btn.disabled = false;
+        btn.innerHTML = '🔄 Üretim Planı Oluştur';
+
+        if (!data.success) {
+            showToast(data.mesaj || 'Hata oluştu.', 'error');
+            return;
+        }
+
+        if (!data.veri_var) {
+            document.getElementById('empty-state').innerHTML = `
+                <div class="empty-plan">
+                    <div class="empty-icon">📋</div>
+                    <h3 style="color:#F39C12; margin-bottom:12px;">Yeterli Veri Yok</h3>
+                    <p>${data.mesaj}</p>
+                </div>`;
+            return;
+        }
+
+        document.getElementById('empty-state').style.display = 'none';
+        showSummary(data.ozet);
+        showChart(data.plan);
+        showTable(data.plan);
+        showToast(`${data.ozet.toplam_yemek} yemek için üretim planı oluşturuldu! ✅`, 'success');
+    }
+
+    function showSummary(ozet) {
+        const div = document.getElementById('plan-summary');
+        div.style.display = 'grid';
+
+        const aksiyonStr = Object.entries(ozet.aksiyon_dagilimi || {})
+            .map(([k, v]) => `${v} ${formatAksiyon(k)}`).join(', ');
+
+        div.innerHTML = `
+            <div class="plan-stat">
+                <div class="ps-icon">🍽️</div>
+                <div class="ps-value">${ozet.toplam_yemek}</div>
+                <div class="ps-label">Analiz Edilen Yemek</div>
+            </div>
+            <div class="plan-stat">
+                <div class="ps-icon">📊</div>
+                <div class="ps-value">${ozet.toplam_mevcut_uretim}</div>
+                <div class="ps-label">Mevcut Ort. Üretim</div>
+            </div>
+            <div class="plan-stat">
+                <div class="ps-icon">🎯</div>
+                <div class="ps-value">${ozet.toplam_onerilen_uretim}</div>
+                <div class="ps-label">Önerilen Üretim</div>
+            </div>
+            <div class="plan-stat highlight">
+                <div class="ps-icon">💡</div>
+                <div class="ps-value" style="color:#48C9B0">${ozet.toplam_tasarruf_porsiyon} prs</div>
+                <div class="ps-label">Tasarruf (%${ozet.tasarruf_yuzde})</div>
+            </div>
+        `;
+    }
+
+    function showChart(plan) {
+        document.getElementById('chart-section').style.display = 'block';
+        const ctx = document.getElementById('plan-chart').getContext('2d');
+        if (planChart) planChart.destroy();
+
+        // İsraf oranına göre sıralı
+        const sorted = [...plan].sort((a, b) => b.ort_israf_orani - a.ort_israf_orani);
+
+        planChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sorted.map(p => p.yemek_adi),
+                datasets: [
+                    {
+                        label: 'Tüketim %',
+                        data: sorted.map(p => +(100 - p.ort_israf_orani).toFixed(1)),
+                        backgroundColor: 'rgba(72,201,176,.7)',
+                        borderRadius: 4,
+                    },
+                    {
+                        label: 'İsraf %',
+                        data: sorted.map(p => p.ort_israf_orani),
+                        backgroundColor: 'rgba(231,76,60,.7)',
+                        borderRadius: 4,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { labels: { color: '#AED6F1' } },
+                },
+                scales: {
+                    y: {
+                        stacked: true, min: 0, max: 100,
+                        ticks: { color: '#8892A4', callback: v => v + '%' },
+                        grid: { color: 'rgba(46,134,193,.1)' }
+                    },
+                    x: {
+                        stacked: true,
+                        ticks: { color: '#AED6F1', maxRotation: 45 },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    function showTable(plan) {
+        const section = document.getElementById('plan-table-section');
+        section.style.display = 'block';
+        const body = document.getElementById('plan-body');
+
+        let html = `
+            <table class="plan-table">
+                <thead>
+                    <tr>
+                        <th>Yemek</th>
+                        <th>Kategori</th>
+                        <th>Ort. İsraf</th>
+                        <th>Trend</th>
+                        <th>Puan</th>
+                        <th>Üretim Önerisi</th>
+                        <th>Tasarruf</th>
+                        <th>Güven</th>
+                        <th>Aksiyon</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+        plan.forEach(item => {
+            const trendClass = item.trend_yon.includes('↑') ? 'up' :
+                               item.trend_yon.includes('↓') ? 'down' : 'stable';
+
+            const guvenClass = item.guven === 'Yüksek' ? 'high' :
+                               item.guven === 'Orta' ? 'mid' : 'low';
+
+            const tasarrufClass = item.tasarruf_porsiyon >= 0 ? '' : 'negative';
+
+            html += `
+                <tr>
+                    <td class="yemek-name">${item.yemek_adi}</td>
+                    <td><span class="kategori-badge ${item.kategori}">${formatKategori(item.kategori)}</span></td>
+                    <td style="color:${item.ort_israf_orani >= 25 ? '#E74C3C' : item.ort_israf_orani >= 15 ? '#F39C12' : '#48C9B0'}; font-weight:700;">%${item.ort_israf_orani}</td>
+                    <td><span class="trend-tag ${trendClass}">${item.trend_yon}</span></td>
+                    <td>${item.puan_ort !== null ? item.puan_ort + '/5' : '—'}</td>
+                    <td>
+                        <div class="porsiyon-compare">
+                            <span class="old">${item.mevcut_ortalama}</span>
+                            <span class="arrow">→</span>
+                            <span class="new">${item.onerilen_porsiyon}</span>
+                        </div>
+                    </td>
+                    <td><span class="tasarruf-badge ${tasarrufClass}">${item.tasarruf_porsiyon >= 0 ? '-' : '+'}${Math.abs(item.tasarruf_porsiyon)} prs</span></td>
+                    <td><span class="guven-badge ${guvenClass}">${item.guven}</span></td>
+                    <td><span class="aksiyon-badge ${item.aksiyon_kodu}">${item.aksiyon}</span></td>
+                </tr>`;
+        });
+
+        html += '</tbody></table>';
+        body.innerHTML = html;
+    }
+
+    // ─── Helpers ─────────────────────────────────────────────────
+    function formatKategori(k) {
+        const map = { corba: 'Çorba', ana_yemek: 'Ana Yemek', pilav: 'Yan Yemek', tatli: 'Tatlı', salata: 'Salata' };
+        return map[k] || k;
+    }
+    function formatAksiyon(k) {
+        const map = { ciddi_azalt: 'Ciddi Azalt', azalt: 'Azalt', koru: 'Koru', artir: 'Artır', cikar: 'Çıkar' };
+        return map[k] || k;
+    }
+</script>
+{% endblock %}

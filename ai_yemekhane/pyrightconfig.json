@@ -1,0 +1,15 @@
+{
+  "include": ["**/*.py"],
+  "executionEnvironments": [
+    {
+      "root": ".",
+      "extraPaths": ["."]
+    }
+  ],
+  "reportMissingImports": "warning",
+  "reportMissingModuleSource": "none",
+  "reportOptionalMemberAccess": "none",
+  "reportGeneralTypeIssues": "warning",
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "basic"
+}

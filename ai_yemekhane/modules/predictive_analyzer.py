@@ -10,10 +10,14 @@ Yöntemler:
   - Risk Skorlama: Düşük puan + yüksek israf = yüksek risk
 """
 
+from __future__ import annotations
+
 from datetime import date, timedelta
 from collections import defaultdict
+from typing import Any, Optional
 
 from sqlalchemy import func as sqla_func
+from sqlalchemy.orm import Session
 from models import SessionLocal, MenuPuanlama, Alert
 
 
@@ -21,7 +25,7 @@ from models import SessionLocal, MenuPuanlama, Alert
 # YARDIMCILAR
 # ═══════════════════════════════════════════════════════════════════
 
-def _weighted_moving_average(values, weights=None):
+def _weighted_moving_average(values: list[float], weights: Optional[list[int]] = None) -> float:
     """Ağırlıklı hareketli ortalama hesaplar."""
     if not values:
         return 0
@@ -35,7 +39,7 @@ def _weighted_moving_average(values, weights=None):
     return sum(v * w for v, w in zip(values, weights[:len(values)])) / total_weight
 
 
-def _trend_direction(values):
+def _trend_direction(values: list[float]) -> tuple[str, float]:
     """Basit trend yönü: artış/azalış/stabil."""
     if len(values) < 2:
         return "stabil", 0
@@ -67,7 +71,7 @@ def _trend_direction(values):
 ISRAF_MAP = {1: 80, 2: 65, 3: 35, 4: 12, 5: 5}
 
 
-def _puan_to_israf(puan):
+def _puan_to_israf(puan: float) -> float:
     """Puanı tahmini israf yüzdesine çevirir."""
     if puan <= 1:
         return 80
@@ -79,7 +83,7 @@ def _puan_to_israf(puan):
     return ISRAF_MAP[lower] * (1 - frac) + ISRAF_MAP[upper] * frac
 
 
-def predict_next_week_waste(db=None) -> dict:
+def predict_next_week_waste(db: Optional[Session] = None) -> dict[str, Any]:
     """
     Son 4 haftanın verilerinden gelecek haftanın israf trendini tahmin eder.
 
@@ -228,7 +232,7 @@ def predict_next_week_waste(db=None) -> dict:
             db.close()
 
 
-def predict_dish_risk(yemek_adi: str, db=None) -> dict:
+def predict_dish_risk(yemek_adi: str, db: Optional[Session] = None) -> dict[str, Any]:
     """
     Belirli bir yemeğin israf riskini tahmin eder.
 
@@ -292,7 +296,7 @@ def predict_dish_risk(yemek_adi: str, db=None) -> dict:
             db.close()
 
 
-def generate_predictive_alerts(db=None) -> list[dict]:
+def generate_predictive_alerts(db: Optional[Session] = None) -> list[dict[str, Any]]:
     """
     Tahmine dayalı uyarılar oluşturur.
 

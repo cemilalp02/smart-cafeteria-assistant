@@ -5,9 +5,13 @@ Puanlama verisinden tüketim trendleri, mevsimsel analiz,
 trend yönü hesaplama ve anomali tespiti yapar.
 """
 
+from __future__ import annotations
+
 from datetime import date, timedelta
+from typing import Any, Optional
 
 from sqlalchemy import func as sqla_func
+from sqlalchemy.orm import Session
 
 from models import SessionLocal, MenuPuanlama
 
@@ -46,7 +50,7 @@ def _get_trend_direction(values: list) -> str:
         return "Sabit"
 
 
-def get_monthly_trends(gun: int = 30, db=None) -> dict:
+def get_monthly_trends(gun: int = 30, db: Optional[Session] = None) -> dict[str, Any]:
     """Son N günlük genel tüketim trendlerini döndürür."""
     close_db = False
     if db is None:
@@ -120,7 +124,7 @@ def get_monthly_trends(gun: int = 30, db=None) -> dict:
             db.close()
 
 
-def get_seasonal_analysis(db=None) -> dict:
+def get_seasonal_analysis(db: Optional[Session] = None) -> dict[str, Any]:
     """Mevsimsel popülerlik analizini döndürür."""
     close_db = False
     if db is None:
@@ -189,7 +193,7 @@ def get_seasonal_analysis(db=None) -> dict:
             db.close()
 
 
-def get_dish_trend(yemek_adi: str, gun: int = 90, db=None) -> dict:
+def get_dish_trend(yemek_adi: str, gun: int = 90, db: Optional[Session] = None) -> dict[str, Any]:
     """Belirli bir yemeğin uzun vadeli trendini ve yönünü döndürür."""
     close_db = False
     if db is None:
@@ -249,7 +253,7 @@ def get_dish_trend(yemek_adi: str, gun: int = 90, db=None) -> dict:
             db.close()
 
 
-def detect_anomalies(gun: int = 30, db=None) -> dict:
+def detect_anomalies(gun: int = 30, db: Optional[Session] = None) -> dict[str, Any]:
     """Normalden çok farklı puanlanan günleri tespit eder."""
     close_db = False
     if db is None:

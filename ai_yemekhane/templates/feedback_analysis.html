@@ -1,0 +1,461 @@
+{% extends "base_admin.html" %}
+{% block title %}Geri Bildirim Analizi{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">💬 Öğrenci Geri Bildirim Analizi</h2>
+            <p class="section-desc">Puanlama ve yorumlardan AI destekli duygu analizi, tema çıkarımı ve menü planlama önerileri</p>
+            <div style="margin-top: 16px; display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                <label style="color: #AED6F1; font-size: 14px;">Dönem:</label>
+                <select id="gun-select" style="padding: 8px 16px; border-radius: 8px; background: rgba(46,134,193,.15); border: 1px solid rgba(46,134,193,.3); color: #AED6F1; font-family: Inter;">
+                    <option value="7">Son 7 Gün</option>
+                    <option value="30" selected>Son 30 Gün</option>
+                    <option value="60">Son 60 Gün</option>
+                    <option value="90">Son 90 Gün</option>
+                </select>
+                <button class="btn btn-primary btn-sm" onclick="loadFeedbackAnalysis()">🔄 Analiz Et</button>
+            </div>
+        </div>
+
+        <!-- Yükleme Spinner -->
+        <div id="loading-spinner" style="display:none; text-align:center; padding: 60px 0;">
+            <div style="font-size: 48px; margin-bottom: 16px;">🔄</div>
+            <p style="color: #AED6F1; font-size: 16px;">AI analizi çalıştırılıyor, lütfen bekleyin...</p>
+        </div>
+
+        <!-- Veri Yok Uyarısı -->
+        <div id="no-data-msg" style="display:none; text-align:center; padding: 60px 0;">
+            <div style="font-size: 48px; margin-bottom: 16px;">📭</div>
+            <p style="color: #8892A4; font-size: 16px;" id="no-data-text">Veri bulunamadı.</p>
+        </div>
+
+        <!-- ═══ ANA İÇERİK ═══ -->
+        <div id="analysis-content" style="display:none;">
+
+            <!-- Özet Kartlar -->
+            <div class="admin-summary-grid">
+                <div class="admin-stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-value" id="stat-total">—</div>
+                    <div class="stat-label">Toplam Puanlama</div>
+                    <div class="stat-sub" id="stat-total-sub">—</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="stat-icon">⭐</div>
+                    <div class="stat-value" id="stat-avg">—</div>
+                    <div class="stat-label">Genel Ortalama</div>
+                    <div class="stat-sub" id="stat-avg-sub">—</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="stat-icon">😊</div>
+                    <div class="stat-value" id="stat-pozitif">—</div>
+                    <div class="stat-label">Pozitif Yorum</div>
+                    <div class="stat-sub" id="stat-pozitif-pct">—</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="stat-icon">📝</div>
+                    <div class="stat-value" id="stat-yorum">—</div>
+                    <div class="stat-label">Toplam Yorum</div>
+                    <div class="stat-sub" id="stat-kaynak">—</div>
+                </div>
+            </div>
+
+            <!-- Grafikler Satır 1 -->
+            <div class="report-grid" style="margin-top: 32px;">
+                <div>
+                    <!-- Duygu Dağılımı -->
+                    <div class="chart-card mb-20">
+                        <h3>🎭 Duygu Dağılımı</h3>
+                        <div class="chart-canvas-wrap">
+                            <canvas id="sentiment-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- En Sık Temalar -->
+                    <div class="chart-card">
+                        <h3>🏷️ En Sık Şikayet / Övgü Temaları</h3>
+                        <div id="themes-container">
+                            <p class="text-dim" style="padding: 20px 0; text-align: center;">Yükleniyor...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <!-- Yemek Duygu Skorları -->
+                    <div class="chart-card mb-20">
+                        <h3>📈 Yemek Bazlı Duygu Skoru</h3>
+                        <div class="chart-canvas-wrap" style="min-height: 300px;">
+                            <canvas id="dish-sentiment-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Son Yorumlar -->
+                    <div class="chart-card">
+                        <h3>💬 Son Yorumlar</h3>
+                        <div id="comments-container" style="max-height: 300px; overflow-y: auto;">
+                            <p class="text-dim" style="padding: 20px 0; text-align: center;">Yükleniyor...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ AI MENÜ ÖNERİ RAPORU ═══ -->
+            <div class="section-header" style="margin-top: 48px;">
+                <h2 class="section-title">🤖 AI Menü Planlama Raporu</h2>
+                <p class="section-desc">Puanlama ve tüketim verilerine dayalı gelecek ay menü önerileri</p>
+            </div>
+
+            <!-- Genel Değerlendirme -->
+            <div id="ai-evaluation" class="chart-card" style="margin-bottom: 24px;">
+                <h3>📋 Genel Değerlendirme</h3>
+                <p id="ai-evaluation-text" style="color: #AED6F1; font-size: 15px; line-height: 1.7; padding: 12px 0;"></p>
+            </div>
+
+            <!-- Menü Aksiyonları Tablosu -->
+            <div id="menu-actions-container" class="chart-card">
+                <h3>📊 Yemek Bazlı Menü Önerileri</h3>
+                <div style="overflow-x: auto;">
+                    <table class="data-table" id="menu-actions-table">
+                        <thead>
+                            <tr>
+                                <th>Yemek</th>
+                                <th>Aksiyon</th>
+                                <th>Gerekçe</th>
+                            </tr>
+                        </thead>
+                        <tbody id="menu-actions-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Aksiyonların Özeti -->
+            <div class="admin-summary-grid" style="margin-top: 24px;" id="action-summary-grid"></div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let sentimentChart = null;
+    let dishSentimentChart = null;
+
+    const AKSIYON_STIL = {
+        'KALDIR': { emoji: '⛔', badge: 'badge-danger', bg: 'rgba(231,76,60,.15)', color: '#e74c3c' },
+        'AZALT':  { emoji: '🟠', badge: 'badge-warning', bg: 'rgba(243,156,18,.15)', color: '#f39c12' },
+        'KORU':   { emoji: '🟢', badge: 'badge-success', bg: 'rgba(72,201,176,.15)', color: '#48c9b0' },
+        'ARTIR':  { emoji: '🔵', badge: 'badge-info',    bg: 'rgba(93,173,226,.15)', color: '#5dade2' },
+    };
+
+    async function loadFeedbackAnalysis() {
+        const gun = document.getElementById('gun-select').value;
+
+        // UI durumlarını ayarla
+        document.getElementById('loading-spinner').style.display = 'block';
+        document.getElementById('analysis-content').style.display = 'none';
+        document.getElementById('no-data-msg').style.display = 'none';
+
+        try {
+            const data = await apiFetch(`/api/feedback/analysis?gun=${gun}`);
+
+            document.getElementById('loading-spinner').style.display = 'none';
+
+            if (!data.success) {
+                document.getElementById('no-data-msg').style.display = 'block';
+                document.getElementById('no-data-text').textContent = data.message || 'Bir hata oluştu.';
+                return;
+            }
+
+            if (!data.veri_var) {
+                document.getElementById('no-data-msg').style.display = 'block';
+                document.getElementById('no-data-text').textContent = data.mesaj || 'Veri bulunamadı.';
+                return;
+            }
+
+            document.getElementById('analysis-content').style.display = 'block';
+            renderAnalysis(data);
+
+        } catch (e) {
+            document.getElementById('loading-spinner').style.display = 'none';
+            document.getElementById('no-data-msg').style.display = 'block';
+            document.getElementById('no-data-text').textContent = 'API bağlantı hatası: ' + e.message;
+            console.error('Feedback analysis error:', e);
+        }
+    }
+
+    function renderAnalysis(data) {
+        const genel = data.genel;
+        const analiz = data.analiz;
+        const duygu = analiz.duygu_dagilimi || {};
+
+        // ── Özet Kartlar ──
+        document.getElementById('stat-total').textContent = genel.toplam_puanlama;
+        document.getElementById('stat-total-sub').textContent = `${genel.toplam_yemek} farklı yemek`;
+        document.getElementById('stat-avg').textContent = `${genel.genel_ortalama}/5`;
+
+        const avgNum = parseFloat(genel.genel_ortalama);
+        if (avgNum >= 4) document.getElementById('stat-avg-sub').textContent = 'Çok İyi 👍';
+        else if (avgNum >= 3) document.getElementById('stat-avg-sub').textContent = 'Orta 😐';
+        else document.getElementById('stat-avg-sub').textContent = 'Düşük 👎';
+
+        const pozitif = duygu.pozitif || 0;
+        const negatif = duygu.negatif || 0;
+        const notr = duygu.notr || 0;
+        const toplamDuygu = pozitif + negatif + notr;
+
+        document.getElementById('stat-pozitif').textContent = pozitif;
+        document.getElementById('stat-pozitif-pct').textContent = toplamDuygu > 0
+            ? `%${Math.round(pozitif / toplamDuygu * 100)} oranında`
+            : '—';
+
+        document.getElementById('stat-yorum').textContent = genel.toplam_yorum;
+        document.getElementById('stat-kaynak').textContent = analiz.kaynak === 'gemini_ai'
+            ? 'Gemini AI Analizi ✨'
+            : 'Yerel Analiz 📊';
+
+        // ── Duygu Dağılımı Grafiği ──
+        drawSentimentChart(duygu);
+
+        // ── Temalar ──
+        renderThemes(analiz.en_sik_temalar || []);
+
+        // ── Yemek Duygu Skoru Grafiği ──
+        drawDishSentimentChart(analiz.yemek_duygu_skorlari || []);
+
+        // ── Son Yorumlar ──
+        renderComments(data.yorumlar || []);
+
+        // ── AI Menü Raporu ──
+        document.getElementById('ai-evaluation-text').textContent =
+            analiz.genel_degerlendirme || 'Değerlendirme mevcut değil.';
+        renderMenuActions(analiz.menu_onerileri || []);
+    }
+
+    // ─── DUY GU DAĞILIMI GRAFİĞİ ──────────────────────────────────
+    function drawSentimentChart(duygu) {
+        const ctx = document.getElementById('sentiment-chart').getContext('2d');
+        if (sentimentChart) sentimentChart.destroy();
+
+        const poz = duygu.pozitif || 0;
+        const neg = duygu.negatif || 0;
+        const notr = duygu.notr || 0;
+        const hasData = (poz + neg + notr) > 0;
+
+        sentimentChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['😊 Pozitif', '😔 Negatif', '😐 Nötr'],
+                datasets: [{
+                    data: hasData ? [poz, neg, notr] : [33, 33, 34],
+                    backgroundColor: [
+                        'rgba(72,201,176,.8)',
+                        'rgba(231,76,60,.8)',
+                        'rgba(149,165,166,.8)',
+                    ],
+                    borderColor: [
+                        'rgba(72,201,176,1)',
+                        'rgba(231,76,60,1)',
+                        'rgba(149,165,166,1)',
+                    ],
+                    borderWidth: 2,
+                    hoverOffset: 8,
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '55%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#AED6F1',
+                            font: { family: 'Inter', size: 13 },
+                            padding: 16,
+                            usePointStyle: true,
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                const pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : '—';
+                                return ` ${ctx.label}: ${ctx.parsed} (%${pct})`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // ─── TEMALAR RENDER ────────────────────────────────────────────
+    function renderThemes(temalar) {
+        const container = document.getElementById('themes-container');
+        if (!temalar.length) {
+            container.innerHTML = '<p class="text-dim" style="padding:20px 0;text-align:center">Tema çıkarımı için yeterli yorum bulunmuyor.</p>';
+            return;
+        }
+
+        let html = '<div style="display:flex; flex-direction:column; gap:8px; padding:8px 0;">';
+        temalar.forEach((t, i) => {
+            html += `
+                <div style="display:flex; align-items:center; gap:12px; padding:12px 16px; background:rgba(46,134,193,.08); border-radius:10px; border-left:3px solid rgba(46,134,193,.6);">
+                    <div style="font-size:20px; min-width:32px; text-align:center;">#${i + 1}</div>
+                    <div style="flex:1;">
+                        <div style="color:#AED6F1; font-weight:600; font-size:14px; margin-bottom:4px;">${t.tema}</div>
+                        ${t.ornek_yorum ? `<div style="color:#8892A4; font-size:12px; font-style:italic;">"${t.ornek_yorum}"</div>` : ''}
+                    </div>
+                    <div style="background:rgba(46,134,193,.2); padding:4px 12px; border-radius:20px; color:#5dade2; font-weight:600; font-size:13px;">
+                        ${t.sayi}x
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // ─── YEMEK DUYGU SKORU GRAFİĞİ ────────────────────────────────
+    function drawDishSentimentChart(skorlar) {
+        const ctx = document.getElementById('dish-sentiment-chart').getContext('2d');
+        if (dishSentimentChart) dishSentimentChart.destroy();
+        if (!skorlar.length) return;
+
+        // En fazla 15 yemek göster
+        const data = skorlar.slice(0, 15);
+
+        dishSentimentChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.yemek_adi),
+                datasets: [{
+                    label: 'Duygu Skoru (-1 ↔ +1)',
+                    data: data.map(d => d.skor),
+                    backgroundColor: data.map(d =>
+                        d.skor >= 0.3 ? 'rgba(72,201,176,.7)' :
+                        d.skor <= -0.3 ? 'rgba(231,76,60,.7)' :
+                        'rgba(149,165,166,.7)'
+                    ),
+                    borderColor: data.map(d =>
+                        d.skor >= 0.3 ? 'rgba(72,201,176,1)' :
+                        d.skor <= -0.3 ? 'rgba(231,76,60,1)' :
+                        'rgba(149,165,166,1)'
+                    ),
+                    borderWidth: 2,
+                    borderRadius: 6,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                scales: {
+                    x: {
+                        min: -1, max: 1,
+                        ticks: {
+                            color: '#8892A4',
+                            font: { family: 'Inter' },
+                            callback: v => v === 0 ? '0' : v > 0 ? `+${v}` : v
+                        },
+                        grid: { color: 'rgba(46,134,193,.1)' }
+                    },
+                    y: {
+                        ticks: { color: '#AED6F1', font: { family: 'Inter', size: 11 } },
+                        grid: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const item = data[ctx.dataIndex];
+                                return ` Skor: ${item.skor > 0 ? '+' : ''}${item.skor} — ${item.ozet}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // ─── SON YORUMLAR ──────────────────────────────────────────────
+    function renderComments(yorumlar) {
+        const container = document.getElementById('comments-container');
+        if (!yorumlar.length) {
+            container.innerHTML = '<p class="text-dim" style="padding:20px 0;text-align:center">Henüz yorum bulunmuyor.</p>';
+            return;
+        }
+
+        let html = '';
+        yorumlar.forEach(y => {
+            const puanColor = y.puan >= 4 ? '#48c9b0' : y.puan <= 2 ? '#e74c3c' : '#f39c12';
+            html += `
+                <div style="padding:10px 14px; margin-bottom:8px; background:rgba(46,134,193,.06); border-radius:8px; border-left:3px solid ${puanColor};">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="color:#AED6F1; font-weight:600; font-size:13px;">${y.yemek_adi}</span>
+                        <span style="color:${puanColor}; font-weight:600; font-size:12px;">${y.puan}⭐</span>
+                    </div>
+                    <div style="color:#8892A4; font-size:12px; line-height:1.5;">"${y.yorum}"</div>
+                    <div style="color:#5d6d7e; font-size:11px; margin-top:4px;">${y.tarih}</div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    // ─── MENÜ AKSİYONLARI TABLOSU ─────────────────────────────────
+    function renderMenuActions(onerileri) {
+        const tbody = document.getElementById('menu-actions-body');
+        if (!onerileri.length) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#8892A4;">Öneri bulunmuyor</td></tr>';
+            return;
+        }
+
+        let html = '';
+        const aksiyonSayilari = { KALDIR: 0, AZALT: 0, KORU: 0, ARTIR: 0 };
+
+        onerileri.forEach(o => {
+            const stil = AKSIYON_STIL[o.aksiyon] || AKSIYON_STIL['KORU'];
+            aksiyonSayilari[o.aksiyon] = (aksiyonSayilari[o.aksiyon] || 0) + 1;
+
+            html += `
+                <tr style="background:${stil.bg};">
+                    <td style="font-weight:600; color:#AED6F1;">${o.yemek_adi}</td>
+                    <td>
+                        <span class="badge ${stil.badge}" style="display:inline-flex; align-items:center; gap:4px; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; color:${stil.color}; background:${stil.bg}; border:1px solid ${stil.color}40;">
+                            ${stil.emoji} ${o.aksiyon}
+                        </span>
+                    </td>
+                    <td style="color:#8892A4; font-size:13px;">${o.gerekce}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+
+        // Aksiyon özet kartları
+        const summaryGrid = document.getElementById('action-summary-grid');
+        summaryGrid.innerHTML = Object.entries(aksiyonSayilari).map(([key, val]) => {
+            const stil = AKSIYON_STIL[key];
+            return `
+                <div class="admin-stat-card" style="border-left:3px solid ${stil.color};">
+                    <div class="stat-icon">${stil.emoji}</div>
+                    <div class="stat-value" style="color:${stil.color};">${val}</div>
+                    <div class="stat-label">${key}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ─── SAYFA YÜKLENDİĞİNDE ──────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        loadFeedbackAnalysis();
+    });
+</script>
+{% endblock %}

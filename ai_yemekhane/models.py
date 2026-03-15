@@ -282,6 +282,64 @@ class Alert(Base):
         }
 
 
+# ═══════════════════════════════════════════════════════════════════
+# MODEL: UretimLog (Günlük Üretim & Tüketim Kaydı)
+# ═══════════════════════════════════════════════════════════════════
+class UretimLog(Base):
+    """Günlük üretim miktarı ve kalan (israf) miktarı kaydı.
+
+    Yemekhane yöneticisi her gün üretilen porsiyon sayısı ve
+    yemek sonunda kalan (çöpe giden) porsiyon sayısını girer.
+    Sistem tüketim oranını otomatik hesaplar.
+    """
+
+    __tablename__ = "uretim_log"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tarih = Column(Date, nullable=False, default=date.today)
+    yemek_adi = Column(String(100), nullable=False)
+    kategori = Column(
+        String(50),
+        nullable=False,
+        comment="corba | ana_yemek | pilav | tatli | salata",
+    )
+    uretilen_porsiyon = Column(
+        Float, nullable=False, comment="Üretilen toplam porsiyon sayısı"
+    )
+    kalan_porsiyon = Column(
+        Float, nullable=False, comment="Yemek sonunda kalan (israf) porsiyon"
+    )
+    tuketim_orani = Column(
+        Float, nullable=True, comment="Otomatik hesaplanan tüketim yüzdesi"
+    )
+    israf_orani = Column(
+        Float, nullable=True, comment="Otomatik hesaplanan israf yüzdesi"
+    )
+    notlar = Column(String(500), nullable=True, default=None)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    def __repr__(self):
+        return (
+            f"<UretimLog(id={self.id}, tarih={self.tarih}, "
+            f"yemek='{self.yemek_adi}', üretilen={self.uretilen_porsiyon}, "
+            f"kalan={self.kalan_porsiyon})>"
+        )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "tarih": str(self.tarih),
+            "yemek_adi": self.yemek_adi,
+            "kategori": self.kategori,
+            "uretilen_porsiyon": self.uretilen_porsiyon,
+            "kalan_porsiyon": self.kalan_porsiyon,
+            "tuketim_orani": self.tuketim_orani,
+            "israf_orani": self.israf_orani,
+            "notlar": self.notlar,
+            "created_at": str(self.created_at),
+        }
+
+
 # ─── Tabloları oluştur ────────────────────────────────────────────
 def init_db():
     """Tüm tabloları veritabanında oluşturur."""

@@ -53,30 +53,25 @@
                 </div>
             </div>
 
-            <!-- Kalori Takibi -->
-            <div class="calorie-card" id="calorie-card">
-                <h3>🔥 Günlük Kalori Takibi</h3>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="calorie-progress" style="width: 0%"></div>
-                </div>
-                <div class="progress-text">
-                    <span class="current" id="calorie-current">0 kcal</span>
-                    <span id="calorie-target">Hedef: 2000 kcal</span>
-                </div>
-
-                <div class="calorie-stats">
+            <!-- Yemekhane Özet -->
+            <div class="calorie-card" id="cafeteria-summary-card">
+                <h3>📊 Bugünün Yemekhane Özeti</h3>
+                <div class="calorie-stats" style="margin-top: 16px;">
                     <div class="calorie-stat protein">
-                        <div class="val" id="stat-protein">0g</div>
-                        <div class="lbl">Protein</div>
+                        <div class="val" id="sum-waste">—</div>
+                        <div class="lbl">İsraf Skoru</div>
                     </div>
                     <div class="calorie-stat carb">
-                        <div class="val" id="stat-carb">0g</div>
-                        <div class="lbl">Karbonhidrat</div>
+                        <div class="val" id="sum-rating">—</div>
+                        <div class="lbl">Ort. Puan</div>
                     </div>
                     <div class="calorie-stat fat">
-                        <div class="val" id="stat-fat">0g</div>
-                        <div class="lbl">Yağ</div>
+                        <div class="val" id="sum-votes">—</div>
+                        <div class="lbl">Toplam Oy</div>
                     </div>
+                </div>
+                <div style="margin-top: 16px; text-align: center;">
+                    <span id="sum-waste-level" style="font-size: 13px; padding: 4px 14px; border-radius: 20px; background: rgba(46,134,193,.15); color: #5dade2;">Yükleniyor...</span>
                 </div>
             </div>
 
@@ -145,19 +140,43 @@
         }
     }
 
-    // ─── Kalori takibi yükle ─────────────────────────────────────
-    async function loadCalorieTracker() {
+    // ─── Yemekhane özet bilgilerini yükle ─────────────────────────
+    async function loadCafeteriaSummary() {
         try {
-            const data = await apiFetch('/api/report/1');
-            if (data.success) {
-                const s = data.data.gunluk_ozet;
-                const pct = Math.min(s.hedef_yuzdesi, 100);
-                document.getElementById('calorie-progress').style.width = pct + '%';
-                document.getElementById('calorie-current').textContent = formatNumber(s.toplam_kalori) + ' kcal';
-                document.getElementById('calorie-target').textContent = `Hedef: ${formatNumber(s.kalori_hedefi)} kcal`;
-                document.getElementById('stat-protein').textContent = formatNumber(s.toplam_protein) + 'g';
-                document.getElementById('stat-carb').textContent = formatNumber(s.toplam_karbonhidrat) + 'g';
-                document.getElementById('stat-fat').textContent = formatNumber(s.toplam_yag) + 'g';
+            // İsraf skoru
+            const waste = await apiFetch('/api/waste/daily');
+            if (waste.success) {
+                document.getElementById('sum-waste').textContent = `%${waste.genel_israf_skoru}`;
+                const seviye = waste.genel_israf_seviye || '—';
+                const badge = document.getElementById('sum-waste-level');
+                if (seviye === 'Düşük') {
+                    badge.textContent = '✅ İsraf Düşük — İyi Durumda';
+                    badge.style.background = 'rgba(72,201,176,.15)';
+                    badge.style.color = '#48c9b0';
+                } else if (seviye === 'Yüksek') {
+                    badge.textContent = '🔴 İsraf Yüksek — Dikkat!';
+                    badge.style.background = 'rgba(231,76,60,.15)';
+                    badge.style.color = '#e74c3c';
+                } else {
+                    badge.textContent = '🟠 İsraf Orta Seviyede';
+                    badge.style.background = 'rgba(243,156,18,.15)';
+                    badge.style.color = '#f39c12';
+                }
+            }
+
+            // Puanlardan ortalama hesapla
+            const ratings = await apiFetch('/api/ratings/today');
+            if (ratings.success && ratings.data) {
+                const entries = Object.values(ratings.data);
+                if (entries.length > 0) {
+                    const toplamOy = entries.reduce((s, e) => s + (e.toplam_oy || 0), 0);
+                    const ortPuan = entries.reduce((s, e) => s + (e.ortalama || 0), 0) / entries.length;
+                    document.getElementById('sum-rating').textContent = `${ortPuan.toFixed(1)}/5`;
+                    document.getElementById('sum-votes').textContent = toplamOy;
+                } else {
+                    document.getElementById('sum-rating').textContent = '—';
+                    document.getElementById('sum-votes').textContent = '0';
+                }
             }
         } catch (e) {
             // Quietly fail
@@ -188,7 +207,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         loadTodayMenu();
-        loadCalorieTracker();
+        loadCafeteriaSummary();
         loadIndexRatings();
     });
 </script>

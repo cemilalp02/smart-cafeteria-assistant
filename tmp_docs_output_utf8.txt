@@ -1,0 +1,329 @@
+================================================================================
+RESEARCH PROPOSAL
+================================================================================
+STUDENT RESEARCH PROPOSAL FORM
+A. GENERAL INFORMATION
+Group Members
+(Names and ID numbers):
+Cemil Alp-21050111005,Ali Batuhan Zeytün-21050111020,Muhammet Talha Şatır-22050111058
+Research Title:
+Artificial Intelligence And Image Processing-Based For Food Intake Measurement And Consumption Pattern Analysis in University Dining Halls
+Supervisor Name:
+Muhammet Abdullah Bülbül
+B. ABSTRACT
+This research proposal addresses the problem of food waste in large-scale dining environments such as university cafeterias. Today, kitchens prepare food without reliable feedback on how much of each meal is actually consumed, which leads to overproduction, higher cost, and unnecessary waste. The objective of this project is to develop an AI-driven system that can measure how much of each served dish is actually eaten versus discarded, and identify which specific dishes are consistently under-consumed so that menu planning can be improved.The methodology is based on computer vision and depth sensing. Reference images of each menu item (e.g., rice, soup, pasta) are first collected at serving time to train the model to recognize dishes. A fixed camera is then placed at the tray return station, where students leave their plates. The system analyzes these returned plates using deep learning models (instance segmentation and volume estimation) to detect which dishes are present and how much of each dish remains uneaten. From this, it calculates metrics such as per-dish consumption rate (%) and waste amount.The expected outcome is a decision support tool for cafeteria management. The system will highlight dishes with consistently low consumption and recommend reducing or removing them from the menu, while maintaining highly consumed items. This is intended to reduce per-person food waste, lower cost, and support institutional sustainability goals.
+Keywords: Artificial intelligence, food waste, computer vision, menu optimization, sustainability
+1. RESEARCH BACKGROUND & SIGNIFICANCE
+1.1 Problem Statement
+The research focuses on the lack of reliable, data-driven feedback about actual food consumption in large-scale meal services such as university cafeterias. In current practice, kitchens prepare and serve multiple dishes without knowing how much of each dish is truly eaten and how much remains on the plate as waste. This means that production decisions are made mostly by intuition or habit rather than direct evidence. As a result, dishes that are not preferred by consumers may continue to be produced in high quantity, leading to systematic overproduction, increased cost, and avoidable food waste.This problem is important for three reasons. First, food waste represents a direct economic loss for institutions that cook at scale. Second, avoidable overproduction increases the environmental footprint of food services through unnecessary use of ingredients, energy, labor, and logistics. Third, the absence of consumption data prevents data-informed menu planning: there is no objective way to identify which specific dishes are consistently under-consumed and should be reduced or removed. Generating quantitative evidence about plate-level consumption therefore has both operational value (cost reduction, planning efficiency) and societal value (waste reduction and sustainability).
+1.2 Literature Review
+Existing work on food analysis with computer vision has mostly focused on three areas: (1) recognizing which foods are present on a plate, typically using image classification or object detection; (2) estimating nutritional content such as calories or macronutrients from a single image; and (3) segmenting food items at pixel level using deep learning models such as instance segmentation to separate different components of a meal. These approaches show that deep learning can identify and localize food items with reasonable accuracy, and in some cases approximate portion size from visual cues. However, most of these studies operate on a single “static” image of a meal and aim at personal nutrition tracking rather than operational waste reduction.There are also studies on plate waste in institutional settings, but these typically rely on manual observation, weighing leftover food, or self-reporting. Such methods are labor-intensive, error-prone, and not scalable to daily use in large cafeterias. Critically, they rarely provide dish-level preference signals that management can act on.What is largely missing in the literature is an automated way to compare the served portion with the uneaten portion and record a per-dish consumption rate. The proposed study aims to address this gap by estimating how much of each meal item remains on the plate after eating and using that information to infer which dishes are consistently under-consumed. These quantitative consumption signals can then be used to adjust menu planning and reduce systematic overproduction. In this sense, the approach links computer vision output directly to waste reduction decisions, which is not well covered in prior work.
+1.3 Research Questions/Hypothesis
+RQ1:Can an AI-based vision system automatically estimate, for each dish on a cafeteria tray, how much was actually consumed and how much was left uneaten by analyzing images captured at serving time and at the tray return station?
+RQ2:Can the per-dish consumption rates produced by this system be used to identify dishes that are consistently under-consumed and therefore candidates for reduced production or removal from the menu?
+Hypothesis:
+H1: Dishes that show a consistently low consumption rate (for example, a large portion repeatedly returned uneaten at the tray return station) are the same dishes that drive avoidable food waste and unnecessary cost. Reducing the production frequency of these low-consumption dishes will lower per-person food waste in the cafeteria.
+2. OBJECTIVES
+Main Objective:
+To develop and validate an AI-based vision system that can recognize cafeteria dishes and automatically estimate, at the tray return station, how much of each dish was actually consumed or wasted, in order to provide actionable feedback for menu planning and waste reduction.
+Specific Objectives:
+To build a labeled reference dataset of cafeteria dishes by capturing images of each menu item at serving time, so that the model can reliably identify which dish is which (rice, soup, pasta, etc.).
+To deploy a fixed camera at the tray return/collection point and process the returned plates using computer vision to estimate, for each recognized dish, how much was left uneaten.
+To calculate dish-level consumption rates (%) and generate reports that highlight items with consistently low consumption, supporting decisions to reduce production of those items and lower food waste and cost.
+3. METHODOLOGY
+3.1 Research Design
+The study follows an applied, quantitative, descriptive research design. The project aims to develop and evaluate an AI-based computer vision system that measures plate-level food consumption in a real cafeteria environment. The approach is observational rather than survey-based: food trays will be monitored during normal operation of the dining hall without interfering with users. The system’s performance will be assessed by comparing its automated estimates of leftover portions to manually obtained reference measurements on a sampled subset of trays. The design focuses on two questions: (1) Can the system reliably recognize menu items and detect how much is left uneaten? (2) Can the resulting consumption rates be used as decision support for menu planning and waste reduction?
+3.2 Data Collection Methods
+Data will be collected in two stages.First, a reference dataset will be created by capturing labeled images of each menu item at serving time (e.g., rice, soup, pasta). These images will be used to train the computer vision model to recognize and segment each dish.Second, a fixed camera will be installed at the tray return station where students leave their plates after eating. The system will record images of returned trays and plates under real cafeteria conditions. These images will show partially eaten or untouched portions. For validation, a limited number of sampled trays will be inspected by researchers (e.g., visual estimation and/or weighing remaining food) to generate ground truth values for leftover amount. No personal or identifying student data will be collected.
+3.3 Data Analysis
+The collected images will be processed with deep learning–based instance segmentation and volume/area estimation methods to identify each dish and estimate the remaining amount on the plate. For each dish, the system will compute a consumption rate (%) = “estimated eaten portion / typical served portion.” These per-dish consumption rates will then be aggregated over time (e.g., per day or per week) to identify dishes with consistently low consumption.To evaluate model accuracy, system estimates will be compared to the manually collected ground truth using quantitative error metrics (e.g., mean absolute error of leftover estimation). Finally, summary reports will be generated to highlight under-consumed dishes and to indicate which items are likely contributing most to preventable food waste and avoidable cost.
+4. WORK PLAN & TIMELINE
+Phase
+Activities
+Duration
+Deliverables
+1
+Collect reference images of each menu item (e.g. rice, soup, pasta); label these images so the model can recognize each dish; document the typical serving configuration for each dish as it is normally presented by cafeteria staff
+Month 1
+Labeled reference dataset of dishes + documented serving examples for each dish
+2
+Install the fixed camera at the tray return station; run a short pilot to collect images of returned trays under real cafeteria conditions; verify that the camera angle and image quality are usable for analysis
+Month 2
+Operational data capture setup at the tray return station + initial tray-return image set
+3
+Train and deploy the computer vision model to detect which dishes are left on returned trays and how much appears uneaten; perform limited manual review of sampled trays to check that the system’s estimates are reasonable
+Month 3-4
+Working prototype of the system + preliminary performance assessment
+4
+Aggregate the estimated consumption rates for each dish over time; identify dishes that show consistently low consumption / high leftover; prepare recommendations to adjust menu frequency and reduce avoidable waste
+Month 5-6
+Final project report + dish-level consumption / leftover analysis + menu adjustment recommendations
+5. EXPECTED OUTCOMES & IMPACT
+Impact Type
+Expected Outputs
+Academic/Scientific
+Undergraduate research report/thesis describing the system design, methodology, and evaluation; internal presentation/poster on AI-based food waste monitoring; documented dataset and model performance.
+Practical/Applied
+Working prototype of the AI-based vision system that recognizes cafeteria dishes and estimates leftover food at the tray return station; dashboard/report that summarizes per-dish consumption rates and flags low-consumption items; deployment procedure for cafeteria use.
+Social/Economic
+Data-driven recommendations to reduce the production of low-consumption dishes and lower per-person food waste and cost; decision support for cafeteria menu planning; contribution to institutional sustainability and waste reduction goals.
+6. RESOURCES & BUDGET (if applicable)
+Available Resources:
+Access to a university cafeteria environment for data collection (tray return station and serving line).
+Existing computing environment with Python, OpenCV, and deep learning frameworks (e.g. PyTorch / TensorFlow).
+Team members with experience in computer vision, labeling data, and basic model training.
+Standard RGB camera hardware that can be used for initial image capture.
+Required Resources:
+Acquiring a camera with depth sensing capability, to improve the accuracy of estimating the remaining volume of food on returned trays.
+Small budget for printing/reporting project results and basic materials needed for data collection.
+7. ETHICAL CONSIDERATIONS
+This study will be conducted in a university cafeteria environment and does not involve direct interaction with participants. The system is designed to analyze only food trays and leftover food; personal data about students (such as names, faces, or identities) will not be collected. The camera at the tray return station will be positioned and cropped so that it records only the tray surface and food items, not the person returning the tray. No biometric data, health data, or behavioral profiling of individuals will be stored.All images collected during the study will be used only for research purposes within the scope of this project. The data will be stored in a secure environment with restricted access limited to the project team. If any identifiable detail is accidentally captured in an image, that part will be removed or blurred before analysis. Results will be reported in aggregate form (for example, average consumption rate of a dish over time), not at the level of individual diners.
+REFERENCES
+He, K., Gkioxari, G., Dollár, P., & Girshick, R. (2017). Mask R-CNN. Proceedings of the IEEE International Conference on Computer Vision (ICCV), 2961–2969.
+Bossard, L., Guillaumin, M., & Van Gool, L. (2014). Food-101: Mining discriminative components with random forests. European Conference on Computer Vision (ECCV), 446–461.
+Meyers, A., Johnston, N., Rathod, V., Korattikara, A., Gorban, A., Silberman, N., … Murphy, K. (2015). Im2Calories: Towards an automated mobile vision food diary. Proceedings of the IEEE International Conference on Computer Vision (ICCV), 1233–1241.
+Puri, M., Zhu, Z., Yu, Q., Divakaran, A., & Sawhney, H. S. (2009). Recognition and volume estimation of food intake using a mobile device. 2009 Workshop on Applications of Computer Vision (WACV), 1–8.
+Swanson, M. (2008). Digital photography as a tool to measure school meal consumption. Journal of the American Dietetic Association, 108(7), 1234–1237.
+
+================================================================================
+YOL HARITASI
+================================================================================
+CENG401 - Proje Dönüşüm Yol Haritası
+AI Tabanlı Akıllı Yemekhane Asistan Sistemi
+Menü Optimizasyonu + Yemek Tanıma & Besin Analizi + Chatbot Asistanı
+Ekip Üyeleri
+Cemil Alp - 21050111005
+Ali Batuhan Zeytün - 21050111020
+Muhammet Talha Şatır - 22050111058
+Danışman: Muhammed Abdullah Bülbül
+Tarih: Şubat 2026
+1. Giriş ve Motivasyon
+Bu doküman, CENG401 dersi kapsamında yürütülen "Yapay Zeka ve Görüntü İşleme Tabanlı Yemek Tüketim Ölçümü" projesinin dönüştürülmüş versiyonunun yol haritasını sunmaktadır.
+Orijinal projede üniversite yemekhanesine sabit kamera kurulması, özel dataset oluşturulması ve gerçek zamanlı görüntü yakalama planlanmıştı. Ancak aşağıdaki pratik kısıtlar nedeniyle proje kapsamı yeniden tanımlanmıştır:
+Yemekhaneye kamera takılması için izin alma sürecinin uzun ve belirsiz olması
+Donanım maliyetlerinin bütçeyi aşması
+Türk yemekhanelerine özgü hazır bir public dataset bulunmaması
+Dataset oluşturma sürecinin proje zaman çizelgesini aşması
+Bu kısıtlar göz önünde bulundurularak proje, üç alt modülden oluşan entegre bir "Akıllı Yemekhane Asistan Sistemi" olarak yeniden tasarlanmıştır. Bu yeni yaklaşım, kamera ve özel dataset bağımlılığını ortadan kaldırırken AI kullanımını korumakta ve hatta genişletmektedir.
+2. Yeni Proje Tanımı
+Proje Adı: AI Tabanlı Akıllı Yemekhane Asistan Sistemi - Menü Optimizasyonu, Yemek Tanıma ve Chatbot Entegrasyonu
+Sistem, üniversite yemekhanelerinin verimliliğini artırmak ve öğrencilere kişiselleştirilmiş beslenme desteği sunmak amacıyla üç temel AI modülünü tek bir platformda birleştirir:
+Modül 1: Menü Optimizasyonu ve Yemek Öneri Sistemi (ML)
+Bu modül, yemekhane menülerini analiz ederek hangi yemeklerin ne zaman sunulması gerektiğini tahmin eden bir makine öğrenmesi sistemi kurar. Gerçek kameraya veya özel dataset'e ihtiyaç duymaz.
+Üniversite yemekhane menüleri (web scraping veya manuel veri girişi ile toplanır)
+Mevsimsellik, gün, hava durumu gibi dış faktörlerle öğrenci tercih simülasyonu
+Collaborative filtering / content-based recommendation algoritmaları
+Çıktı: Haftalık optimum menü önerisi, popülerlik tahmini, israf azaltma skoru
+Modül 2: Yemek Fotoğrafından Tanıma ve Besin Değeri Analizi (Computer Vision)
+Bu modül, Food-101 gibi hazır public dataset kullanarak YOLO tabanlı yemek tanıma modeli eğitir. Kullanıcı telefonuyla fotoğraf çeker ve sisteme yükler.
+Food-101 dataset (101 kategori, 101.000 görüntü - ücretsiz ve hazır)
+YOLO modeli transfer learning ile eğitilir
+Tanınan yemeğin besin değerleri API üzerinden getirilir (kalori, protein, karbonhidrat, yağ)
+Çıktı: Yemek adı, güven skoru, besin tablosu, günlük kalori takibi
+Modül 3: Chatbot Tabanlı Yemekhane Asistanı (LLM)
+Öğrencilerin yedikleri yemekleri chatbot aracılığıyla bildirmesini sağlayan, kişiselleştirilmiş beslenme takibi ve öneriler sunan bir LLM tabanlı asistan.
+LLM API entegrasyonu (OpenAI GPT / Google Gemini / yerel model)
+Doğal dil ile yemek girişi: "Bugün pilav, tavuk ve ayran içtim"
+Günlük/haftalık kalori ve besin raporu oluşturma
+Çıktı: Kişisel beslenme profili, eksik besin uyarıları, yemek önerileri
+3. Sistem Mimarisi
+Sistemin genel mimarisi aşağıdaki katmanlardan oluşur:
+3.1 Veri Katmanı
+Yemekhane menü verileri (haftalık menüler, fiyatlar, kategoriler)
+Food-101 görüntü dataset'i
+Besin değeri veritabanı (USDA FoodData Central / Nutritionix API)
+Kullanıcı yemek geçmişi ve tercih verileri (SQLite/PostgreSQL)
+3.2 AI/ML Katmanı
+Menü optimizasyonu: scikit-learn (Random Forest, Gradient Boosting) veya basit sinir ağı
+Yemek tanıma: YOLOv8/YOLOv11 + PyTorch (transfer learning)
+Chatbot: LLM API (prompt engineering + function calling)
+3.3 Backend Katmanı
+Flask veya FastAPI ile RESTful API sunucusu
+Endpoints: /predict-menu, /recognize-food, /chat, /report
+JWT veya session-based kullanıcı yönetimi
+3.4 Frontend/Arayüz Katmanı
+Web dashboard: Menü önerileri, istatistikler, grafikler
+Fotoğraf yükleme arayüzü: Kamera ile çek veya galeriden seç
+Chatbot arayüzü: Mesajlaşma tarzı sohbet penceresi
+4. Detaylı Yol Haritası (Hafta Hafta)
+Hafta 1: Proje Kapsamı Güncelleme ve Gereksinim Analizi
+Mevcut raporun güncellenmesi (problem tanımı, amaçlar, yöntem değişikliği)
+Yeni sistem mimarisinin kesinleştirilmesi
+Görev dağılımının netleştirilmesi (kimin hangi modülü yapacağı)
+Gerekli API anahtarlarının alınması (OpenAI/Gemini, besin API)
+Hafta 1-2: Veri Kaynakları Araştırma ve Toplama
+Food-101 dataset indirme ve inceleme (https://data.vision.ee.ethz.ch/cvl/food-101.tar.gz)
+Üniversite yemekhanesi menülerinin toplanması (en az 3 aylık geçmiş menü)
+Besin değeri veritabanı entegrasyonu için API araştırması
+Menü optimizasyonu için sentetik tercih verisi oluşturma stratejisi belirleme
+Hafta 2-3: Veritabanı Tasarımı ve Backend Altyapısı
+Veritabanı şeması tasarımı (kullanıcılar, yemekler, menüler, besin değerleri, yemek logları)
+Flask/FastAPI proje yapısının kurulması
+Temel API endpoint'lerinin oluşturulması
+Git repository ve proje yapısının organize edilmesi
+Hafta 3-4: Modül 1 - Menü Optimizasyon ML Modeli
+Sorumlu: Cemil Alp
+Feature engineering: gün, mevsim, hava durumu, önceki gün menüsü, besin çeşitliliği skoru
+Tercih simülasyon modeli: Öğrenci yemek tercihlerini simüle eden sentetik veri üretimi
+ML model eğitimi: Random Forest, XGBoost veya basit Neural Network ile popülerlik tahmini
+Optimizasyon algoritması: Haftalık menü için constraint-based optimizasyon (besin dengesi, çeşitlilik, maliyet)
+Değerlendirme metrikleri: RMSE, MAE, cross-validation sonuçları
+Hafta 4-5: Modül 2 - Food-101 ile YOLO Model Eğitimi
+Sorumlu: Ali Batuhan Zeytün
+Food-101 dataset'ini YOLO formatına dönüştürme (bounding box annotation)
+YOLOv8 veya YOLOv11 modelini Ultralytics kütüphanesi ile eğitme
+Transfer learning: COCO pre-trained weights üzerinden fine-tuning
+Model performans değerlendirmesi: mAP, precision, recall, F1-score
+Fotoğraf upload endpoint'i: Kullanıcı fotoğraf yükler → model tahmin yapar → sonuç döner
+Hafta 5-6: Besin Değeri API Entegrasyonu
+USDA FoodData Central API veya Nutritionix API entegrasyonu
+Yemek adı → besin değeri eşleştirme tablosu (Food-101 kategorileri için)
+Porsiyon büyüklüğü tahmini (varsayılan porsiyon değerleri)
+Günlük besin takip sistemi: Kullanıcının toplam kalori ve makro besin alımı
+Hafta 6-7: Modül 3 - Chatbot Tasarımı ve LLM Entegrasyonu
+Sorumlu: Muhammet Talha Şatır
+LLM API seçimi ve entegrasyonu (OpenAI GPT-4o-mini veya Google Gemini - maliyet/performans dengesi)
+System prompt tasarımı: Chatbot'un beslenme uzmanı rolü, Türkçe yanıt vermesi
+Function calling: Chatbot'un besin API'sini ve veritabanını sorgulaması
+Konuşma geçmişi yönetimi ve bağlam tutma
+Örnek diyaloglar: "Bugün ne yemeliyim?", "Dün kaç kalori aldım?", "Protein açığım var mı?"
+Hafta 7-8: Web Arayüzü Geliştirme
+Ana dashboard sayfası: Günlük menü, besin takibi özeti, öneriler
+Fotoğraf yükleme sayfası: Drag & drop veya kamera ile çekim
+Chatbot arayüzü: Gerçek zamanlı mesajlaşma penceresi
+Menü optimizasyonu paneli: Admin görünümü - haftalık menü önerisi
+Raporlama sayfası: Grafikler, trendler, besin analizi (Plotly/Chart.js)
+Hafta 8-9: Modül Entegrasyonu ve Sistem Testi
+Üç modülün tek platform altında birleştirilmesi
+End-to-end test senaryoları: Fotoğraf çek → tanı → chatbot'a bildir → rapor al
+API performans testi ve hata yönetimi
+Bug fixing ve edge case handling
+Hafta 9-10: Kullanıcı Testi ve Geri Bildirim
+5-10 öğrenci ile kullanılabilirlik testi
+Chatbot yanıt kalitesi değerlendirmesi
+Yemek tanıma doğruluğunun gerçek dünya fotoğraflarıyla testi
+Hafta 10-11: İyileştirme ve Performans Optimizasyonu
+Geri bildirimlere göre model ince ayarları
+UI/UX iyileştirmeleri
+Performans metrikleri ve karşılaştırma tabloları hazırlama
+Hafta 11-12: Dokümantasyon ve Final Raporu
+Final raporu yazımı (güncellenen tüm bölümler)
+Sunum hazırlığı ve demo video
+Kod temizliği, README ve deployment rehberi
+5. Zaman Çizelgesi (Gantt Chart Özeti)
+Hafta
+Görev
+Kategori
+Hafta 1
+Proje Kapsamı Güncelleme & Gereksinim Analizi
+Planlama
+Hafta 1-2
+Veri Kaynakları Araştırma & Toplama
+Veri
+Hafta 2-3
+Veritabanı Tasarımı & Backend Altyapısı
+Geliştirme
+Hafta 3-4
+Menü Optimizasyon ML Modeli Geliştirme
+AI/ML
+Hafta 4-5
+Food-101 ile YOLO Model Eğitimi
+AI/ML
+Hafta 5-6
+Besin Değeri API Entegrasyonu
+Geliştirme
+Hafta 6-7
+Chatbot Tasarımı & LLM Entegrasyonu
+AI/ML
+Hafta 7-8
+Web Arayüzü Geliştirme (Frontend)
+Geliştirme
+Hafta 8-9
+Modül Entegrasyonu & Sistem Testi
+Test
+Hafta 9-10
+Kullanıcı Testi & Geri Bildirim
+Test
+Hafta 10-11
+İyileştirme & Performans Optimizasyonu
+İyileştirme
+Hafta 11-12
+Dokümantasyon & Final Raporu
+Teslim
+6. Teknoloji ve Araçlar
+Teknoloji
+Kullanım Amacı
+İlgili Modül
+Python 3.10+
+Ana geliştirme dili
+Tüm modüller
+Flask / FastAPI
+Backend web framework
+API & Arayüz
+scikit-learn
+Menü optimizasyon ML modelleri
+Modül 1
+PyTorch + Ultralytics
+YOLO tabanlı yemek tanıma
+Modül 2
+OpenAI API / Gemini API
+Chatbot LLM entegrasyonu
+Modül 3
+React / HTML+CSS+JS
+Frontend arayüz
+Dashboard
+SQLite / PostgreSQL
+Veritabanı
+Veri katmanı
+Food-101 Dataset
+Hazır yemek görüntü veri seti
+Modül 2
+USDA / Nutritionix API
+Besin değeri verileri
+Modül 2 & 3
+Pandas / NumPy
+Veri analizi ve işleme
+Tüm modüller
+Matplotlib / Plotly
+Görselleştirme
+Dashboard
+7. Ekip Görev Dağılımı
+Ekip Üyesi
+Sorumluluk Alanı
+Detay Görevler
+Cemil Alp
+Modül 1: Menü Optimizasyonu & ML Modeli
+Veri toplama, feature engineering, ML model eğitimi, optimizasyon algoritması
+Ali Batuhan Zeytün
+Modül 2: Yemek Tanıma & Besin Analizi
+Food-101 dataset hazırlığı, YOLO eğitimi, besin API entegrasyonu, fotoğraf upload sistemi
+Muhammet Talha Şatır
+Modül 3: Chatbot & Dashboard Arayüzü
+LLM entegrasyonu, chatbot geliştirme, frontend dashboard, raporlama sistemi
+Not: Ortak görevler (veritabanı tasarımı, entegrasyon testleri, dokümantasyon) tüm ekip üyeleri tarafından birlikte yürütülecektir.
+8. Başarı Kriterleri ve Değerlendirme Metrikleri
+Modül 1 - Menü Optimizasyonu:
+Popülerlik tahmin doğruluğu (RMSE < 0.2 veya R² > 0.7 hedefi)
+Optimizasyon sonucunda besin çeşitliliği ve denge skorunun artması
+Modül 2 - Yemek Tanıma:
+Top-5 accuracy > %80 (Food-101 benchmark'ına yakın)
+mAP@0.5 > 0.70
+Ortalama inference süresi < 500ms
+Modül 3 - Chatbot:
+Doğru besin değeri raporlama oranı > %90
+Kullanıcı memnuniyet skoru > 4/5 (anket bazlı)
+Ortalama yanıt süresi < 3 saniye
+9. Potansiyel Riskler ve Çözüm Stratejileri
+Risk 1 - API Maliyetleri: LLM API kullanımı maliyetli olabilir. Çözüm: GPT-4o-mini veya Gemini Flash gibi düşük maliyetli modeller tercih edilir. Gerekirse yerel Ollama modeli kullanılır.
+Risk 2 - Food-101 Kısıtları: Dataset Türk yemeklerini içermez. Çözüm: Model genel yemek tanıma için eğitilir, Türk yemekleri için ek fine-tuning yapılabilir veya en yakın kategori eşleştirmesi kullanılır.
+Risk 3 - Entegrasyon Karmaşıklığı: Üç modülün birleştirilmesi zaman alabilir. Çözüm: Her modül bağımsız API endpoint'i olarak geliştirilir, modüler mimari sayesinde entegrasyon basitleşir.
+Risk 4 - Zaman Kısıtı: 12 haftalık süre yoğun olabilir. Çözüm: MVP (Minimum Viable Product) yaklaşımı benimsenir, önce temel fonksiyonlar tamamlanır.
+10. Orijinal Projeden Farklar ve Avantajlar
+Kamera Bağımlılığı Kaldırıldı: Sabit kamera yerine kullanıcı telefonundan fotoğraf yükleme ve doğal dil girişi kullanılır.
+Dataset Sorunu Çözüldü: Özel dataset yerine Food-101 (101K görüntü) ve sentetik menü verisi kullanılır.
+Kapsam Genişledi: Sadece israf ölçümü yerine menü optimizasyonu + kişisel beslenme takibi + akıllı asistan.
+AI Kullanımı Arttı: Tek bir YOLO modeli yerine ML optimizasyonu + Computer Vision + LLM olmak üzere üç farklı AI tekniği.
+Pratik Uygulanabilirlik: İzin alma, donanım maliyeti gibi engeller ortadan kalktığı için proje tamamen yazılım tabanlı ve hemen uygulanabilir.
+11. Sonuç
+Bu yol haritası, orijinal projenin güçlü AI temellerini koruyarak pratik kısıtları aşan yeni bir sistem tasarımı sunmaktadır. Üç modüllü yapı, projenin hem teknik derinliğini artırmakta hem de gerçek dünyada uygulanabilirliğini güçlendirmektedir.
+Her ekip üyesi bir modülden birincil olarak sorumlu olacak, ortak altyapı (veritabanı, API, frontend çerçevesi) ise birlikte geliştirilecektir. Bu doküman, projenin her aşamasında referans olarak kullanılacak ve ilerleme takibi bu plana göre yapılacaktır.
