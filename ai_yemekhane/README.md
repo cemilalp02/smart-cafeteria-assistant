@@ -86,7 +86,7 @@ Sunucu varsayılan olarak `http://localhost:8000` adresinde çalışır.
 | `POST` | `/api/recognize-food` | Fotoğraftan yemek tanıma |
 | `POST` | `/api/chat` | Chatbot mesajı gönder |
 | `GET` | `/api/nutrition/{yemek_adi}` | Besin değeri sorgula |
-| `GET` | `/api/report/{kullanici_id}` | Kullanıcı raporu |
+| `POST` | `/api/rate-meal` | Anonim yemek puanla |
 | `GET` | `/api/menu/today` | Bugünün menüsü |
 
 ### Swagger API Dokümantasyonu
@@ -97,8 +97,8 @@ Sunucu çalışırken `http://localhost:8000/docs` adresinden interaktif API dok
 
 - **Yemekler**: Yemek bilgileri ve besin değerleri (kalori, protein, karbonhidrat, yağ)
 - **Menüler**: Günlük menü planları (çorba, ana yemek, pilav, tatlı, salata)
-- **Kullanıcılar**: Kullanıcı profilleri ve kalori hedefleri
-- **KullanıcıYemekLog**: Yemek tüketim kayıtları (foto/chatbot/manuel)
+- **Yemek Puanları**: Anonim puan ve yorum kayıtları
+- **Üretim Logları**: Üretilen, kalan ve tüketim/israf kayıtları
 
 ## 🛠️ Teknoloji Stack
 
@@ -115,3 +115,16 @@ Sunucu çalışırken `http://localhost:8000/docs` adresinden interaktif API dok
 - Modüller şu an **placeholder** fonksiyonlar ile oluşturulmuştur
 - İlerleyen aşamalarda her modüldeki `TODO` işaretli kısımlar gerçek implementasyon ile değiştirilecektir
 - Kamera sistemi projeden kaldırılmıştır; fotoğraf yükleme manuel olarak yapılır
+
+## Mobile App (Expo)
+
+Mobil istemci `mobile_app/` klasorunde bulunur.
+
+```bash
+cd mobile_app
+npm install
+npm run start
+```
+
+API adresi icin `mobile_app/.env.example` dosyasini `.env` yapip
+`EXPO_PUBLIC_API_BASE_URL` degerini guncelleyin.

@@ -8,6 +8,7 @@ route'larını içerir.
 import os
 import io
 import shutil
+import re
 from datetime import date, datetime, timedelta
 
 import hashlib
@@ -27,8 +28,6 @@ from models import (
     get_db,
     Yemek,
     Menu,
-    Kullanici,
-    KullaniciYemekLog,
     MenuPuanlama,
     Alert,
     UretimLog,
@@ -39,11 +38,13 @@ from modules.food_recognizer import (
     analyze_food_photo, analyze_tray_photo,
     recognize_food_ensemble, get_nutrition_info,
 )
-from modules.chatbot import init_chatbot, get_response, get_meal_recommendation
+from modules.chatbot import init_chatbot, get_response
 from modules.waste_analyzer import (
     get_daily_waste_report,
     get_weekly_waste_report,
     get_dish_waste_history,
+    train_waste_model_from_db,
+    get_waste_model_status,
 )
 from modules.trend_analyzer import (
     get_monthly_trends,
@@ -135,18 +136,10 @@ def get_menu_model():
 # ─── Pydantic Şemaları ────────────────────────────────────────────
 class ChatRequest(BaseModel):
     message: str
-    kullanici_id: int | None = None
 
 
 class MenuPredictRequest(BaseModel):
     baslangic_tarihi: str | None = None
-
-
-class LogFoodRequest(BaseModel):
-    yemek_adi: str
-    kullanici_id: int = 1
-    miktar: float = 1.0
-    kaynak_tipi: str = "manuel"
 
 
 class RateMealRequest(BaseModel):
@@ -155,6 +148,79 @@ class RateMealRequest(BaseModel):
     kategori: str
     puan: int = Field(..., ge=1, le=5)
     yorum: str | None = None
+
+
+class WasteModelTrainRequest(BaseModel):
+    min_samples: int = Field(default=8, ge=4, le=10000)
+
+
+def _canonicalize_meal_name(name: str) -> str:
+    """Yemek adını standart forma çevirir: trim + tek boşluk + title-case."""
+    normalized = re.sub(r"\s+", " ", (name or "").strip())
+    if not normalized:
+        return ""
+    return normalized.title()
+
+
+def _meal_group_key(name: str) -> str:
+    """Case-insensitive ve boşluk normalize edilmiş grup anahtarı üretir."""
+    normalized = re.sub(r"\s+", " ", (name or "").strip())
+    return normalized.casefold()
+
+
+def _merge_meal_rating_aggregates(rows):
+    """
+    SQL'den gelen satırları (yemek_adi, kategori, ortalama, toplam_oy)
+    yemek adı normalizasyonu ile birleştirir.
+    """
+    merged = {}
+
+    for row in rows:
+        canonical_name = _canonicalize_meal_name(row.yemek_adi)
+        key = _meal_group_key(canonical_name)
+
+        if key not in merged:
+            merged[key] = {
+                "yemek_adi": canonical_name,
+                "toplam_oy": 0,
+                "puan_toplami": 0.0,
+                "kategori_oylari": {},
+            }
+
+        oy_sayisi = int(row.toplam_oy or 0)
+        merged[key]["toplam_oy"] += oy_sayisi
+        merged[key]["puan_toplami"] += float(row.ortalama or 0) * oy_sayisi
+        merged[key]["kategori_oylari"][row.kategori] = (
+            merged[key]["kategori_oylari"].get(row.kategori, 0) + oy_sayisi
+        )
+
+    result = []
+    for item in merged.values():
+        toplam_oy = item["toplam_oy"]
+        ortalama = (item["puan_toplami"] / toplam_oy) if toplam_oy else 0.0
+
+        kategori = "diger"
+        if item["kategori_oylari"]:
+            kategori_adaylari = set(item["kategori_oylari"].keys())
+            if "icecek" in kategori_adaylari and kategori_adaylari.issubset({"salata", "icecek"}):
+                kategori = "icecek"
+            else:
+                kategori = sorted(
+                    item["kategori_oylari"].items(),
+                    key=lambda x: (x[1], x[0] == "icecek"),
+                    reverse=True,
+                )[0][0]
+
+        result.append(
+            {
+                "yemek_adi": item["yemek_adi"],
+                "kategori": kategori,
+                "ortalama": ortalama,
+                "toplam_oy": toplam_oy,
+            }
+        )
+
+    return result
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -535,7 +601,7 @@ async def chat_endpoint(
     Yemekhane chatbot'una mesaj gönderir ve yanıt alır.
 
     Body:
-        {"message": "Bugün öğlen pilav ve tavuk yedim", "kullanici_id": 1}
+        {"message": "Bugünkü menü ne?"}
 
     Response:
         {
@@ -543,7 +609,7 @@ async def chat_endpoint(
             "data": {
                 "response": "...",
                 "suggestions": [...],
-                "gunluk_toplam": 430.0
+                "gunluk_toplam": 0.0
             }
         }
     """
@@ -560,14 +626,10 @@ async def chat_endpoint(
         if bugunki_menu:
             context["bugunki_menu"] = bugunki_menu.to_dict()
 
-        # Kullanıcı ID
-        kullanici_id = request_body.kullanici_id or 0
-
         # Chatbot yanıtı al
         yanit = get_response(
             model=model,
             user_message=request_body.message,
-            kullanici_id=kullanici_id,
             context=context,
             db=db,
         )
@@ -613,86 +675,9 @@ async def get_nutrition(
     }
 
 
-# ──────────────────────────────────────────────────────────────────
-# 5) GET /api/report/{kullanici_id} — Günlük/haftalık rapor
-# ──────────────────────────────────────────────────────────────────
-@app.get("/api/report/{kullanici_id}")
-async def get_report(
-    kullanici_id: int,
-    db: Session = Depends(get_db),
-):
-    """
-    Kullanıcının günlük/haftalık besin değeri raporunu döndürür.
-    """
-    # Kullanıcı kontrolü
-    kullanici = db.query(Kullanici).filter(Kullanici.id == kullanici_id).first()
-    if not kullanici:
-        return JSONResponse(
-            status_code=404,
-            content={
-                "success": False,
-                "message": f"ID={kullanici_id} kullanıcı bulunamadı.",
-            },
-        )
-
-    # Bugünkü loglar
-    bugun = date.today()
-    loglar = (
-        db.query(KullaniciYemekLog)
-        .filter(
-            KullaniciYemekLog.kullanici_id == kullanici_id,
-            KullaniciYemekLog.tarih >= datetime(bugun.year, bugun.month, bugun.day),
-        )
-        .all()
-    )
-
-    # Toplam besin değeri
-    toplam_kalori = 0.0
-    toplam_protein = 0.0
-    toplam_karbonhidrat = 0.0
-    toplam_yag = 0.0
-    yenen_yemekler = []
-
-    for log in loglar:
-        yemek = db.query(Yemek).filter(Yemek.id == log.yemek_id).first()
-        if yemek:
-            miktar = log.miktar
-            toplam_kalori += yemek.kalori * miktar
-            toplam_protein += yemek.protein * miktar
-            toplam_karbonhidrat += yemek.karbonhidrat * miktar
-            toplam_yag += yemek.yag * miktar
-            yenen_yemekler.append({
-                "yemek": yemek.ad,
-                "miktar": miktar,
-                "kaynak": log.kaynak_tipi,
-                "kalori": yemek.kalori * miktar,
-            })
-
-    hedef = kullanici.gunluk_kalori_hedefi
-    kalan = hedef - toplam_kalori
-
-    return {
-        "success": True,
-        "data": {
-            "kullanici": kullanici.to_dict(),
-            "tarih": str(bugun),
-            "gunluk_ozet": {
-                "toplam_kalori": round(toplam_kalori, 1),
-                "toplam_protein": round(toplam_protein, 1),
-                "toplam_karbonhidrat": round(toplam_karbonhidrat, 1),
-                "toplam_yag": round(toplam_yag, 1),
-                "kalori_hedefi": hedef,
-                "kalan_kalori": round(kalan, 1),
-                "hedef_yuzdesi": round((toplam_kalori / hedef) * 100, 1) if hedef > 0 else 0,
-            },
-            "yenen_yemekler": yenen_yemekler,
-        },
-    }
-
-
-# ──────────────────────────────────────────────────────────────────
-# 6) GET /api/menu/today — Bugünün menüsü
-# ──────────────────────────────────────────────────────────────────
+# ------------------------------------------------------------------
+# 5) GET /api/menu/today - Bugunun menusu
+# ------------------------------------------------------------------
 @app.get("/api/menu/today")
 async def get_today_menu(db: Session = Depends(get_db)):
     """
@@ -717,53 +702,9 @@ async def get_today_menu(db: Session = Depends(get_db)):
     }
 
 
-# ──────────────────────────────────────────────────────────────────
-# 7) POST /api/log-food — Yemek kaydı ekle
-# ──────────────────────────────────────────────────────────────────
-@app.post("/api/log-food")
-async def log_food(
-    request_body: LogFoodRequest,
-    db: Session = Depends(get_db),
-):
-    """
-    Kullanıcının yemek loguna yeni bir kayıt ekler.
-    Yemek adına göre DB'den eşleşen yemeği bulur.
-    """
-    yemek = (
-        db.query(Yemek)
-        .filter(Yemek.ad.ilike(f"%{request_body.yemek_adi}%"))
-        .first()
-    )
-
-    if not yemek:
-        return JSONResponse(
-            status_code=404,
-            content={
-                "success": False,
-                "message": f"'{request_body.yemek_adi}' adlı yemek veritabanında bulunamadı.",
-            },
-        )
-
-    yeni_log = KullaniciYemekLog(
-        kullanici_id=request_body.kullanici_id,
-        yemek_id=yemek.id,
-        miktar=request_body.miktar,
-        kaynak_tipi=request_body.kaynak_tipi,
-    )
-    db.add(yeni_log)
-    db.commit()
-    db.refresh(yeni_log)
-
-    return {
-        "success": True,
-        "message": f"'{yemek.ad}' yemek logunuza eklendi.",
-        "data": yeni_log.to_dict(),
-    }
-
-
-# ──────────────────────────────────────────────────────────────────
-# 8) POST /api/rate-meal — Anonim yemek puanlama
-# ──────────────────────────────────────────────────────────────────
+# ------------------------------------------------------------------
+# 6) POST /api/rate-meal - Anonim yemek puanlama
+# ------------------------------------------------------------------
 @app.post("/api/rate-meal")
 async def rate_meal(
     request_body: RateMealRequest,
@@ -773,7 +714,7 @@ async def rate_meal(
     Anonim olarak yemek puanı kaydeder.
     Giriş veya kullanıcı ID gerektirmez.
     """
-    gecerli_kategoriler = ["corba", "ana_yemek", "pilav", "tatli", "salata"]
+    gecerli_kategoriler = ["corba", "ana_yemek", "pilav", "tatli", "salata", "icecek"]
     if request_body.kategori not in gecerli_kategoriler:
         return JSONResponse(
             status_code=400,
@@ -795,9 +736,19 @@ async def rate_meal(
             },
         )
 
+    canonical_meal_name = _canonicalize_meal_name(request_body.yemek_adi)
+    if not canonical_meal_name:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "success": False,
+                "message": "Yemek adı boş olamaz.",
+            },
+        )
+
     yeni_puan = MenuPuanlama(
         tarih=tarih,
-        yemek_adi=request_body.yemek_adi,
+        yemek_adi=canonical_meal_name,
         kategori=request_body.kategori,
         puan=request_body.puan,
         yorum=request_body.yorum,
@@ -808,7 +759,7 @@ async def rate_meal(
 
     return {
         "success": True,
-        "message": f"'{request_body.yemek_adi}' için {request_body.puan}⭐ puanınız kaydedildi. Teşekkürler!",
+        "message": f"'{canonical_meal_name}' için {request_body.puan}⭐ puanınız kaydedildi. Teşekkürler!",
         "data": yeni_puan.to_dict(),
     }
 
@@ -835,12 +786,14 @@ async def get_today_ratings(db: Session = Depends(get_db)):
         .all()
     )
 
+    birlesik_sonuclar = _merge_meal_rating_aggregates(sonuclar)
+
     data = {}
-    for row in sonuclar:
-        data[row.yemek_adi] = {
-            "kategori": row.kategori,
-            "ortalama": round(float(row.ortalama), 1),
-            "toplam_oy": row.toplam_oy,
+    for row in birlesik_sonuclar:
+        data[row["yemek_adi"]] = {
+            "kategori": row["kategori"],
+            "ortalama": round(float(row["ortalama"]), 1),
+            "toplam_oy": row["toplam_oy"],
         }
 
     return {
@@ -876,15 +829,17 @@ async def get_weekly_rating_report(db: Session = Depends(get_db)):
         .all()
     )
 
-    tum_yemekler = [
+    birlesik_yemek_ort = _merge_meal_rating_aggregates(yemek_ort)
+
+    tum_yemekler = sorted([
         {
-            "yemek_adi": row.yemek_adi,
-            "kategori": row.kategori,
-            "ortalama": round(float(row.ortalama), 2),
-            "toplam_oy": row.toplam_oy,
+            "yemek_adi": row["yemek_adi"],
+            "kategori": row["kategori"],
+            "ortalama": round(float(row["ortalama"]), 2),
+            "toplam_oy": row["toplam_oy"],
         }
-        for row in yemek_ort
-    ]
+        for row in birlesik_yemek_ort
+    ], key=lambda item: item["ortalama"], reverse=True)
 
     en_begenilen = tum_yemekler[:5]
     en_az_begenilen = list(reversed(tum_yemekler[-5:])) if len(tum_yemekler) >= 5 else list(reversed(tum_yemekler))
@@ -1023,6 +978,24 @@ async def waste_by_dish(
 ):
     """Belirli bir yemeğin israf geçmişini döndürür."""
     return get_dish_waste_history(yemek_adi, gun=gun, db=db)
+
+
+@app.get("/api/waste/model-status")
+async def waste_model_status(db: Session = Depends(get_db)):
+    """Israf ML modelinin dosya/veri durumunu dondurur."""
+    return get_waste_model_status(db=db)
+
+
+@app.post("/api/waste/train-model")
+async def waste_train_model(
+    request_body: WasteModelTrainRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Gercek uretim + puan sinyali ile israf modelini yeniden egitir.
+    Veri yetersizse fallback devam eder.
+    """
+    return train_waste_model_from_db(db=db, min_samples=request_body.min_samples)
 
 
 # ═══════════════════════════════════════════════════════════════════

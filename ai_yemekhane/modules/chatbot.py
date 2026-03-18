@@ -2,43 +2,39 @@
 Modül 3: Chatbot Yemekhane Asistanı
 ─────────────────────────────────────────────
 Google Gemini 2.0 Flash API tabanlı yemekhane asistan chatbot modülü.
-Kullanıcılara menü, besin değeri, kalori takibi ve diyet önerisi
+Kullanıcılara menü, besin değeri, puanlama ve genel beslenme
 konularında yardımcı olur.
 
 Özellikler:
   - Gemini 2.0 Flash (ücretsiz katman)
   - Function Calling (Tool Use)
   - Session bazlı konuşma geçmişi
-  - Günlük kalori takibi
+  - Menü ve puanlama desteği
 """
 
-from datetime import date, datetime
+from datetime import date
 from typing import Any
 
 import google.generativeai as genai
 
 from config import active_config
-from models import SessionLocal, Yemek, Menu, Kullanici, KullaniciYemekLog, MenuPuanlama, Alert
+from models import SessionLocal, Yemek, Menu, MenuPuanlama, Alert
 
 # ─── Sabitler ──────────────────────────────────────────────────────
 SYSTEM_PROMPT = """\
 Sen bir üniversite yemekhane beslenme asistanısın. Adın "Yemekhane Asistanı".
 
 Görevlerin:
-1. Öğrencilere yedikleri yemeklerin besin değerlerini söylemek
-2. Günlük kalori takibi yapmak
-3. Sağlıklı beslenme önerileri vermek
-4. Bugünkü menü hakkında bilgi vermek
-5. Yemek kayıtlarını tutmak
-6. Yemek puanlamaları hakkında bilgi vermek
-7. Öğrencilerin yemek puanlamasına yardımcı olmak
+1. Öğrencilere yemeklerin besin değerlerini söylemek
+2. Genel beslenme önerileri vermek
+3. Bugünkü menü hakkında bilgi vermek
+4. Yemek puanlamaları hakkında bilgi vermek
+5. Öğrencilerin yemek puanlamasına yardımcı olmak
 
 Kurallar:
 - Her zaman Türkçe yanıt ver
 - Kısa, samimi ve yardımsever ol
 - Kullanıcı yemek söylediğinde, önce get_nutrition aracıyla besin değerlerini kontrol et
-- Yemek kaydı istendiğinde log_meal aracını kullan
-- Günlük rapor istendiğinde get_daily_report aracını kullan
 - Menü sorulduğunda get_today_menu aracını kullan
 - Yemek puanları sorulduğunda get_meal_ratings aracını kullan
 - Kullanıcı puan vermek istediğinde rate_meal aracını kullan
@@ -46,7 +42,6 @@ Kurallar:
 - Tıbbi tavsiye verme, sadece genel beslenme bilgisi paylaş
 - Bilmediğin konularda "Bu konuda yardımcı olamıyorum" de
 - Kullanıcı birden fazla yemek söylerse, her birinin besin değerini ayrı ayrı kontrol et
-- Günlük kalori hedefi varsayılan 2000 kcal'dir (kullanıcıya özel hedef varsa onu kullan)
 - Puanlama tamamen anonimdir, kullanıcı ID gerekmez
 - İsraf ve uyarı sorulduğunda get_waste_info aracını kullan
 - Aktif uyarılar sorulduğunda get_alerts_info aracını kullan
@@ -68,46 +63,6 @@ TOOL_DEFINITIONS = [
                         }
                     },
                     "required": ["yemek_adi"]
-                }
-            },
-            {
-                "name": "log_meal",
-                "description": "Kullanıcının yediği yemeği veritabanına kaydeder. Kullanıcı bir yemek yediğini söylediğinde bu aracı kullan.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "kullanici_id": {
-                            "type": "integer",
-                            "description": "Kullanıcının ID'si"
-                        },
-                        "yemek_adi": {
-                            "type": "string",
-                            "description": "Yenen yemeğin adı. Örnek: 'Kuru Fasulye'"
-                        },
-                        "miktar": {
-                            "type": "number",
-                            "description": "Porsiyon miktarı (varsayılan 1.0). Örnek: 1.0 = 1 porsiyon, 0.5 = yarım porsiyon"
-                        }
-                    },
-                    "required": ["kullanici_id", "yemek_adi"]
-                }
-            },
-            {
-                "name": "get_daily_report",
-                "description": "Kullanıcının belirtilen tarihteki günlük beslenme raporunu (toplam kalori, protein, karbonhidrat, yağ ve yenen yemekler) getirir.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "kullanici_id": {
-                            "type": "integer",
-                            "description": "Kullanıcının ID'si"
-                        },
-                        "tarih": {
-                            "type": "string",
-                            "description": "Rapor tarihi (YYYY-MM-DD formatında). Boş bırakılırsa bugünün tarihi kullanılır."
-                        }
-                    },
-                    "required": ["kullanici_id"]
                 }
             },
             {
@@ -240,140 +195,6 @@ def _tool_get_nutrition(yemek_adi: str, db=None) -> dict:
                 "yemek_adi": yemek_adi,
                 "mesaj": f"'{yemek_adi}' veritabanında bulunamadı."
             }
-    finally:
-        if close_db:
-            db.close()
-
-
-def _tool_log_meal(kullanici_id: int, yemek_adi: str, miktar: float = 1.0, db=None) -> dict:
-    """Kullanıcının yemek kaydını veritabanına ekler."""
-    close_db = False
-    if db is None:
-        db = SessionLocal()
-        close_db = True
-
-    try:
-        # Yemeği bul
-        yemek = (
-            db.query(Yemek)
-            .filter(Yemek.ad.ilike(f"%{yemek_adi}%"))
-            .first()
-        )
-
-        if not yemek:
-            return {
-                "basarili": False,
-                "mesaj": f"'{yemek_adi}' veritabanında bulunamadı. Kayıt eklenemedi."
-            }
-
-        # Kullanıcı kontrolü
-        kullanici = db.query(Kullanici).filter(Kullanici.id == kullanici_id).first()
-        if not kullanici:
-            return {
-                "basarili": False,
-                "mesaj": f"ID={kullanici_id} kullanıcı bulunamadı."
-            }
-
-        # Log ekle
-        log = KullaniciYemekLog(
-            kullanici_id=kullanici_id,
-            yemek_id=yemek.id,
-            tarih=datetime.now(),
-            miktar=miktar,
-            kaynak_tipi="chatbot"
-        )
-        db.add(log)
-        db.commit()
-
-        return {
-            "basarili": True,
-            "yemek_adi": yemek.ad,
-            "miktar": miktar,
-            "kalori": yemek.kalori * miktar,
-            "protein": yemek.protein * miktar,
-            "karbonhidrat": yemek.karbonhidrat * miktar,
-            "yag": yemek.yag * miktar,
-            "mesaj": f"{yemek.ad} ({miktar} porsiyon) kaydedildi."
-        }
-    finally:
-        if close_db:
-            db.close()
-
-
-def _tool_get_daily_report(kullanici_id: int, tarih: str | None = None, db=None) -> dict:
-    """Kullanıcının günlük beslenme raporunu döndürür."""
-    close_db = False
-    if db is None:
-        db = SessionLocal()
-        close_db = True
-
-    try:
-        # Tarih belirle
-        if tarih:
-            rapor_tarihi = date.fromisoformat(tarih)
-        else:
-            rapor_tarihi = date.today()
-
-        # Kullanıcı kontrolü
-        kullanici = db.query(Kullanici).filter(Kullanici.id == kullanici_id).first()
-        if not kullanici:
-            return {
-                "basarili": False,
-                "mesaj": f"ID={kullanici_id} kullanıcı bulunamadı."
-            }
-
-        # O günkü loglar
-        gun_baslangic = datetime(rapor_tarihi.year, rapor_tarihi.month, rapor_tarihi.day)
-        gun_bitis = datetime(rapor_tarihi.year, rapor_tarihi.month, rapor_tarihi.day, 23, 59, 59)
-
-        loglar = (
-            db.query(KullaniciYemekLog)
-            .filter(
-                KullaniciYemekLog.kullanici_id == kullanici_id,
-                KullaniciYemekLog.tarih >= gun_baslangic,
-                KullaniciYemekLog.tarih <= gun_bitis,
-            )
-            .all()
-        )
-
-        toplam_kalori = 0.0
-        toplam_protein = 0.0
-        toplam_karbonhidrat = 0.0
-        toplam_yag = 0.0
-        yenen_yemekler = []
-
-        for log in loglar:
-            yemek = db.query(Yemek).filter(Yemek.id == log.yemek_id).first()
-            if yemek:
-                miktar = log.miktar
-                kalori = yemek.kalori * miktar
-                toplam_kalori += kalori
-                toplam_protein += yemek.protein * miktar
-                toplam_karbonhidrat += yemek.karbonhidrat * miktar
-                toplam_yag += yemek.yag * miktar
-                yenen_yemekler.append({
-                    "yemek": yemek.ad,
-                    "miktar": miktar,
-                    "kalori": round(kalori, 1)
-                })
-
-        hedef = kullanici.gunluk_kalori_hedefi
-        kalan = hedef - toplam_kalori
-
-        return {
-            "basarili": True,
-            "tarih": str(rapor_tarihi),
-            "kullanici_adi": kullanici.ad,
-            "toplam_kalori": round(toplam_kalori, 1),
-            "toplam_protein": round(toplam_protein, 1),
-            "toplam_karbonhidrat": round(toplam_karbonhidrat, 1),
-            "toplam_yag": round(toplam_yag, 1),
-            "kalori_hedefi": hedef,
-            "kalan_kalori": round(kalan, 1),
-            "hedef_yuzdesi": round((toplam_kalori / hedef) * 100, 1) if hedef > 0 else 0,
-            "yenen_yemekler": yenen_yemekler,
-            "ogun_sayisi": len(yenen_yemekler)
-        }
     finally:
         if close_db:
             db.close()
@@ -578,19 +399,6 @@ def _execute_tool(function_name: str, function_args: dict, db=None) -> dict:
             yemek_adi=function_args.get("yemek_adi", ""),
             db=db,
         )
-    elif function_name == "log_meal":
-        return _tool_log_meal(
-            kullanici_id=function_args.get("kullanici_id", 0),
-            yemek_adi=function_args.get("yemek_adi", ""),
-            miktar=function_args.get("miktar", 1.0),
-            db=db,
-        )
-    elif function_name == "get_daily_report":
-        return _tool_get_daily_report(
-            kullanici_id=function_args.get("kullanici_id", 0),
-            tarih=function_args.get("tarih"),
-            db=db,
-        )
     elif function_name == "get_today_menu":
         return _tool_get_today_menu(db=db)
     elif function_name == "get_meal_ratings":
@@ -662,7 +470,7 @@ def get_response(
     Args:
         model: Başlatılmış Gemini modeli.
         user_message: Kullanıcının mesajı.
-        kullanici_id: Kullanıcı ID (session ve function calling için).
+        kullanici_id: Oturum geçmişini ayırmak için isteğe bağlı kimlik.
         context: Ek bağlam bilgisi.
         db: SQLAlchemy DB session.
 
@@ -691,9 +499,6 @@ def get_response(
             f"Tatlı: {menu.get('tatli', '?')}, "
             f"Salata: {menu.get('salata', '?')}]"
         )
-
-    if kullanici_id > 0:
-        enriched_message += f"\n[Sistem Bilgisi: Kullanıcı ID = {kullanici_id}]"
 
     # Chat geçmişini al
     history = _get_chat_history(kullanici_id)
@@ -732,10 +537,6 @@ def get_response(
 
                     print(f"🔧 Tool çağrısı: {fn_name}({fn_args})")
 
-                    # Eğer log_meal veya get_daily_report ise ve kullanici_id yoksa ekle
-                    if fn_name in ("log_meal", "get_daily_report") and kullanici_id > 0:
-                        fn_args.setdefault("kullanici_id", kullanici_id)
-
                     # Tool'u çalıştır
                     result = _execute_tool(fn_name, fn_args, db=db)
                     print(f"📋 Tool sonucu: {result}")
@@ -769,12 +570,7 @@ def get_response(
         _add_to_history(kullanici_id, "user", [enriched_message])
         _add_to_history(kullanici_id, "model", [yanit_text])
 
-        # Günlük kalori toplamını hesapla
         gunluk_toplam = 0.0
-        if kullanici_id > 0:
-            rapor = _tool_get_daily_report(kullanici_id=kullanici_id, db=db)
-            if rapor.get("basarili"):
-                gunluk_toplam = rapor.get("toplam_kalori", 0.0)
 
         print(f"🤖 [{kullanici_id}] Yanıt: {yanit_text[:80]}...")
 
@@ -793,58 +589,6 @@ def get_response(
         }
 
 
-# ═══════════════════════════════════════════════════════════════════
-# FONKSİYON: Yemek Önerisi Al
-# ═══════════════════════════════════════════════════════════════════
-def get_meal_recommendation(
-    model: Any,
-    kullanici_bilgi: dict,
-    bugunki_menu: dict | None = None,
-) -> dict:
-    """
-    Kullanıcı profiline göre kişiselleştirilmiş yemek önerisi verir.
-    """
-    if model is None:
-        kalori_hedefi = kullanici_bilgi.get("kalori_hedefi", 2000)
-        alinan = kullanici_bilgi.get("alinan_kalori", 0)
-        kalan = kalori_hedefi - alinan
-        return {
-            "oneri": f"Günlük hedefinize {kalan:.0f} kcal kaldı. "
-                     f"Hafif bir öğün tercih etmenizi öneririm.",
-            "kalan_kalori": kalan,
-            "onerilen_yemekler": ["Mevsim Salata", "Mercimek Çorbası"],
-        }
-
-    try:
-        prompt = (
-            f"Kullanıcı bilgileri: {kullanici_bilgi}\n"
-            f"Bugünkü menü: {bugunki_menu}\n\n"
-            f"Bu kullanıcıya kişiselleştirilmiş yemek önerisi ver. "
-            f"Kalan kalori miktarına göre menüden uygun yemekleri öner."
-        )
-
-        response = model.generate_content(prompt)
-        yanit = response.text if response.text else "Öneri üretilemedi."
-
-        kalori_hedefi = kullanici_bilgi.get("kalori_hedefi", 2000)
-        alinan = kullanici_bilgi.get("alinan_kalori", 0)
-        kalan = kalori_hedefi - alinan
-
-        return {
-            "oneri": yanit,
-            "kalan_kalori": kalan,
-            "onerilen_yemekler": [],
-        }
-
-    except Exception as e:
-        print(f"❌ Yemek önerisi hatası: {e}")
-        return {
-            "oneri": "Öneri üretilirken bir hata oluştu.",
-            "kalan_kalori": 0,
-            "onerilen_yemekler": [],
-        }
-
-
 # ─── Yardımcı Fonksiyonlar ────────────────────────────────────────
 
 def _generate_suggestions(user_message: str) -> list[str]:
@@ -855,19 +599,19 @@ def _generate_suggestions(user_message: str) -> list[str]:
         return [
             "Bu menünün toplam kalorisi ne kadar?",
             "Hangi yemek en düşük kalorili?",
-            "Diyet için hangi yemeği seçmeliyim?",
+            "Bugün hangi yemek daha dengeli görünüyor?",
         ]
     elif "kalori" in mesaj or "rapor" in mesaj:
         return [
-            "Protein alımım yeterli mi?",
-            "Akşam ne yemeliyim?",
-            "Bu haftanın ortalaması nedir?",
+            "Bu yemek protein açısından nasıl?",
+            "Menüde daha hafif seçenek var mı?",
+            "Bugünkü menü ne?",
         ]
     elif any(word in mesaj for word in ["yedim", "içtim", "yemek"]):
         return [
-            "Günlük raporumu göster",
-            "Kalan kalorimi söyle",
+            "Bu yemeğin besin değeri nedir?",
             "Bu yemeğe puan ver",
+            "Bugünkü menü ne?",
         ]
     elif any(word in mesaj for word in ["puan", "puanlama", "beğenilen", "yıldız", "oy"]):
         return [
@@ -890,8 +634,8 @@ def _generate_suggestions(user_message: str) -> list[str]:
     else:
         return [
             "Bugünkü menü ne?",
-            "Günlük kalori raporumu göster",
-            "Sağlıklı bir öğün öner",
+            "Mercimek çorbası kaç kalori?",
+            "Bugün en çok beğenilen yemek hangisi?",
         ]
 
 

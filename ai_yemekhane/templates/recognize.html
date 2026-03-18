@@ -68,9 +68,6 @@
                     </div>
                 </div>
                 <div class="result-actions">
-                    <button class="btn btn-accent" id="save-btn" onclick="saveFood()">
-                        ✅ Bu Yemeği Kaydet
-                    </button>
                     <button class="btn btn-outline" onclick="resetUpload()">
                         🔄 Yeni Fotoğraf
                     </button>
@@ -201,34 +198,6 @@
 
         resultPanel.style.display = 'block';
         resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    // ─── Save Food ───────────────────────────────────────────────
-    async function saveFood() {
-        if (!recognizedData || !recognizedData.en_olasi_yemek) return;
-
-        const btn = document.getElementById('save-btn');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> Kaydediliyor...';
-
-        const best = recognizedData.en_olasi_yemek;
-        const data = await apiFetch('/api/log-food', {
-            method: 'POST',
-            body: JSON.stringify({
-                yemek_adi: best.yemek || best.yemek_adi,
-                kullanici_id: 1,
-                kaynak_tipi: 'foto'
-            })
-        });
-
-        btn.disabled = false;
-        btn.innerHTML = '✅ Bu Yemeği Kaydet';
-
-        if (data.success) {
-            showToast('Yemek kaydedildi!', 'success');
-        } else {
-            showToast(data.message || 'Kayıt başarısız.', 'error');
-        }
     }
 
     // ─── Reset ───────────────────────────────────────────────────

@@ -10,7 +10,7 @@
                 <div class="chat-header-avatar">🤖</div>
                 <div class="chat-header-info">
                     <h3>Yemekhane Asistanı</h3>
-                    <p>Menü, besin değeri ve diyet hakkında soru sorun</p>
+                    <p>Menu, besin degeri, puanlama ve israf hakkinda soru sorun</p>
                 </div>
             </div>
 
@@ -20,11 +20,11 @@
                     <div class="msg-avatar">🤖</div>
                     <div class="msg-bubble">
                         <p>Merhaba! 👋 Ben yemekhane asistanıyım. Size menü, besin değerleri
-                            veya diyet önerileri konusunda yardımcı olabilirim.</p>
+                            veya yemek puanlari konusunda yardimci olabilirim.</p>
                         <div class="chat-suggestions" id="init-suggestions">
                             <button onclick="sendSuggestion('Bugün ne yemeliyim?')">Bugün ne yemeliyim?</button>
-                            <button onclick="sendSuggestion('Kaç kalori aldım?')">Kaç kalori aldım?</button>
-                            <button onclick="sendSuggestion('Sağlıklı bir öğün öner')">Sağlıklı öğün öner</button>
+                            <button onclick="sendSuggestion('Mercimek corbasi kac kalori?')">Mercimek corbasi kac kalori?</button>
+                            <button onclick="sendSuggestion('Bugun en cok begenilen yemek hangisi?')">En cok begenilen ne?</button>
                             <button onclick="sendSuggestion('Bugünkü menü ne?')">Bugünkü menü ne?</button>
                         </div>
                     </div>
@@ -64,7 +64,7 @@
         try {
             const data = await apiFetch('/api/chat', {
                 method: 'POST',
-                body: JSON.stringify({ message: msg, kullanici_id: 1 })
+                body: JSON.stringify({ message: msg })
             });
 
             removeTyping();

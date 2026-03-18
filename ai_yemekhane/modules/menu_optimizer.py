@@ -19,6 +19,7 @@ Kullanılan teknolojiler:
 import os
 import random
 import hashlib
+import re
 from datetime import date, timedelta
 from typing import Any
 
@@ -31,7 +32,7 @@ from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from sklearn.preprocessing import LabelEncoder
 
-from models import SessionLocal, MenuPuanlama, Alert
+from models import SessionLocal, MenuPuanlama, Alert, UretimLog
 
 # ─── Sabitler ──────────────────────────────────────────────────────
 GUNLER = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"]
@@ -361,6 +362,122 @@ def get_meal_average_rating(yemek_adi: str, db=None) -> dict:
             db.close()
 
 
+def _normalize_meal_key(value: str) -> str:
+    """Farkli yazimlari tek anahtarda toplamak icin yemek adini normalize eder."""
+    return re.sub(r"[\W_]+", " ", str(value).casefold()).strip()
+
+
+def _build_rating_signal_map(db) -> dict[str, dict]:
+    """Yemek adina gore normalize edilmis gercek puan sinyallerini toplar."""
+    from sqlalchemy import func as sqla_func
+
+    rows = (
+        db.query(
+            MenuPuanlama.yemek_adi,
+            sqla_func.avg(MenuPuanlama.puan).label("ortalama"),
+            sqla_func.count(MenuPuanlama.id).label("toplam_oy"),
+        )
+        .group_by(MenuPuanlama.yemek_adi)
+        .all()
+    )
+
+    grouped: dict[str, dict[str, float]] = {}
+    for row in rows:
+        key = _normalize_meal_key(row.yemek_adi)
+        toplam_oy = int(row.toplam_oy or 0)
+        if not key or toplam_oy <= 0:
+            continue
+
+        item = grouped.setdefault(key, {"puan_toplam": 0.0, "toplam_oy": 0})
+        item["puan_toplam"] += float(row.ortalama) * toplam_oy
+        item["toplam_oy"] += toplam_oy
+
+    result = {}
+    for key, item in grouped.items():
+        toplam_oy = int(item["toplam_oy"])
+        result[key] = {
+            "ortalama": round(item["puan_toplam"] / toplam_oy, 3),
+            "toplam_oy": toplam_oy,
+        }
+    return result
+
+
+def _build_production_signal_map(db) -> dict[str, dict]:
+    """Yemek adina gore normalize edilmis tuketim/israf sinyallerini toplar."""
+    from sqlalchemy import func as sqla_func
+
+    rows = (
+        db.query(
+            UretimLog.yemek_adi,
+            sqla_func.avg(UretimLog.tuketim_orani).label("ort_tuketim"),
+            sqla_func.avg(UretimLog.israf_orani).label("ort_israf"),
+            sqla_func.count(UretimLog.id).label("kayit_sayisi"),
+        )
+        .group_by(UretimLog.yemek_adi)
+        .all()
+    )
+
+    grouped: dict[str, dict[str, float]] = {}
+    for row in rows:
+        key = _normalize_meal_key(row.yemek_adi)
+        kayit_sayisi = int(row.kayit_sayisi or 0)
+        if not key or kayit_sayisi <= 0:
+            continue
+
+        item = grouped.setdefault(
+            key,
+            {"tuketim_toplam": 0.0, "israf_toplam": 0.0, "kayit_sayisi": 0},
+        )
+        item["tuketim_toplam"] += float(row.ort_tuketim or 0.0) * kayit_sayisi
+        item["israf_toplam"] += float(row.ort_israf or 0.0) * kayit_sayisi
+        item["kayit_sayisi"] += kayit_sayisi
+
+    result = {}
+    for key, item in grouped.items():
+        kayit_sayisi = int(item["kayit_sayisi"])
+        result[key] = {
+            "ort_tuketim_orani": round(item["tuketim_toplam"] / kayit_sayisi, 3),
+            "ort_israf_orani": round(item["israf_toplam"] / kayit_sayisi, 3),
+            "kayit_sayisi": kayit_sayisi,
+        }
+    return result
+
+
+def _blend_real_world_signals(
+    synthetic_score: float,
+    rating_info: dict | None = None,
+    production_info: dict | None = None,
+) -> float:
+    """
+    Sentetik skoru, gercek puan ve operasyon verisiyle agirlikli sekilde birlestirir.
+
+    Puan sayisi ve uretim kaydi azsa sentetik hedef baskin kalir; veri arttikca
+    gercek dunya sinyalleri hedef uzerinde daha etkili olur.
+    """
+    weighted_sum = synthetic_score * 0.55
+    total_weight = 0.55
+
+    if rating_info and rating_info.get("toplam_oy", 0) > 0:
+        rating_norm = max(0.0, min(1.0, (float(rating_info["ortalama"]) - 1.0) / 4.0))
+        rating_conf = min(float(rating_info["toplam_oy"]) / 12.0, 1.0)
+        rating_weight = 0.25 * rating_conf
+        weighted_sum += rating_norm * rating_weight
+        total_weight += rating_weight
+
+    if production_info and production_info.get("kayit_sayisi", 0) > 0:
+        tuketim_norm = max(
+            0.0,
+            min(1.0, float(production_info.get("ort_tuketim_orani", 0.0)) / 100.0),
+        )
+        production_conf = min(float(production_info["kayit_sayisi"]) / 8.0, 1.0)
+        production_weight = 0.35 * production_conf
+        weighted_sum += tuketim_norm * production_weight
+        total_weight += production_weight
+
+    blended = weighted_sum / total_weight if total_weight else synthetic_score
+    return round(max(0.10, min(1.0, blended)), 3)
+
+
 # ═══════════════════════════════════════════════════════════════════
 # 1) VERİ YÜKLEME
 # ═══════════════════════════════════════════════════════════════════
@@ -387,10 +504,13 @@ def melt_to_long(df: pd.DataFrame) -> pd.DataFrame:
         for kat in KATEGORI_KOLONLARI:
             yemek = row.get(kat, None)
             if pd.notna(yemek) and str(yemek).strip():
+                # CSV'deki "pilav_makarna" kolonu, uygulamadaki "pilav"
+                # kategorisine karşılık gelir; eğitim ve runtime tutarlı olmalı.
+                kategori = "pilav" if kat == "pilav_makarna" else kat
                 rows.append({
                     "tarih": tarih,
                     "gun": gun,
-                    "kategori": kat,
+                    "kategori": kategori,
                     "yemek_adi": str(yemek).strip(),
                 })
     return pd.DataFrame(rows)
@@ -440,8 +560,8 @@ def add_features(df_long: pd.DataFrame) -> pd.DataFrame:
 # ═══════════════════════════════════════════════════════════════════
 def generate_popularity_scores(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Gerçek anket verisi olmadığı için mantıklı kurallara dayalı
-    sentetik popülerlik skoru (0-1) üretir.
+    Kurallara dayali sentetik skoru, varsa gercek puan ve uretim verisiyle
+    harmanlayarak 0-1 arasi hedef populerlik skoru uretir.
     """
     df = df.copy()
     skorlar = []
@@ -493,36 +613,25 @@ def generate_popularity_scores(df: pd.DataFrame) -> pd.DataFrame:
 
     df["populerlik"] = skorlar
 
-    # ── Gerçek puanlama verisi ile düzeltme ──
+    # ── Gerçek puanlama ve uretim verisi ile hedefi guclendir ──
     try:
         db = SessionLocal()
-        from sqlalchemy import func as sqla_func
-        puan_verisi = (
-            db.query(
-                MenuPuanlama.yemek_adi,
-                sqla_func.avg(MenuPuanlama.puan).label("ort"),
-            )
-            .group_by(MenuPuanlama.yemek_adi)
-            .all()
-        )
+        rating_map = _build_rating_signal_map(db)
+        production_map = _build_production_signal_map(db)
         db.close()
 
-        puan_map = {row.yemek_adi: float(row.ort) for row in puan_verisi}
+        if rating_map or production_map:
+            def blend_real_signals(row):
+                key = _normalize_meal_key(row["yemek_adi"])
+                return _blend_real_world_signals(
+                    synthetic_score=float(row["populerlik"]),
+                    rating_info=rating_map.get(key),
+                    production_info=production_map.get(key),
+                )
 
-        if puan_map:
-            # Normalize (1-5) → (0-1) ve baz popülerliğe karıştır
-            def blend_rating(row):
-                yemek = row["yemek_adi"]
-                if yemek in puan_map:
-                    gercek_norm = (puan_map[yemek] - 1) / 4  # 1-5 → 0-1
-                    # %60 mevcut popülerlik, %40 gerçek puan
-                    return row["populerlik"] * 0.6 + gercek_norm * 0.4
-                return row["populerlik"]
-
-            df["populerlik"] = df.apply(blend_rating, axis=1)
-            df["populerlik"] = df["populerlik"].clip(0.10, 1.0).round(3)
+            df["populerlik"] = df.apply(blend_real_signals, axis=1)
     except Exception:
-        pass  # Puan verisi yoksa mevcut skorlarla devam et
+        pass  # Gercek sinyal yoksa sentetik skorlarla devam et
 
     return df
 

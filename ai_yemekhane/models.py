@@ -218,7 +218,7 @@ class MenuPuanlama(Base):
     kategori = Column(
         String(50),
         nullable=False,
-        comment="corba | ana_yemek | pilav | tatli | salata",
+        comment="corba | ana_yemek | pilav | tatli | salata | icecek",
     )
     puan = Column(Integer, nullable=False, comment="1-5 arası yıldız puanı")
     yorum = Column(String(500), nullable=True, default=None)
