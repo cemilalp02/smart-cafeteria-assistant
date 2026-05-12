@@ -10,7 +10,14 @@
                 <div class="chat-header-avatar">🤖</div>
                 <div class="chat-header-info">
                     <h3>Yemekhane Asistanı</h3>
-                    <p>Menu, besin degeri, puanlama ve israf hakkinda soru sorun</p>
+                    <p>Menü, besin değeri, puanlama ve israf hakkında soru sorun</p>
+                </div>
+                <div class="chat-header-badges">
+                    <span class="ai-badge">
+                        <span class="ai-badge-dot"></span>
+                        Gemini AI
+                    </span>
+                    <span class="ai-badge ai-badge-fc">Function Calling</span>
                 </div>
             </div>
 
@@ -19,13 +26,14 @@
                 <div class="message bot">
                     <div class="msg-avatar">🤖</div>
                     <div class="msg-bubble">
-                        <p>Merhaba! 👋 Ben yemekhane asistanıyım. Size menü, besin değerleri
-                            veya yemek puanlari konusunda yardimci olabilirim.</p>
+                        <p>Merhaba! 👋 Ben yemekhane asistanıyım. Gemini AI ile güçlendirilmiş olarak size menü, besin değerleri, israf analizi veya yemek puanları konusunda yardımcı olabilirim.</p>
                         <div class="chat-suggestions" id="init-suggestions">
-                            <button onclick="sendSuggestion('Bugün ne yemeliyim?')">Bugün ne yemeliyim?</button>
-                            <button onclick="sendSuggestion('Mercimek corbasi kac kalori?')">Mercimek corbasi kac kalori?</button>
-                            <button onclick="sendSuggestion('Bugun en cok begenilen yemek hangisi?')">En cok begenilen ne?</button>
-                            <button onclick="sendSuggestion('Bugünkü menü ne?')">Bugünkü menü ne?</button>
+                            <button onclick="sendSuggestion('Bugünkü menü ne?')">🍽️ Bugünkü menü ne?</button>
+                            <button onclick="sendSuggestion('Mercimek çorbası kaç kalori?')">🔥 Mercimek çorbası kalori</button>
+                            <button onclick="sendSuggestion('En çok beğenilen yemek hangisi?')">⭐ En beğenilen yemek</button>
+                            <button onclick="sendSuggestion('Bu hafta ne var?')">📅 Haftalık menü</button>
+                            <button onclick="sendSuggestion('En çok israf edilen yemek hangisi?')">🌱 İsraf analizi</button>
+                            <button onclick="sendSuggestion('Öğrenci yorumlarını analiz et, memnuniyet durumu nedir?')">📊 Yorum Analizi</button>
                         </div>
                     </div>
                 </div>
@@ -33,7 +41,7 @@
 
             <!-- Input Bar -->
             <div class="chat-input-bar">
-                <input type="text" id="chat-input" placeholder="Mesajınızı yazın..."
+                <input type="text" id="chat-input" placeholder="Mesajınızı yazın... (menü, kalori, israf, puanlama)"
                     onkeypress="if(event.key==='Enter') sendMessage()">
                 <button class="send-btn" id="send-btn" onclick="sendMessage()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -52,7 +60,6 @@
     const chatMessages = document.getElementById('chat-messages');
     const chatInput = document.getElementById('chat-input');
 
-    // ─── Send Message ────────────────────────────────────────────
     async function sendMessage() {
         const msg = chatInput.value.trim();
         if (!msg) return;
@@ -86,7 +93,6 @@
         sendMessage();
     }
 
-    // ─── Append Message ──────────────────────────────────────────
     function appendMessage(role, text, suggestions) {
         const div = document.createElement('div');
         div.className = `message ${role}`;
@@ -101,8 +107,11 @@
                 ).join('') + '</div>';
         }
 
-        // Convert line breaks to <br>
-        const formattedText = text.replace(/\n/g, '<br>');
+        // Markdown-like formatting
+        let formattedText = text
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/\n/g, '<br>');
 
         div.innerHTML = `
             <div class="msg-avatar">${avatar}</div>
@@ -116,7 +125,6 @@
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    // ─── Typing Indicator ────────────────────────────────────────
     function showTyping() {
         const div = document.createElement('div');
         div.className = 'message bot';
@@ -138,7 +146,6 @@
         if (typing) typing.remove();
     }
 
-    // Focus input on load
     document.addEventListener('DOMContentLoaded', () => {
         chatInput.focus();
     });

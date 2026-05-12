@@ -3,86 +3,209 @@
 
 {% block content %}
 <div class="page-wrapper">
-    <!-- ═══ HERO BANNER ═══ -->
+
+    <!-- ═══ HERO ═══ -->
     <section class="hero-banner">
-        <div class="container">
-            <h1 class="hero-title">Akıllı Yemekhane<br><span class="gradient-text">Asistan Sistemi</span></h1>
-            <p class="hero-subtitle">
-                Menü optimizasyonu, fotoğraftan yemek tanıma ve kişiselleştirilmiş
-                beslenme önerilerini tek bir platformda deneyimleyin.
-            </p>
-            <div class="quick-actions">
-                <a href="/recognize" class="quick-action" id="qa-recognize">
-                    <span class="qa-icon">📸</span>
-                    <span class="qa-label">Fotoğraf Çek</span>
-                </a>
-                <a href="/chat" class="quick-action" id="qa-chat">
-                    <span class="qa-icon">💬</span>
-                    <span class="qa-label">Chatbot</span>
-                </a>
-                <a href="/report" class="quick-action" id="qa-report">
-                    <span class="qa-icon">📊</span>
-                    <span class="qa-label">Raporlar</span>
-                </a>
-                <a href="/menu" class="quick-action" id="qa-menu">
-                    <span class="qa-icon">🗓️</span>
-                    <span class="qa-label">Menü Yönetimi</span>
-                </a>
-                <a href="/rate" class="quick-action" id="qa-rate">
-                    <span class="qa-icon">⭐</span>
-                    <span class="qa-label">Menü Puanla</span>
-                </a>
+        <div class="container hero-layout hero-layout-simple">
+            <div class="hero-content" data-reveal>
+                <span class="eyebrow">AI Tabanlı Akıllı Yemekhane Platformu</span>
+                <h1 class="hero-title hero-title-simple">Yemek İsrafını<br><span class="gradient-text">Yapay Zekâ ile Azaltıyoruz</span></h1>
+                <p class="hero-subtitle hero-subtitle-simple">
+                    Öğrenci geri bildirimleri, makine öğrenmesi ve gerçek zamanlı analiz ile yemekhane menülerini optimize ediyor, israfı minimuma indiriyoruz.
+                </p>
+                <div class="hero-cta-row">
+                    <a href="/today-menu" class="btn btn-primary">🍽️ Günün Menüsü</a>
+                    <a href="/rate" class="btn btn-accent">⭐ Yemek Puanla</a>
+                    <a href="/chat" class="btn btn-outline">🤖 AI Asistan</a>
+                </div>
+            </div>
+
+            <aside class="hero-focus-card hero-focus-card-simple" data-reveal>
+                <h2 class="hero-focus-title">📊 Canlı İstatistikler</h2>
+                <div class="live-stats-grid">
+                    <div class="live-stat-item">
+                        <div class="live-stat-value" id="stat-ratings">—</div>
+                        <div class="live-stat-label">Toplam Puanlama</div>
+                    </div>
+                    <div class="live-stat-item">
+                        <div class="live-stat-value" id="stat-avg">—</div>
+                        <div class="live-stat-label">Ortalama Puan</div>
+                    </div>
+                    <div class="live-stat-item">
+                        <div class="live-stat-value" id="stat-meals">—</div>
+                        <div class="live-stat-label">Puanlanan Yemek</div>
+                    </div>
+                    <div class="live-stat-item">
+                        <div class="live-stat-value" id="stat-waste">—</div>
+                        <div class="live-stat-label">Tahmini İsraf</div>
+                    </div>
+                </div>
+                <div class="live-stat-footer">
+                    <span class="pulse-badge">● Canlı</span>
+                    <span class="stat-note">Veriler gerçek zamanlı güncellenir</span>
+                </div>
+            </aside>
+        </div>
+    </section>
+
+    <!-- ═══ NASIL ÇALIŞIR ═══ -->
+    <section class="container section-flow">
+        <div class="section-header" data-reveal>
+            <h2 class="section-title">Sistem Nasıl Çalışır?</h2>
+            <p class="section-desc">Yemek israfını azaltmak için 4 adımlık döngüsel süreç</p>
+        </div>
+
+        <div class="flow-steps" data-reveal>
+            <div class="flow-step">
+                <div class="flow-step-icon flow-icon-1">⭐</div>
+                <div class="flow-step-num">01</div>
+                <h3>Puanla & Yorum Yaz</h3>
+                <p>Öğrenciler yemekleri anonim olarak puanlar ve detaylı yorum bırakır</p>
+            </div>
+            <div class="flow-connector"><span>→</span></div>
+            <div class="flow-step">
+                <div class="flow-step-icon flow-icon-2">🤖</div>
+                <div class="flow-step-num">02</div>
+                <h3>AI Analiz Eder</h3>
+                <p>Makine öğrenmesi puanları, trendleri ve israf oranlarını analiz eder</p>
+            </div>
+            <div class="flow-connector"><span>→</span></div>
+            <div class="flow-step">
+                <div class="flow-step-icon flow-icon-3">📋</div>
+                <div class="flow-step-num">03</div>
+                <h3>Menü Optimize Edilir</h3>
+                <p>Düşük puanlı yemekler azaltılır, popüler yemekler sıklaştırılır</p>
+            </div>
+            <div class="flow-connector"><span>→</span></div>
+            <div class="flow-step">
+                <div class="flow-step-icon flow-icon-4">🌱</div>
+                <div class="flow-step-num">04</div>
+                <h3>İsraf Azalır</h3>
+                <p>Daha az yiyecek çöpe gider, kaynak tasarrufu sağlanır</p>
             </div>
         </div>
     </section>
 
-    <!-- ═══ DASHBOARD ═══ -->
+    <!-- ═══ BUGÜNÜN GÖRÜNÜMÜ ═══ -->
     <section class="container">
+        <div class="section-header section-header-split" data-reveal>
+            <div>
+                <h2 class="section-title section-title-left">Bugünün Görünümü</h2>
+            </div>
+            <div class="section-actions">
+                <a href="/today-menu" class="btn btn-outline">Menüyü Aç</a>
+                <a href="/report" class="btn btn-primary">Detaylı Rapor</a>
+            </div>
+        </div>
+
         <div class="dashboard-grid">
-            <!-- Bugünün Menüsü -->
-            <div class="menu-today-card" id="today-menu-card">
+            <div class="menu-today-card panel-card" id="today-menu-card" data-reveal>
                 <div class="menu-today-header">
-                    <h3>🍽️ Bugünün Menüsü</h3>
+                    <div>
+                        <span class="panel-kicker">Günlük Menü</span>
+                        <h3>Bugünün Menüsü</h3>
+                    </div>
                     <span class="date-badge" id="today-date">Yükleniyor...</span>
                 </div>
                 <div class="menu-today-body" id="menu-body">
                     <div class="menu-empty-state">
-                        <div class="empty-icon">⏳</div>
+                        <div class="empty-icon">•</div>
                         <p>Menü yükleniyor...</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Yemekhane Özet -->
-            <div class="calorie-card" id="cafeteria-summary-card">
-                <h3>📊 Bugünün Yemekhane Özeti</h3>
+            <div class="calorie-card panel-card" id="cafeteria-summary-card" data-reveal>
+                <span class="panel-kicker">İsraf Takibi</span>
+                <h3>Bugünün Özeti</h3>
                 <div class="calorie-stats" style="margin-top: 16px;">
                     <div class="calorie-stat protein">
                         <div class="val" id="sum-waste">—</div>
-                        <div class="lbl">İsraf Skoru</div>
+                        <div class="lbl">İsraf</div>
                     </div>
                     <div class="calorie-stat carb">
                         <div class="val" id="sum-rating">—</div>
-                        <div class="lbl">Ort. Puan</div>
+                        <div class="lbl">Ortalama</div>
                     </div>
                     <div class="calorie-stat fat">
                         <div class="val" id="sum-votes">—</div>
-                        <div class="lbl">Toplam Oy</div>
+                        <div class="lbl">Oy</div>
                     </div>
                 </div>
                 <div style="margin-top: 16px; text-align: center;">
-                    <span id="sum-waste-level" style="font-size: 13px; padding: 4px 14px; border-radius: 20px; background: rgba(46,134,193,.15); color: #5dade2;">Yükleniyor...</span>
+                    <span id="sum-waste-level" class="status-chip">Yükleniyor...</span>
                 </div>
             </div>
 
-            <!-- Bugünün Puanları -->
-            <div class="rating-summary-card" id="rating-summary-card">
-                <h3>⭐ Bugünün Puanları</h3>
+            <div class="rating-summary-card panel-card" id="rating-summary-card" data-reveal>
+                <div class="rating-summary-top">
+                    <div>
+                        <span class="panel-kicker">Öğrenci geri bildirimi</span>
+                        <h3>Bugünün Puanları</h3>
+                    </div>
+                    <span class="status-chip status-chip-soft">Canlı</span>
+                </div>
                 <div id="idx-ratings-body">
                     <p class="text-dim">Yükleniyor...</p>
                 </div>
-                <a href="/rate" class="btn btn-accent"
-                    style="margin-top:12px; display:inline-block; font-size:.85rem; padding:8px 20px;">Puanla →</a>
+                <a href="/rate" class="btn btn-accent rating-summary-btn">Puanlama Ekranı</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ MODÜLLER ═══ -->
+    <section class="container section-features">
+        <div class="section-header" data-reveal>
+            <h2 class="section-title">Platform Modülleri</h2>
+            <p class="section-desc">Yemek israfını azaltmak için tasarlanmış yapay zekâ destekli araçlar</p>
+        </div>
+
+        <div class="feature-grid" data-reveal>
+            <a href="/chat" class="feature-card">
+                <div class="feature-icon feature-icon-2">🤖</div>
+                <h3 class="feature-title">AI Chatbot</h3>
+                <p class="feature-desc">Menü, besin değeri ve puanlama hakkında anında yanıt veren akıllı asistan</p>
+                <span class="feature-tech">Gemini 2.0 Flash</span>
+            </a>
+            <a href="/rate" class="feature-card">
+                <div class="feature-icon feature-icon-3">⭐</div>
+                <h3 class="feature-title">Anonim Puanlama</h3>
+                <p class="feature-desc">Öğrenciler yemekleri anonim olarak puanlar, yorumlar ML modeline beslenir</p>
+                <span class="feature-tech">604+ Puanlama</span>
+            </a>
+            <a href="/admin/login" class="feature-card">
+                <div class="feature-icon feature-icon-4">📊</div>
+                <h3 class="feature-title">İsraf Analizi</h3>
+                <p class="feature-desc">Ensemble ML modeli ile yemek bazlı israf tahmini ve trend analizi</p>
+                <span class="feature-tech">RandomForest + GBR</span>
+            </a>
+            <a href="/admin/login" class="feature-card">
+                <div class="feature-icon feature-icon-5">📋</div>
+                <h3 class="feature-title">Menü Optimizasyonu</h3>
+                <p class="feature-desc">Popülerlik, beslenme dengesi ve israf verisine dayalı haftalık menü önerisi</p>
+                <span class="feature-tech">GradientBoosting</span>
+            </a>
+            <a href="/admin/login" class="feature-card">
+                <div class="feature-icon feature-icon-6">📄</div>
+                <h3 class="feature-title">PDF Raporlama</h3>
+                <p class="feature-desc">Haftalık/aylık detaylı analiz raporları otomatik oluşturma ve indirme</p>
+                <span class="feature-tech">Otomatik Rapor</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- ═══ TEKNOLOJİ ═══ -->
+    <section class="container section-tech-stack">
+        <div class="tech-strip" data-reveal>
+            <span class="tech-strip-label">Kullanılan Teknolojiler</span>
+            <div class="tech-strip-items">
+                <span class="tech-tag">FastAPI</span>
+                <span class="tech-tag">Python</span>
+                <span class="tech-tag">scikit-learn</span>
+                <span class="tech-tag">Gemini AI</span>
+                <span class="tech-tag">SQLite</span>
+                <span class="tech-tag">Chart.js</span>
+                <span class="tech-tag">React Native</span>
             </div>
         </div>
     </section>
@@ -91,7 +214,6 @@
 
 {% block scripts %}
 <script>
-    // ─── Bugünün menüsünü yükle ──────────────────────────────────
     async function loadTodayMenu() {
         const body = document.getElementById('menu-body');
         const dateBadge = document.getElementById('today-date');
@@ -102,23 +224,23 @@
                 dateBadge.textContent = `${m.gun} — ${formatDate(m.tarih)}`;
                 body.innerHTML = `
                     <div class="menu-item-row">
-                        <span class="menu-item-cat">🥣 Çorba</span>
+                        <span class="menu-item-cat">Çorba</span>
                         <span class="menu-item-name">${m.corba || '—'}</span>
                     </div>
                     <div class="menu-item-row">
-                        <span class="menu-item-cat">🍖 Ana Yemek</span>
+                        <span class="menu-item-cat">Ana Yemek</span>
                         <span class="menu-item-name">${m.ana_yemek || '—'}</span>
                     </div>
                     <div class="menu-item-row">
-                        <span class="menu-item-cat">🍚 Yan Yemek</span>
-                        <span class="menu-item-name">${m.pilav || '—'}</span>
+                        <span class="menu-item-cat">Yan Yemek</span>
+                        <span class="menu-item-name">${m.yan_yemek || '—'}</span>
                     </div>
                     <div class="menu-item-row">
-                        <span class="menu-item-cat">🍰 Tatlı</span>
+                        <span class="menu-item-cat">Tatlı</span>
                         <span class="menu-item-name">${m.tatli || '—'}</span>
                     </div>
                     <div class="menu-item-row">
-                        <span class="menu-item-cat">🥗 Salata</span>
+                        <span class="menu-item-cat">Salata / İçecek</span>
                         <span class="menu-item-name">${m.salata || '—'}</span>
                     </div>
                 `;
@@ -126,7 +248,7 @@
                 dateBadge.textContent = new Date().toLocaleDateString('tr-TR');
                 body.innerHTML = `
                     <div class="menu-empty-state">
-                        <div class="empty-icon">📋</div>
+                        <div class="empty-icon">•</div>
                         <p>${data.message || 'Bugün için menü bulunamadı.'}</p>
                     </div>`;
             }
@@ -134,37 +256,34 @@
             dateBadge.textContent = new Date().toLocaleDateString('tr-TR');
             body.innerHTML = `
                 <div class="menu-empty-state">
-                    <div class="empty-icon">⚠️</div>
+                    <div class="empty-icon">•</div>
                     <p>Menü yüklenirken hata oluştu.</p>
                 </div>`;
         }
     }
 
-    // ─── Yemekhane özet bilgilerini yükle ─────────────────────────
     async function loadCafeteriaSummary() {
         try {
-            // İsraf skoru
             const waste = await apiFetch('/api/waste/daily');
             if (waste.success) {
                 document.getElementById('sum-waste').textContent = `%${waste.genel_israf_skoru}`;
                 const seviye = waste.genel_israf_seviye || '—';
                 const badge = document.getElementById('sum-waste-level');
                 if (seviye === 'Düşük') {
-                    badge.textContent = '✅ İsraf Düşük — İyi Durumda';
-                    badge.style.background = 'rgba(72,201,176,.15)';
-                    badge.style.color = '#48c9b0';
+                    badge.textContent = '🌱 İsraf düşük';
+                    badge.style.background = 'rgba(50, 185, 131, .16)';
+                    badge.style.color = '#79efc4';
                 } else if (seviye === 'Yüksek') {
-                    badge.textContent = '🔴 İsraf Yüksek — Dikkat!';
-                    badge.style.background = 'rgba(231,76,60,.15)';
-                    badge.style.color = '#e74c3c';
+                    badge.textContent = '⚠️ İsraf yüksek';
+                    badge.style.background = 'rgba(255, 107, 107, .16)';
+                    badge.style.color = '#ffb2a6';
                 } else {
-                    badge.textContent = '🟠 İsraf Orta Seviyede';
-                    badge.style.background = 'rgba(243,156,18,.15)';
-                    badge.style.color = '#f39c12';
+                    badge.textContent = '📊 İsraf orta';
+                    badge.style.background = 'rgba(255, 189, 89, .16)';
+                    badge.style.color = '#ffd792';
                 }
             }
 
-            // Puanlardan ortalama hesapla
             const ratings = await apiFetch('/api/ratings/today');
             if (ratings.success && ratings.data) {
                 const entries = Object.values(ratings.data);
@@ -179,17 +298,15 @@
                 }
             }
         } catch (e) {
-            // Quietly fail
         }
     }
 
-    // ─── Bugünün puanlarını yükle ─────────────────────────────────
     async function loadIndexRatings() {
         try {
             const data = await apiFetch('/api/ratings/today');
             const body = document.getElementById('idx-ratings-body');
             if (!data.success || Object.keys(data.data).length === 0) {
-                body.innerHTML = '<p class="text-dim">Henüz puanlama yok.</p>';
+                body.innerHTML = '<p class="text-dim">Henüz puanlama kaydı yok.</p>';
                 return;
             }
             let html = '';
@@ -202,13 +319,69 @@
                 </div>`;
             }
             body.innerHTML = html;
-        } catch (e) { }
+        } catch (e) {
+        }
+    }
+
+    /* ─── Canlı İstatistikler ─── */
+    async function loadLiveStats() {
+        try {
+            const [wasteData, ratingsData] = await Promise.all([
+                apiFetch('/api/waste/daily'),
+                apiFetch('/api/ratings/today')
+            ]);
+
+            // Toplam puanlama
+            if (ratingsData.success && ratingsData.data) {
+                const entries = Object.values(ratingsData.data);
+                const toplamOy = entries.reduce((s, e) => s + (e.toplam_oy || 0), 0);
+                const ortPuan = entries.length > 0
+                    ? (entries.reduce((s, e) => s + (e.ortalama || 0), 0) / entries.length)
+                    : 0;
+                animateCounter('stat-ratings', toplamOy, '', 0);
+                animateCounter('stat-avg', ortPuan, '/5', 1);
+                document.getElementById('stat-meals').textContent = entries.length;
+            }
+
+            // İsraf
+            if (wasteData.success) {
+                document.getElementById('stat-waste').textContent = `%${wasteData.genel_israf_skoru || '—'}`;
+            }
+        } catch (e) {
+            // Sessiz hata
+        }
+    }
+
+    function animateCounter(id, target, suffix, decimals) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const duration = 1200;
+        const start = performance.now();
+        const startVal = 0;
+
+        function update(now) {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const current = startVal + (target - startVal) * eased;
+            el.textContent = current.toFixed(decimals) + suffix;
+            if (progress < 1) requestAnimationFrame(update);
+        }
+        requestAnimationFrame(update);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         loadTodayMenu();
         loadCafeteriaSummary();
         loadIndexRatings();
+        loadLiveStats();
+
+        // Her 30 saniyede canlı güncelleme
+        setInterval(() => {
+            loadLiveStats();
+            loadCafeteriaSummary();
+            loadIndexRatings();
+        }, 30000);
     });
 </script>
 {% endblock %}

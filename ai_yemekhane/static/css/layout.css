@@ -1,0 +1,994 @@
+/* Forge UI
+   A reversible, high-contrast visual layer for the Smart Cafeteria web app. */
+
+:root {
+    --forge-bg: #070a0f;
+    --forge-bg-2: #0b111a;
+    --forge-panel: rgba(15, 23, 34, .86);
+    --forge-panel-solid: #111a26;
+    --forge-panel-2: #172231;
+    --forge-line: rgba(225, 236, 255, .12);
+    --forge-line-strong: rgba(255, 255, 255, .22);
+    --forge-text: #f7f1e8;
+    --forge-muted: #b9c3d0;
+    --forge-soft: #8793a4;
+    --forge-amber: #f5b84b;
+    --forge-ember: #ef6a3a;
+    --forge-green: #35d08f;
+    --forge-cyan: #54d8ff;
+    --forge-violet: #a78bfa;
+    --forge-red: #ff5d6c;
+    --forge-shadow: 0 22px 70px rgba(0, 0, 0, .48);
+    --forge-shadow-soft: 0 16px 42px rgba(0, 0, 0, .28);
+    --forge-x: 50%;
+    --forge-y: 20%;
+
+    --clr-bg: var(--forge-bg);
+    --clr-surface: var(--forge-panel-solid);
+    --clr-surface-2: var(--forge-panel-2);
+    --clr-primary: var(--forge-amber);
+    --clr-primary-d: #d88d23;
+    --clr-primary-l: #ffd98c;
+    --clr-accent: var(--forge-green);
+    --clr-accent-2: var(--forge-ember);
+    --clr-light: var(--forge-text);
+    --clr-light-2: #d7e3f4;
+    --clr-text: var(--forge-text);
+    --clr-text-dim: var(--forge-muted);
+    --clr-border: var(--forge-line);
+    --shadow-sm: 0 8px 22px rgba(0, 0, 0, .24);
+    --shadow-md: var(--forge-shadow-soft);
+    --shadow-lg: var(--forge-shadow);
+    --shadow-glow: 0 0 34px rgba(245, 184, 75, .18);
+    --radius-sm: 8px;
+    --radius-md: 8px;
+    --radius-lg: 8px;
+    --radius-xl: 8px;
+}
+
+html {
+    background: var(--forge-bg);
+}
+
+body.ui-forge {
+    min-height: 100vh;
+    color: var(--forge-text);
+    background:
+        linear-gradient(180deg, rgba(7, 10, 15, .88), rgba(7, 10, 15, .98)),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, .035) 0 1px, transparent 1px 72px),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, .026) 0 1px, transparent 1px 72px),
+        linear-gradient(135deg, #111a26 0%, #070a0f 48%, #15100b 100%);
+    font-family: Manrope, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: 0;
+    overflow-x: hidden;
+}
+
+body.ui-forge::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(115deg, transparent 0 38%, rgba(245, 184, 75, .07) 38.2% 38.8%, transparent 39% 100%),
+        linear-gradient(245deg, transparent 0 48%, rgba(53, 208, 143, .055) 48.2% 48.8%, transparent 49% 100%),
+        radial-gradient(circle at var(--forge-x) var(--forge-y), rgba(245, 184, 75, .12), transparent 18rem);
+    opacity: .9;
+}
+
+body.ui-forge::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: .18;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, .08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, .08) 1px, transparent 1px);
+    background-size: 24px 24px;
+    mask-image: linear-gradient(180deg, rgba(0,0,0,.8), rgba(0,0,0,.08));
+}
+
+.ui-forge *,
+.ui-forge *::before,
+.ui-forge *::after {
+    letter-spacing: 0 !important;
+}
+
+.ui-forge .site-main,
+.ui-forge .navbar,
+.ui-forge .footer {
+    position: relative;
+    z-index: 2;
+}
+
+.ui-forge .site-aurora,
+.ui-forge .site-grid,
+.ui-forge #particles-canvas,
+.ui-forge #pm-cursor-glow,
+.ui-forge .aur-cursor-blob {
+    display: none !important;
+}
+
+.ui-forge .container,
+.ui-forge .nav-container {
+    max-width: 1260px;
+}
+
+.ui-forge .site-main {
+    padding-top: 84px;
+}
+
+.ui-forge .page-wrapper {
+    padding: 34px 0 76px !important;
+}
+
+/* Navigation */
+.ui-forge .navbar {
+    top: 14px;
+    left: 20px;
+    right: 20px;
+    border: 1px solid var(--forge-line) !important;
+    border-bottom-color: var(--forge-line-strong) !important;
+    border-radius: 8px;
+    background: rgba(8, 13, 20, .76) !important;
+    box-shadow: var(--forge-shadow-soft), inset 0 1px 0 rgba(255,255,255,.08) !important;
+    backdrop-filter: blur(22px) saturate(1.45) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(1.45) !important;
+    padding: 0 18px !important;
+}
+
+.ui-forge .navbar::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(90deg, var(--forge-amber), var(--forge-green), var(--forge-cyan), transparent 72%);
+    height: 2px;
+}
+
+.ui-forge .nav-container {
+    height: 64px;
+    gap: 18px;
+}
+
+.ui-forge .nav-logo {
+    color: var(--forge-text);
+    gap: 12px;
+    min-width: max-content;
+}
+
+.ui-forge .logo-mark {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    color: #120f09;
+    background: url('/static/img/logo.svg') center / cover no-repeat !important;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.18), 0 14px 34px rgba(245,184,75,.24);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 44px;
+    overflow: hidden;
+}
+
+.ui-forge .logo-mark::before {
+    display: none !important;
+}
+
+.ui-forge .logo-mark::after {
+    display: none !important;
+}
+
+.ui-forge .logo-text,
+.ui-forge .navbar-admin .logo-text {
+    color: var(--forge-text) !important;
+    background: none !important;
+    -webkit-text-fill-color: currentColor !important;
+    font-weight: 900;
+}
+
+.ui-forge .nav-status {
+    color: var(--forge-green) !important;
+    background: rgba(53, 208, 143, .10) !important;
+    border: 1px solid rgba(53, 208, 143, .32) !important;
+    border-radius: 999px !important;
+    box-shadow: none !important;
+    font-size: .72rem !important;
+    padding: 5px 10px !important;
+    text-transform: uppercase !important;
+}
+
+.ui-forge .nav-status-admin {
+    color: var(--forge-amber) !important;
+    background: rgba(245, 184, 75, .10) !important;
+    border-color: rgba(245, 184, 75, .32) !important;
+}
+
+.ui-forge .nav-links {
+    margin-left: auto;
+    gap: 3px;
+}
+
+.ui-forge .nav-links a {
+    color: var(--forge-muted) !important;
+    border: 1px solid transparent;
+    border-radius: 8px !important;
+    font-size: .84rem;
+    font-weight: 800;
+    padding: 9px 11px !important;
+    text-shadow: none;
+}
+
+.ui-forge .nav-links a::after {
+    display: none !important;
+}
+
+.ui-forge .nav-links a:hover,
+.ui-forge .nav-links a.active {
+    color: var(--forge-text) !important;
+    background: rgba(255, 255, 255, .07) !important;
+    border-color: rgba(255, 255, 255, .12);
+    box-shadow: inset 0 0 0 1px rgba(245,184,75,.08) !important;
+    transform: none !important;
+}
+
+.ui-forge .nav-btn,
+.ui-forge .nav-btn-logout {
+    color: #16100a !important;
+    background: linear-gradient(135deg, var(--forge-amber), #ff8d4d) !important;
+    border-color: rgba(255, 222, 156, .44) !important;
+    box-shadow: 0 10px 24px rgba(245, 184, 75, .25) !important;
+}
+
+.ui-forge .nav-btn-logout {
+    color: #fff !important;
+    background: linear-gradient(135deg, var(--forge-red), #b91c1c) !important;
+}
+
+/* Typography */
+.ui-forge .hero-title,
+.ui-forge .section-title,
+.ui-forge .page-title,
+.ui-forge .hero-title h1,
+.ui-forge .hero-title .gradient-text,
+.ui-forge .gradient-text,
+.ui-forge .stat-value,
+.ui-forge .metric-value,
+.ui-forge .live-stat-value {
+    background: none !important;
+    -webkit-text-fill-color: currentColor !important;
+    animation: none !important;
+}
+
+.ui-forge .hero-title {
+    max-width: 13ch;
+    color: var(--forge-text) !important;
+    font-family: Sora, Manrope, sans-serif;
+    font-size: clamp(3rem, 5.6vw, 4.85rem) !important;
+    line-height: .98 !important;
+    font-weight: 900;
+    text-wrap: balance;
+}
+
+.ui-forge .gradient-text {
+    color: var(--forge-amber) !important;
+}
+
+.ui-forge .hero-subtitle,
+.ui-forge .section-desc {
+    color: var(--forge-muted) !important;
+    line-height: 1.78;
+}
+
+.ui-forge .hero-subtitle {
+    max-width: 56ch;
+    font-size: 1.05rem;
+}
+
+.ui-forge .section-title {
+    color: var(--forge-text) !important;
+    font-family: Sora, Manrope, sans-serif;
+    font-size: clamp(1.65rem, 3vw, 2.35rem) !important;
+    font-weight: 900;
+}
+
+.ui-forge .section-header {
+    margin-bottom: 28px;
+}
+
+.ui-forge .section-header::after {
+    background: linear-gradient(90deg, var(--forge-amber), var(--forge-green), transparent) !important;
+    opacity: .9 !important;
+}
+
+.ui-forge .eyebrow,
+.ui-forge .panel-kicker,
+.ui-forge .tech-strip-label,
+.ui-forge .stat-label,
+.ui-forge .live-stat-label,
+.ui-forge .ns-label {
+    color: var(--forge-amber) !important;
+    text-transform: uppercase !important;
+    font-weight: 900;
+}
+
+.ui-forge .eyebrow {
+    padding: 7px 11px !important;
+    color: var(--forge-green) !important;
+    background: rgba(53, 208, 143, .08) !important;
+    border: 1px solid rgba(53, 208, 143, .18) !important;
+    border-radius: 8px;
+}
+
+.ui-forge .eyebrow::before {
+    background: var(--forge-green);
+    animation: none !important;
+}
+
+/* Hero */
+.ui-forge .hero-banner,
+.ui-forge .hero,
+.ui-forge .page-hero {
+    position: relative;
+    overflow: hidden;
+    margin-top: -34px;
+    padding: 94px 0 62px;
+    background:
+        linear-gradient(135deg, rgba(17, 26, 38, .96), rgba(8, 12, 18, .88) 54%, rgba(28, 17, 10, .92)),
+        repeating-linear-gradient(135deg, rgba(255,255,255,.045) 0 1px, transparent 1px 18px);
+    border-bottom: 1px solid rgba(245, 184, 75, .18);
+}
+
+.ui-forge .hero-banner::before,
+.ui-forge .hero::before,
+.ui-forge .page-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: block !important;
+    background:
+        linear-gradient(90deg, rgba(245,184,75,.28), transparent 24% 76%, rgba(53,208,143,.18)),
+        linear-gradient(120deg, transparent 0 64%, rgba(255,255,255,.06) 64.2% 65%, transparent 65.2%);
+    mask-image: linear-gradient(180deg, rgba(0,0,0,.92), transparent 86%);
+}
+
+.ui-forge .hero-banner::after,
+.ui-forge .hero::after,
+.ui-forge .page-hero::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 5px;
+    display: block !important;
+    background: linear-gradient(90deg, var(--forge-amber), var(--forge-green), var(--forge-cyan), var(--forge-ember));
+}
+
+.ui-forge .hero-layout-simple {
+    grid-template-columns: minmax(0, 1.12fr) minmax(360px, .78fr);
+    align-items: center;
+    gap: 48px;
+}
+
+.ui-forge .hero-content {
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+}
+
+.ui-forge .hero-content::after {
+    display: none !important;
+}
+
+.ui-forge .hero-content > * {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+}
+
+.ui-forge .hero-cta-row {
+    gap: 12px;
+    margin-top: 28px;
+}
+
+.ui-forge .hero-focus-card {
+    position: relative;
+    padding: 28px !important;
+    background:
+        linear-gradient(180deg, rgba(22, 32, 46, .92), rgba(9, 14, 22, .92)) !important;
+    border: 1px solid rgba(255, 255, 255, .14) !important;
+    border-radius: 8px !important;
+    box-shadow: var(--forge-shadow) !important;
+    overflow: hidden;
+    animation: none !important;
+}
+
+.ui-forge .hero-focus-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(90deg, rgba(245,184,75,.20), transparent 34%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 18px);
+}
+
+.ui-forge .hero-focus-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+.ui-forge .hero-focus-title {
+    color: var(--forge-text);
+}
+
+/* Cards */
+.ui-forge .card,
+.ui-forge .panel-card,
+.ui-forge .chart-card,
+.ui-forge .summary-card,
+.ui-forge .stat-card,
+.ui-forge .admin-stat-card,
+.ui-forge .feature-card,
+.ui-forge .menu-today-card,
+.ui-forge .calorie-card,
+.ui-forge .rating-summary-card,
+.ui-forge .quick-action-card,
+.ui-forge .menu-table-wrapper,
+.ui-forge .upload-zone,
+.ui-forge .preview-container,
+.ui-forge .result-panel,
+.ui-forge .chat-wrapper,
+.ui-forge .tech-strip {
+    position: relative;
+    color: var(--forge-text) !important;
+    background:
+        linear-gradient(180deg, rgba(22, 32, 46, .86), rgba(12, 18, 28, .92)) !important;
+    border: 1px solid var(--forge-line) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 18px 48px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.05) !important;
+    backdrop-filter: blur(18px) saturate(1.18) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.18) !important;
+}
+
+.ui-forge .card::before,
+.ui-forge .panel-card::before,
+.ui-forge .chart-card::before,
+.ui-forge .summary-card::before,
+.ui-forge .stat-card::before,
+.ui-forge .admin-stat-card::before,
+.ui-forge .feature-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 2px;
+    border-radius: 8px 8px 0 0;
+    background: linear-gradient(90deg, var(--forge-amber), var(--forge-green), var(--forge-cyan));
+    opacity: .84;
+}
+
+.ui-forge .card:hover,
+.ui-forge .panel-card:hover,
+.ui-forge .chart-card:hover,
+.ui-forge .summary-card:hover,
+.ui-forge .stat-card:hover,
+.ui-forge .admin-stat-card:hover,
+.ui-forge .feature-card:hover,
+.ui-forge .quick-action-card:hover {
+    transform: translateY(-4px) !important;
+    border-color: rgba(245, 184, 75, .34) !important;
+    box-shadow: 0 26px 72px rgba(0,0,0,.46), 0 0 0 1px rgba(245,184,75,.08) !important;
+}
+
+.ui-forge .forge-corner {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    width: 18px;
+    height: 18px;
+    border-top: 1px solid rgba(245,184,75,.55);
+    border-right: 1px solid rgba(53,208,143,.48);
+    pointer-events: none;
+}
+
+.ui-forge .dashboard-grid,
+.ui-forge .feature-grid,
+.ui-forge .report-grid,
+.ui-forge .admin-summary-grid,
+.ui-forge .stats-grid,
+.ui-forge .grid-4 {
+    gap: 18px;
+}
+
+.ui-forge .live-stats-grid {
+    gap: 12px;
+}
+
+.ui-forge .live-stat-item,
+.ui-forge .nutrition-summary-item,
+.ui-forge .hero-quick-item,
+.ui-forge .menu-item-icon,
+.ui-forge .flow-step-icon,
+.ui-forge .calorie-stat,
+.ui-forge .top-food-rank {
+    color: var(--forge-text);
+    background: rgba(255, 255, 255, .045) !important;
+    border: 1px solid rgba(255, 255, 255, .10) !important;
+    border-radius: 8px !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.ui-forge .live-stat-value,
+.ui-forge .stat-value,
+.ui-forge .ns-value,
+.ui-forge .val,
+.ui-forge .ring-value {
+    color: var(--forge-amber) !important;
+    font-weight: 900;
+    text-shadow: 0 0 20px rgba(245,184,75,.18);
+}
+
+.ui-forge .live-stat-label,
+.ui-forge .stat-label,
+.ui-forge .lbl,
+.ui-forge .ring-label,
+.ui-forge .ns-label {
+    color: var(--forge-muted) !important;
+}
+
+.ui-forge .status-chip,
+.ui-forge .tech-tag,
+.ui-forge .ai-badge,
+.ui-forge .date-badge,
+.ui-forge .pulse-badge,
+.ui-forge .feature-tech,
+.ui-forge .confidence-badge,
+.ui-forge .mini-cal {
+    color: var(--forge-green) !important;
+    background: rgba(53, 208, 143, .10) !important;
+    border: 1px solid rgba(53, 208, 143, .28) !important;
+    border-radius: 999px !important;
+    box-shadow: none !important;
+    animation: none !important;
+    text-transform: uppercase !important;
+    font-weight: 900;
+}
+
+.ui-forge .status-chip-soft {
+    color: var(--forge-amber) !important;
+    background: rgba(245, 184, 75, .11) !important;
+    border-color: rgba(245, 184, 75, .30) !important;
+}
+
+/* Buttons */
+.ui-forge .btn,
+.ui-forge .send-btn,
+.ui-forge button[type="submit"] {
+    border-radius: 8px !important;
+    min-height: 44px;
+    color: var(--forge-text);
+    font-weight: 900;
+    box-shadow: none;
+    transform: none;
+}
+
+.ui-forge .btn::before {
+    background: linear-gradient(110deg, transparent 25%, rgba(255,255,255,.22) 50%, transparent 75%) !important;
+}
+
+.ui-forge .btn-primary,
+.ui-forge .send-btn {
+    color: #171109 !important;
+    background: linear-gradient(135deg, var(--forge-amber), #ff8d4d) !important;
+    border: 1px solid rgba(255, 221, 155, .55) !important;
+    box-shadow: 0 14px 32px rgba(245,184,75,.22) !important;
+}
+
+.ui-forge .btn-accent {
+    color: #06120d !important;
+    background: linear-gradient(135deg, var(--forge-green), #6be6bd) !important;
+    border: 1px solid rgba(128, 255, 210, .42) !important;
+    box-shadow: 0 14px 32px rgba(53,208,143,.18) !important;
+}
+
+.ui-forge .btn-outline {
+    color: var(--forge-text) !important;
+    background: rgba(255, 255, 255, .055) !important;
+    border: 1px solid rgba(255,255,255,.18) !important;
+}
+
+.ui-forge .btn:hover,
+.ui-forge .send-btn:hover {
+    transform: translateY(-2px) !important;
+    filter: brightness(1.05);
+}
+
+/* Flow and features */
+.ui-forge .section-flow,
+.ui-forge .section-features,
+.ui-forge .section-tech-stack {
+    padding-top: 56px;
+}
+
+.ui-forge .flow-steps {
+    align-items: stretch;
+    justify-content: space-between;
+    background:
+        linear-gradient(180deg, rgba(18, 27, 40, .92), rgba(10, 16, 25, .92)) !important;
+    border: 1px solid var(--forge-line);
+    border-radius: 8px;
+    padding: 14px;
+    box-shadow: var(--forge-shadow-soft);
+}
+
+.ui-forge .flow-step {
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 20px 16px;
+}
+
+.ui-forge .flow-step:hover {
+    background: rgba(255,255,255,.045);
+    border-color: rgba(245,184,75,.18);
+    transform: translateY(-3px) !important;
+    box-shadow: none !important;
+}
+
+.ui-forge .flow-step-num {
+    background: rgba(245,184,75,.12) !important;
+    color: var(--forge-amber) !important;
+}
+
+.ui-forge .flow-connector {
+    color: var(--forge-amber);
+    opacity: .56;
+}
+
+.ui-forge .feature-card {
+    min-height: 232px;
+    overflow: hidden;
+}
+
+.ui-forge .feature-icon {
+    color: var(--forge-text);
+    background:
+        linear-gradient(135deg, rgba(245,184,75,.18), rgba(53,208,143,.10)) !important;
+    border: 1px solid rgba(255,255,255,.14) !important;
+    border-radius: 8px;
+}
+
+.ui-forge .feature-title,
+.ui-forge .chart-card h3,
+.ui-forge .summary-card h3,
+.ui-forge .panel-card h3,
+.ui-forge .chat-header-info h3,
+.ui-forge .result-food-name {
+    color: var(--forge-text) !important;
+}
+
+.ui-forge .feature-desc,
+.ui-forge .text-dim,
+.ui-forge .stat-note,
+.ui-forge .menu-empty-state,
+.ui-forge .weekly-day-meals,
+.ui-forge .summary-item span:first-child {
+    color: var(--forge-muted) !important;
+}
+
+/* Recognition */
+.ui-forge .upload-zone {
+    border-style: dashed !important;
+    padding: 46px 28px;
+}
+
+.ui-forge .upload-zone.dragover {
+    background: rgba(53,208,143,.08) !important;
+    border-color: rgba(53,208,143,.52) !important;
+}
+
+.ui-forge .upload-icon-inner,
+.ui-forge .chat-header-avatar,
+.ui-forge .msg-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--forge-amber);
+    background: rgba(245,184,75,.10);
+    border: 1px solid rgba(245,184,75,.25);
+    border-radius: 8px;
+}
+
+.ui-forge .upload-pulse-ring {
+    border-color: rgba(245,184,75,.36);
+}
+
+.ui-forge .ring-circle {
+    background: rgba(255,255,255,.045) !important;
+    border: 1px solid rgba(255,255,255,.12) !important;
+}
+
+.ui-forge .result-main-header {
+    border-bottom: 1px solid var(--forge-line);
+}
+
+/* Chat */
+.ui-forge .chat-wrapper {
+    overflow: hidden;
+}
+
+.ui-forge .chat-header,
+.ui-forge .chat-input-bar {
+    background: rgba(10,16,25,.92) !important;
+    border-color: var(--forge-line) !important;
+}
+
+.ui-forge .chat-messages {
+    background:
+        linear-gradient(180deg, rgba(7,10,15,.78), rgba(11,17,26,.92)),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0 1px, transparent 1px 42px) !important;
+}
+
+.ui-forge .msg-bubble {
+    color: var(--forge-text) !important;
+    background: rgba(19, 29, 43, .90) !important;
+    border: 1px solid rgba(255,255,255,.12) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,.24);
+}
+
+.ui-forge .message.user .msg-bubble {
+    color: #0c120f !important;
+    background: linear-gradient(135deg, var(--forge-green), #9af0cc) !important;
+    border-color: rgba(157,255,214,.35) !important;
+}
+
+.ui-forge .chat-suggestions button {
+    color: var(--forge-text) !important;
+    background: rgba(255,255,255,.055) !important;
+    border: 1px solid rgba(255,255,255,.13) !important;
+    border-radius: 8px !important;
+}
+
+.ui-forge .chat-suggestions button:hover {
+    color: #171109 !important;
+    background: var(--forge-amber) !important;
+}
+
+/* Tables and forms */
+.ui-forge table,
+.ui-forge .data-table {
+    color: var(--forge-text);
+}
+
+.ui-forge .data-table thead,
+.ui-forge table thead {
+    background: rgba(255,255,255,.06) !important;
+}
+
+.ui-forge .data-table th,
+.ui-forge table th {
+    color: var(--forge-amber) !important;
+    text-transform: uppercase !important;
+    font-weight: 900;
+}
+
+.ui-forge .data-table td,
+.ui-forge table td {
+    color: var(--forge-text);
+    border-color: var(--forge-line) !important;
+}
+
+.ui-forge table tbody tr:hover,
+.ui-forge .data-table tbody tr:hover {
+    background: rgba(245,184,75,.06) !important;
+}
+
+.ui-forge input:not([type="checkbox"]):not([type="radio"]),
+.ui-forge select,
+.ui-forge textarea {
+    color: var(--forge-text) !important;
+    background: rgba(255,255,255,.055) !important;
+    border: 1px solid rgba(255,255,255,.16) !important;
+    border-radius: 8px !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.035) !important;
+}
+
+.ui-forge input::placeholder,
+.ui-forge textarea::placeholder {
+    color: rgba(247,241,232,.48) !important;
+}
+
+.ui-forge input:focus,
+.ui-forge select:focus,
+.ui-forge textarea:focus {
+    border-color: rgba(245,184,75,.66) !important;
+    box-shadow: 0 0 0 4px rgba(245,184,75,.13), inset 0 1px 0 rgba(255,255,255,.04) !important;
+    outline: none !important;
+}
+
+.ui-forge select option {
+    color: var(--forge-text) !important;
+    background: #101722 !important;
+}
+
+.ui-forge label {
+    color: var(--forge-text) !important;
+}
+
+/* Alerts/footer */
+.ui-forge .alert-item,
+.ui-forge .toast,
+.ui-forge .notification,
+.ui-forge .alert-float {
+    color: var(--forge-text) !important;
+    background: rgba(18, 27, 40, .95) !important;
+    border: 1px solid var(--forge-line) !important;
+    border-radius: 8px !important;
+    box-shadow: var(--forge-shadow-soft) !important;
+}
+
+.ui-forge .footer {
+    color: var(--forge-muted);
+    background: transparent !important;
+    border-top: 1px solid var(--forge-line);
+    padding: 28px 0 42px !important;
+}
+
+.ui-forge .footer .container {
+    border: 0 !important;
+}
+
+.ui-forge .footer p {
+    color: var(--forge-muted) !important;
+}
+
+.ui-forge .footer-tech {
+    color: var(--forge-soft) !important;
+}
+
+@media (max-width: 1120px) {
+    .ui-forge .nav-meta {
+        display: none;
+    }
+
+    .ui-forge .nav-links a {
+        padding: 8px 8px !important;
+        font-size: .78rem;
+    }
+}
+
+@media (max-width: 900px) {
+    .ui-forge .hero-layout-simple {
+        grid-template-columns: 1fr;
+    }
+
+    .ui-forge .hero-title {
+        max-width: 12ch;
+    }
+}
+
+@media (max-width: 768px) {
+    .ui-forge .navbar {
+        top: 10px;
+        left: 12px;
+        right: 12px;
+        padding: 0 12px !important;
+    }
+
+    .ui-forge .nav-container {
+        height: 58px;
+    }
+
+    .ui-forge .site-main {
+        padding-top: 78px;
+    }
+
+    .ui-forge .hamburger {
+        display: flex;
+        background: rgba(255,255,255,.06);
+        border: 1px solid var(--forge-line);
+        border-radius: 8px;
+    }
+
+    .ui-forge .hamburger span {
+        background: var(--forge-text);
+    }
+
+    .ui-forge .nav-links {
+        top: 74px;
+        left: 12px;
+        right: 12px;
+        padding: 10px;
+        background: rgba(9, 14, 22, .98) !important;
+        border: 1px solid var(--forge-line);
+        border-radius: 8px;
+        box-shadow: var(--forge-shadow);
+    }
+
+    .ui-forge .nav-links a {
+        width: 100%;
+        padding: 12px 14px !important;
+        font-size: .94rem !important;
+    }
+
+    .ui-forge .page-wrapper {
+        padding: 28px 0 52px !important;
+    }
+
+    .ui-forge .hero-banner,
+    .ui-forge .hero,
+    .ui-forge .page-hero {
+        margin-top: -28px;
+        padding: 58px 0 44px;
+    }
+
+    .ui-forge .hero-title {
+        max-width: 11ch;
+        font-size: clamp(2.24rem, 12vw, 3rem) !important;
+    }
+
+    .ui-forge .hero-subtitle {
+        font-size: .98rem;
+    }
+
+    .ui-forge .dashboard-grid,
+    .ui-forge .feature-grid,
+    .ui-forge .report-grid,
+    .ui-forge .admin-summary-grid,
+    .ui-forge .grid-4,
+    .ui-forge .nutrition-summary-grid,
+    .ui-forge .nutrition-ring-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .ui-forge .live-stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .ui-forge .flow-steps {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .ui-forge .flow-connector {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .ui-forge .container {
+        padding: 0 14px;
+    }
+
+    .ui-forge .logo-text {
+        font-size: .88rem;
+    }
+
+    .ui-forge .hero-cta-row .btn,
+    .ui-forge .section-actions .btn,
+    .ui-forge .upload-actions .btn {
+        width: 100%;
+    }
+
+    .ui-forge .live-stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ui-forge *,
+    .ui-forge *::before,
+    .ui-forge *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}

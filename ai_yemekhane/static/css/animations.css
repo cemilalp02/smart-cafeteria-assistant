@@ -1,0 +1,685 @@
+/* ═══════════════════════════════════════════════════════════════════
+   PREMIUM UI v3 — Animasyonlu, 3D, Profesyonel
+   Kaldırmak: base.html + base_admin.html'den link sil + bu dosyayı sil
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── KEYFRAMES ──────────────────────────────────────────────────── */
+@keyframes pm-gradient-shift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes pm-float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+}
+
+@keyframes pm-glow-pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(99,102,241,.15), 0 0 60px rgba(99,102,241,.05); }
+    50%      { box-shadow: 0 0 30px rgba(99,102,241,.25), 0 0 80px rgba(99,102,241,.1); }
+}
+
+@keyframes pm-slide-up {
+    from { opacity: 0; transform: translateY(40px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pm-slide-left {
+    from { opacity: 0; transform: translateX(30px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pm-scale-in {
+    from { opacity: 0; transform: scale(.92); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pm-border-glow {
+    0%, 100% { border-color: rgba(99,102,241,.15); }
+    50%      { border-color: rgba(99,102,241,.35); }
+}
+
+@keyframes pm-text-shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position: 200% center; }
+}
+
+@keyframes pm-spin-slow {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+@keyframes pm-orbit {
+    from { transform: rotate(0deg) translateX(120px) rotate(0deg); }
+    to   { transform: rotate(360deg) translateX(120px) rotate(-360deg); }
+}
+
+@keyframes pm-mesh-move {
+    0%   { transform: translate(0, 0) scale(1); }
+    33%  { transform: translate(30px, -40px) scale(1.1); }
+    66%  { transform: translate(-20px, 20px) scale(.95); }
+    100% { transform: translate(0, 0) scale(1); }
+}
+
+/* ─── 1. ANİME ARKA PLAN — Hareketli Mesh Gradient ─────────────── */
+.site-aurora-left {
+    background: radial-gradient(
+        ellipse at 20% 40%,
+        rgba(99,102,241,.45) 0%,
+        rgba(59,130,246,.15) 45%,
+        transparent 70%
+    ) !important;
+    animation: pm-mesh-move 20s ease-in-out infinite !important;
+    opacity: .14 !important;
+    filter: blur(80px) !important;
+}
+
+.site-aurora-right {
+    background: radial-gradient(
+        ellipse at 80% 30%,
+        rgba(16,185,129,.4) 0%,
+        rgba(6,182,212,.12) 45%,
+        transparent 70%
+    ) !important;
+    animation: pm-mesh-move 25s ease-in-out infinite reverse !important;
+    opacity: .12 !important;
+    filter: blur(80px) !important;
+}
+
+.site-grid {
+    opacity: .015 !important;
+    background-size: 80px 80px !important;
+}
+
+
+/* ─── 2. NAVBAR — Cam Efekti + Animasyon ─────────────────────────── */
+.navbar {
+    backdrop-filter: blur(24px) saturate(1.8) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(1.8) !important;
+    background: rgba(8, 17, 29, .5) !important;
+    border: 1px solid rgba(132, 190, 255, .1) !important;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, .25),
+        inset 0 1px 0 rgba(255, 255, 255, .06) !important;
+    transition: all .5s cubic-bezier(.22, 1, .36, 1) !important;
+}
+
+.navbar.nav-scrolled {
+    background: rgba(8, 17, 29, .82) !important;
+    box-shadow:
+        0 16px 48px rgba(0, 0, 0, .35),
+        inset 0 1px 0 rgba(255, 255, 255, .04) !important;
+}
+
+.nav-links a {
+    transition: all .3s cubic-bezier(.22, 1, .36, 1) !important;
+    position: relative;
+}
+
+.nav-links a:hover {
+    transform: translateY(-2px);
+    color: #fff !important;
+}
+
+.nav-links a.active {
+    background: linear-gradient(135deg, rgba(99,102,241,.15), rgba(139,92,246,.1)) !important;
+    box-shadow: inset 0 0 0 1px rgba(99,102,241,.2), 0 0 24px rgba(99,102,241,.08) !important;
+}
+
+/* Navbar buton hover glow */
+.nav-btn {
+    box-shadow:
+        0 4px 16px rgba(47, 128, 237, .35),
+        inset 0 1px 0 rgba(255, 255, 255, .15) !important;
+    transition: all .3s ease !important;
+}
+.nav-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 28px rgba(47, 128, 237, .5), inset 0 1px 0 rgba(255, 255, 255, .2) !important;
+}
+
+.nav-btn-logout {
+    box-shadow: 0 4px 16px rgba(255, 107, 107, .3), inset 0 1px 0 rgba(255, 255, 255, .12) !important;
+}
+.nav-btn-logout:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 28px rgba(255, 107, 107, .45), inset 0 1px 0 rgba(255, 255, 255, .15) !important;
+}
+
+/* Admin navbar full-width */
+.navbar-admin {
+    max-width: none !important;
+    left: 8px !important;
+    right: 8px !important;
+}
+.navbar-admin .nav-container {
+    max-width: none !important;
+}
+.navbar-admin .nav-links { gap: 2px !important; }
+.navbar-admin .nav-links a { padding: 9px 9px !important; font-size: .74rem !important; }
+.navbar-admin .nav-btn-logout { padding: 8px 14px !important; }
+
+
+/* ─── 3. ANIMATED GRADIENT TEXT ──────────────────────────────────── */
+.section-title,
+.hero-title .gradient-text {
+    background: linear-gradient(
+        90deg,
+        #60a5fa 0%, #a78bfa 25%, #34d399 50%, #a78bfa 75%, #60a5fa 100%
+    ) !important;
+    background-size: 200% auto !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    animation: pm-text-shimmer 6s linear infinite;
+}
+
+.hero-title {
+    -webkit-text-fill-color: unset !important;
+}
+
+.stat-value {
+    background: linear-gradient(
+        135deg, #60a5fa 0%, #c084fc 40%, #34d399 100%
+    ) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+}
+
+
+/* ─── 4. KARTLAR — 3D Hover + Glow Border ───────────────────────── */
+.chart-card, .summary-card, .stat-card, .admin-stat-card,
+.panel-card, .menu-today-card, .calorie-card, .rating-summary-card, .card {
+    background: linear-gradient(
+        155deg,
+        rgba(17, 34, 64, .9) 0%,
+        rgba(11, 25, 41, .95) 100%
+    ) !important;
+    border: 1px solid rgba(132, 190, 255, .08) !important;
+    backdrop-filter: blur(20px) saturate(1.4) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;
+    box-shadow:
+        0 4px 24px rgba(0, 0, 0, .2),
+        inset 0 1px 0 rgba(255, 255, 255, .04) !important;
+    transition:
+        transform .4s cubic-bezier(.22, 1, .36, 1),
+        box-shadow .4s ease,
+        border-color .4s ease !important;
+    transform-style: preserve-3d;
+    perspective: 800px;
+}
+
+.chart-card:hover, .summary-card:hover, .stat-card:hover,
+.admin-stat-card:hover, .panel-card:hover, .menu-today-card:hover,
+.calorie-card:hover, .rating-summary-card:hover, .card:hover {
+    transform: translateY(-6px) !important;
+    border-color: rgba(99, 102, 241, .25) !important;
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, .3),
+        0 0 40px rgba(99, 102, 241, .08),
+        inset 0 1px 0 rgba(255, 255, 255, .06) !important;
+}
+
+/* Kart üst border — renkli accent çizgi */
+.chart-card, .stat-card, .admin-stat-card, .panel-card {
+    border-top: 2px solid !important;
+}
+
+
+/* ─── 5. BUTONLAR — Glow + Ripple ───────────────────────────────── */
+.btn {
+    position: relative;
+    overflow: hidden;
+    transition:
+        transform .3s cubic-bezier(.22, 1, .36, 1),
+        box-shadow .3s ease,
+        filter .3s ease !important;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.12) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform .6s ease;
+}
+
+.btn:hover::before {
+    transform: translateX(120%);
+}
+
+.btn:hover {
+    transform: translateY(-3px);
+}
+
+.btn:active {
+    transform: translateY(0) scale(.97);
+    transition-duration: .1s;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #6366f1) !important;
+    box-shadow:
+        0 4px 20px rgba(99, 102, 241, .4),
+        inset 0 1px 0 rgba(255, 255, 255, .15) !important;
+    color: #fff !important;
+}
+.btn-primary:hover {
+    box-shadow:
+        0 8px 32px rgba(99, 102, 241, .55),
+        inset 0 1px 0 rgba(255, 255, 255, .2) !important;
+}
+
+.btn-accent {
+    background: linear-gradient(135deg, #10b981, #06b6d4) !important;
+    box-shadow:
+        0 4px 20px rgba(16, 185, 129, .35),
+        inset 0 1px 0 rgba(255, 255, 255, .12) !important;
+    color: #fff !important;
+}
+.btn-accent:hover {
+    box-shadow:
+        0 8px 32px rgba(16, 185, 129, .5),
+        inset 0 1px 0 rgba(255, 255, 255, .18) !important;
+}
+
+.btn-outline {
+    border: 1px solid rgba(132, 190, 255, .2) !important;
+    background: rgba(255,255,255,.03) !important;
+}
+.btn-outline:hover {
+    background: rgba(99, 102, 241, .1) !important;
+    border-color: rgba(99, 102, 241, .3) !important;
+    box-shadow: 0 4px 20px rgba(99, 102, 241, .15) !important;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    box-shadow: 0 4px 20px rgba(239, 68, 68, .35) !important;
+    color: #fff !important;
+}
+
+
+/* ─── 6. HERO BÖLÜMÜ — Özel Animasyon ───────────────────────────── */
+.hero-content,
+.hero-focus-card {
+    background: linear-gradient(
+        160deg,
+        rgba(17, 34, 64, .92),
+        rgba(11, 25, 41, .96)
+    ) !important;
+    border: 1px solid rgba(132, 190, 255, .08) !important;
+    box-shadow:
+        0 12px 48px rgba(0, 0, 0, .25),
+        inset 0 1px 0 rgba(255, 255, 255, .04) !important;
+}
+
+.hero-focus-card {
+    animation: pm-glow-pulse 4s ease-in-out infinite;
+}
+
+.hero-title {
+    line-height: 1.05 !important;
+}
+
+.hero-cta-row .btn {
+    animation: pm-slide-up .6s ease both;
+}
+.hero-cta-row .btn:nth-child(1) { animation-delay: .1s; }
+.hero-cta-row .btn:nth-child(2) { animation-delay: .2s; }
+.hero-cta-row .btn:nth-child(3) { animation-delay: .3s; }
+
+/* Canlı stats pulse */
+.pulse-badge {
+    animation: pm-glow-pulse 3s ease-in-out infinite;
+}
+
+.live-stat-value {
+    font-size: 1.8rem !important;
+    font-weight: 800;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+}
+
+
+/* ─── 7. SCROLL ANİMASYON — Yukarı Kayma ────────────────────────── */
+[data-reveal] {
+    opacity: 0;
+    transform: translateY(40px);
+    transition:
+        opacity .8s cubic-bezier(.22, 1, .36, 1),
+        transform .8s cubic-bezier(.22, 1, .36, 1) !important;
+}
+
+.page-ready [data-reveal],
+[data-reveal].is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Stagger children */
+[data-reveal]:nth-child(2) { transition-delay: .1s; }
+[data-reveal]:nth-child(3) { transition-delay: .2s; }
+[data-reveal]:nth-child(4) { transition-delay: .3s; }
+[data-reveal]:nth-child(5) { transition-delay: .4s; }
+
+
+/* ─── 8. FLOW STEPS — Entrance Animasyonu ────────────────────────── */
+.flow-step {
+    transition: transform .4s ease, box-shadow .4s ease !important;
+}
+
+.flow-step:hover {
+    transform: translateY(-8px) scale(1.03);
+    box-shadow: 0 12px 40px rgba(99, 102, 241, .15) !important;
+}
+
+.flow-step-icon {
+    animation: pm-float 4s ease-in-out infinite;
+}
+
+.flow-step:nth-child(1) .flow-step-icon { animation-delay: 0s; }
+.flow-step:nth-child(3) .flow-step-icon { animation-delay: .5s; }
+.flow-step:nth-child(5) .flow-step-icon { animation-delay: 1s; }
+.flow-step:nth-child(7) .flow-step-icon { animation-delay: 1.5s; }
+
+.flow-step-num {
+    background: linear-gradient(135deg, rgba(99,102,241,.2), rgba(139,92,246,.15)) !important;
+    color: #a78bfa !important;
+}
+
+.flow-connector span {
+    color: rgba(99, 102, 241, .4) !important;
+}
+
+
+/* ─── 9. QUICK ACTION CARDS ─────────────────────────────────────── */
+.quick-action-card {
+    transition:
+        transform .35s cubic-bezier(.22, 1, .36, 1),
+        box-shadow .35s ease,
+        border-color .35s ease !important;
+}
+
+.quick-action-card:hover {
+    transform: translateY(-6px) !important;
+    border-color: rgba(99, 102, 241, .2) !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, .25), 0 0 30px rgba(99,102,241,.06) !important;
+}
+
+
+/* ─── 10. TABLOLAR — Premium ────────────────────────────────────── */
+.data-table { border-radius: 16px; overflow: hidden; }
+
+.data-table thead {
+    background: linear-gradient(135deg, rgba(30,58,95,.95), rgba(17,34,64,.98)) !important;
+}
+
+.data-table th {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    font-size: .7rem;
+    color: rgba(174,214,241,.7);
+    padding: 14px 16px;
+}
+
+.data-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(132,190,255,.05);
+    transition: background .2s ease;
+}
+
+.data-table tbody tr:hover {
+    background: rgba(99,102,241,.06) !important;
+}
+
+.data-table tbody tr:hover td {
+    color: #fff;
+}
+
+
+/* ─── 11. FORM GİRDİLERİ ────────────────────────────────────────── */
+input, textarea, select {
+    background: rgba(255,255,255,.025) !important;
+    border: 1px solid rgba(132,190,255,.1) !important;
+    border-radius: 12px !important;
+    transition: all .3s ease !important;
+}
+
+input:focus, textarea:focus, select:focus {
+    background: rgba(255,255,255,.05) !important;
+    border-color: rgba(99,102,241,.4) !important;
+    box-shadow: 0 0 0 3px rgba(99,102,241,.12), 0 0 24px rgba(99,102,241,.06) !important;
+}
+
+
+/* ─── 12. STAT LABEL & ICON ─────────────────────────────────────── */
+.stat-label {
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    font-size: .7rem !important;
+    font-weight: 700;
+    color: rgba(174,214,241,.45) !important;
+}
+
+.stat-icon {
+    font-size: 1.8rem;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,.3));
+    transition: transform .3s ease;
+}
+
+.stat-card:hover .stat-icon,
+.admin-stat-card:hover .stat-icon {
+    transform: scale(1.15) rotate(-5deg);
+}
+
+
+/* ─── 13. SECTION HEADER ────────────────────────────────────────── */
+.section-desc {
+    color: rgba(174,214,241,.5) !important;
+    max-width: 56ch;
+    line-height: 1.75;
+}
+
+
+/* ─── 14. FOOTER — Minimal ──────────────────────────────────────── */
+.footer { padding: 16px 0 32px !important; }
+
+.footer .container {
+    border-top: 1px solid rgba(132,190,255,.06) !important;
+    padding-top: 20px;
+}
+
+.footer p { font-size: .78rem !important; color: rgba(174,214,241,.35) !important; }
+.footer-tech {
+    font-size: .68rem !important;
+    color: rgba(174,214,241,.22) !important;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+
+/* ─── 15. SCROLLBAR ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: rgba(99,102,241,.2);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(99,102,241,.35);
+}
+
+::selection {
+    background: rgba(99,102,241,.3);
+    color: #fff;
+}
+
+
+/* ─── 16. MOTİVASYON BANNER ─────────────────────────────────────── */
+.motivation-banner {
+    background: linear-gradient(135deg, rgba(16,185,129,.08), rgba(6,182,212,.05)) !important;
+    border: 1px solid rgba(16,185,129,.12) !important;
+    border-radius: 16px !important;
+    backdrop-filter: blur(12px) !important;
+}
+
+
+/* ─── 17. CHART BAŞLIKLARI ──────────────────────────────────────── */
+.chart-card h3, .summary-card h3 {
+    font-weight: 800;
+    color: rgba(235,245,251,.92) !important;
+}
+
+
+/* ─── 18. BADGE / PİL ──────────────────────────────────────────── */
+.nav-status {
+    font-size: .68rem !important;
+    padding: 5px 11px !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.status-chip {
+    animation: pm-border-glow 3s ease-in-out infinite;
+}
+
+.eyebrow {
+    background: linear-gradient(135deg, rgba(99,102,241,.12), rgba(139,92,246,.08)) !important;
+    border: 1px solid rgba(99,102,241,.2) !important;
+    color: #a5b4fc !important;
+}
+
+
+/* ─── 19. ADMIN DASHBOARD GRID ──────────────────────────────────── */
+.admin-summary-grid { gap: 16px; }
+
+.admin-stat-card {
+    transition:
+        transform .35s cubic-bezier(.22, 1, .36, 1),
+        box-shadow .35s ease !important;
+}
+
+.admin-stat-card:hover {
+    transform: translateY(-5px) !important;
+}
+
+
+/* ─── 20. FEATURE CARD GRID ─────────────────────────────────────── */
+.feature-card {
+    transition:
+        transform .4s cubic-bezier(.22, 1, .36, 1),
+        box-shadow .4s ease,
+        border-color .4s ease !important;
+}
+
+.feature-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 48px rgba(0,0,0,.25), 0 0 40px rgba(99,102,241,.06) !important;
+    border-color: rgba(99,102,241,.2) !important;
+}
+
+.feature-card:hover .feature-icon {
+    transform: scale(1.1);
+    transition: transform .3s ease;
+}
+
+
+/* ─── 21. MENÜ TABLO WRAPPER ────────────────────────────────────── */
+.menu-table-wrapper {
+    background: linear-gradient(160deg, rgba(17,34,64,.9), rgba(11,25,41,.95)) !important;
+    border: 1px solid rgba(132,190,255,.08) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,.18) !important;
+}
+
+
+/* ─── 22. ALERTS LIST ───────────────────────────────────────────── */
+.alerts-list .alert-item {
+    border-radius: 12px;
+    transition: transform .25s ease, box-shadow .25s ease;
+}
+.alerts-list .alert-item:hover {
+    transform: translateX(6px);
+}
+
+
+/* ─── 23. PAGE WRAPPER ──────────────────────────────────────────── */
+.page-wrapper { padding-bottom: 64px !important; }
+
+
+/* ─── 24. FOCUS VISIBLE — Erişilebilirlik ───────────────────────── */
+:focus-visible {
+    outline: 2px solid rgba(99,102,241,.5);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+
+/* ─── 25. TOOLTIP EFECT (data-tooltip) ──────────────────────────── */
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, .95);
+    color: #e2e8f0;
+    font-size: .72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 100;
+    box-shadow: 0 4px 16px rgba(0,0,0,.3);
+    animation: pm-scale-in .15s ease;
+}
+
+
+/* ─── 26. LOADING SKELETON ──────────────────────────────────────── */
+.pm-skeleton {
+    background: linear-gradient(
+        90deg,
+        rgba(132,190,255,.04) 25%,
+        rgba(132,190,255,.08) 50%,
+        rgba(132,190,255,.04) 75%
+    );
+    background-size: 200% 100%;
+    animation: pm-text-shimmer 1.5s ease infinite;
+    border-radius: 8px;
+}
+
+
+/* ─── 27. RESPONSIVE ────────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .navbar {
+        backdrop-filter: blur(20px) saturate(1.5) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(1.5) !important;
+    }
+
+    .section-title {
+        font-size: clamp(1.3rem, 4vw, 2rem) !important;
+    }
+
+    .chart-card:hover, .stat-card:hover, .panel-card:hover {
+        transform: translateY(-3px) !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}

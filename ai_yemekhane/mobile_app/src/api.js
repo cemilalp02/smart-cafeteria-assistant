@@ -4,6 +4,10 @@ export const API_BASE_URL =
 function buildUrl(path) {
   if (!path) return API_BASE_URL;
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  // /api/* → /api/v1/* otomatik dönüşüm
+  if (path.startsWith("/api/") && !path.startsWith("/api/v1/")) {
+    path = "/api/v1/" + path.slice(5);
+  }
   if (path.startsWith("/")) return `${API_BASE_URL}${path}`;
   return `${API_BASE_URL}/${path}`;
 }
@@ -43,24 +47,3 @@ export async function apiPostJson(path, payload) {
   });
   return parseJsonResponse(response);
 }
-
-export async function apiUploadFile(path, asset) {
-  const formData = new FormData();
-  const filename =
-    asset?.fileName || `upload_${Date.now()}.${asset?.uri?.endsWith(".png") ? "png" : "jpg"}`;
-  const mimeType = asset?.mimeType || "image/jpeg";
-
-  formData.append("file", {
-    uri: asset.uri,
-    name: filename,
-    type: mimeType,
-  });
-
-  const response = await fetch(buildUrl(path), {
-    method: "POST",
-    body: formData,
-  });
-
-  return parseJsonResponse(response);
-}
-

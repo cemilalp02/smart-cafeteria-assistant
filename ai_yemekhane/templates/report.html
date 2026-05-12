@@ -2,6 +2,7 @@
 {% block title %}Raporlar{% endblock %}
 
 {% block head %}
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" as="script">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 {% endblock %}
 
@@ -146,6 +147,113 @@
                 </div>
             </div>
         </div>
+
+        <!-- ═══ ÜRETİM VE İSRAF TRENDİ ═══ -->
+        <div class="section-header" style="margin-top: 48px;">
+            <h2 class="section-title">📈 Üretim & İsraf Trendleri</h2>
+            <p class="section-desc">Son 30 günün üretim ve israf verileri</p>
+        </div>
+
+        <div class="report-grid">
+            <div>
+                <!-- Günlük Üretim Trendi -->
+                <div class="chart-card mb-20">
+                    <h3>🏭 Günlük Üretim vs İsraf</h3>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="production-trend-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <!-- Model Durumu -->
+                <div class="summary-card">
+                    <h3>🧠 İsraf Modeli Durumu</h3>
+                    <div id="model-status-body">
+                        <p class="text-dim">Yükleniyor...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ AI MENÜ SONUÇ TAKİBİ ═══ -->
+        <div class="section-header" style="margin-top: 48px;">
+            <h2 class="section-title">🤖 AI Menü Önerisi — Sonuç Takibi</h2>
+            <p class="section-desc">AI önerisi uygulanmış olsaydı israf ne kadar azalırdı?</p>
+        </div>
+
+        <div class="report-grid">
+            <div>
+                <!-- Haftalık Karşılaştırma Grafiği -->
+                <div class="chart-card mb-20">
+                    <h3>📊 Gerçek Menü vs AI Önerisi — Haftalık İsraf</h3>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="ai-tracking-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <!-- Özet Kart -->
+                <div class="summary-card">
+                    <h3>📋 AI İyileştirme Potansiyeli</h3>
+                    <div id="ai-tracking-summary">
+                        <p class="text-dim">Yükleniyor...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ GELİŞMİŞ ANALİTİK DASHBOARD ═══ -->
+        <div class="section-header" style="margin-top: 48px;">
+            <h2 class="section-title">📊 Gelişmiş İsraf Analitiği</h2>
+            <p class="section-desc">Son 30 günün detaylı israf analizi, maliyet tahmini ve trend karşılaştırmaları</p>
+        </div>
+
+
+        <div class="report-grid">
+            <div>
+                <!-- 30 Gün İsraf Trend Çizgi Grafiği -->
+                <div class="chart-card mb-20">
+                    <h3>📈 Son 30 Gün İsraf Trendi</h3>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="israf-trend-line-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- En Çok İsraf Edilen Yemekler (Bar) -->
+                <div class="chart-card">
+                    <h3>🔴 En Çok İsraf Edilen Yemekler (Son 30 Gün)</h3>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="top-israf-bar-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <!-- Haftalık Karşılaştırma -->
+                <div class="summary-card mb-20">
+                    <h3>📅 Haftalık Karşılaştırma</h3>
+                    <div id="haftalik-karsilastirma-body">
+                        <p class="text-dim">Yükleniyor...</p>
+                    </div>
+                </div>
+
+                <!-- Maliyet Analizi -->
+                <div class="summary-card mb-20">
+                    <h3>💰 Maliyet Analizi (Son 30 Gün)</h3>
+                    <div id="maliyet-analiz-body">
+                        <p class="text-dim">Yükleniyor...</p>
+                    </div>
+                </div>
+
+                <!-- Kategori İsraf Radar -->
+                <div class="chart-card">
+                    <h3>🎯 Kategori Bazlı Detaylı İsraf</h3>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="kategori-radar-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -157,8 +265,14 @@
 
     async function loadReport() {
         try {
+            // Tüm API çağrılarını paralel olarak başlat (sıralı bekleme yerine)
+            const [daily, ratings, weekly] = await Promise.all([
+                apiFetch('/api/waste/daily'),
+                apiFetch('/api/ratings/today'),
+                apiFetch('/api/waste/weekly'),
+            ]);
+
             // Bugünün israf raporu
-            const daily = await apiFetch('/api/waste/daily');
             if (daily.success) {
                 document.getElementById('s-israf').textContent = `%${daily.genel_israf_skoru}`;
 
@@ -179,7 +293,6 @@
             }
 
             // Bugünün puanları
-            const ratings = await apiFetch('/api/ratings/today');
             if (ratings.success && ratings.data) {
                 const entries = Object.entries(ratings.data);
                 if (entries.length > 0) {
@@ -192,7 +305,6 @@
             }
 
             // Haftalık israf raporu
-            const weekly = await apiFetch('/api/waste/weekly');
             if (weekly.success) {
                 document.getElementById('w-israf').textContent = `%${weekly.genel_israf_skoru}`;
                 const skor = weekly.genel_israf_skoru;
@@ -302,8 +414,8 @@
         if (categoryWasteChart) categoryWasteChart.destroy();
 
         const KAT_LABELS2 = {
-            corba: 'Çorbalar', ana_yemek: 'Ana Yemekler', pilav: 'Yan Yemek',
-            tatli: 'Tatlılar', salata: 'Salatalar', pilav_makarna: 'Pilav/Makarna'
+            corba: 'Çorbalar', ana_yemek: 'Ana Yemekler', yan_yemek: 'Yan Yemekler',
+            tatli: 'Tatlılar', salata: 'Salatalar'
         };
 
         const keys = Object.keys(data);
@@ -338,6 +450,7 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 cutout: '55%',
                 plugins: {
                     legend: {
@@ -355,9 +468,209 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        loadReport();
-        loadRatingCharts();
+        // Rapor ve puanlama grafiklerini paralel yükle
+        Promise.all([
+            loadReport(), loadRatingCharts(), loadProductionTrend(),
+            loadModelStatus(), loadAITracking(),
+            // Gelişmiş analitik grafikleri
+            loadIsrafTrendLine(), loadTopIsrafBar(),
+            loadHaftalikKarsilastirma(), loadMaliyetAnalizi(),
+            loadKategoriRadar(),
+        ]);
     });
+
+    // ═══ AI MENÜ TAKİP ═══════════════════════════════════════
+    let aiTrackingChart = null;
+
+    async function loadAITracking() {
+        try {
+            const data = await apiFetch('/api/ai/menu-tracking');
+            if (!data.success) return;
+
+            // Grafik
+            const haftalik = data.haftalik_karsilastirma || [];
+            if (haftalik.length > 0) {
+                const ctx = document.getElementById('ai-tracking-chart').getContext('2d');
+                if (aiTrackingChart) aiTrackingChart.destroy();
+
+                aiTrackingChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: haftalik.map(h => h.hafta),
+                        datasets: [
+                            {
+                                label: 'Gerçek Menü İsrafı (%)',
+                                data: haftalik.map(h => h.gercek_israf),
+                                backgroundColor: 'rgba(231,76,60,.7)',
+                                borderColor: 'rgba(231,76,60,1)',
+                                borderWidth: 2,
+                                borderRadius: 8,
+                            },
+                            {
+                                label: 'AI Önerisi İsrafı (%)',
+                                data: haftalik.map(h => h.ai_israf),
+                                backgroundColor: 'rgba(72,201,176,.7)',
+                                borderColor: 'rgba(72,201,176,1)',
+                                borderWidth: 2,
+                                borderRadius: 8,
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                labels: { color: '#AED6F1', font: { family: 'Inter' } }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                title: { display: true, text: 'İsraf %', color: '#8892A4' },
+                                ticks: { color: '#8892A4', font: { family: 'Inter' } },
+                                grid: { color: 'rgba(46,134,193,.1)' }
+                            },
+                            x: {
+                                ticks: { color: '#8892A4', font: { family: 'Inter' } },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Özet kart
+            const ozet = data.genel_ozet || {};
+            const container = document.getElementById('ai-tracking-summary');
+            const iyilestirme = ozet.potansiyel_iyilestirme || 0;
+            const yuzde = ozet.yuzde_iyilestirme || 0;
+
+            let html = '';
+            const items = [
+                ['Gerçek Menü Ort. İsrafı', `%${ozet.gercek_ort_israf || '—'}`],
+                ['AI Önerisi Ort. İsrafı', `%${ozet.ai_ort_israf || '—'}`],
+                ['Potansiyel İyileştirme', iyilestirme > 0 ? `%${iyilestirme} ↓` : '—'],
+                ['İyileştirme Oranı', yuzde > 0 ? `%${yuzde}` : '—'],
+            ];
+            for (const [label, value] of items) {
+                html += `<div class="summary-item">
+                    <span>${label}</span>
+                    <span class="s-value" style="${label.includes('İyileştirme') && iyilestirme > 0 ? 'color:#79efc4;' : ''}">${value}</span>
+                </div>`;
+            }
+
+            // AI önerdiği menü
+            const oneri = data.ai_oneri_menusu || {};
+            if (Object.keys(oneri).length > 0) {
+                const katLabels = {corba:'Çorba', ana_yemek:'Ana Yemek', yan_yemek:'Yan Yemek', tatli:'Tatlı', salata:'Salata'};
+                html += '<div style="margin-top:16px;padding:12px;background:rgba(168,85,247,.06);border-radius:10px;font-size:.85rem;">';
+                html += '<strong style="color:#c084fc;">AI Önerdiği Menü:</strong><br>';
+                for (const [kat, yemek] of Object.entries(oneri)) {
+                    html += `<span style="opacity:.6;">${katLabels[kat]||kat}:</span> <strong>${yemek}</strong><br>`;
+                }
+                html += '</div>';
+            }
+
+            container.innerHTML = html;
+        } catch (e) {
+            console.error('AI tracking error:', e);
+        }
+    }
+
+    // ═══ ÜRETİM TRENDİ ═══════════════════════════════════════
+    let productionChart = null;
+
+    async function loadProductionTrend() {
+        try {
+            const data = await apiFetch('/api/waste/production-summary?gun=30');
+            if (data.success && data.gunluk_trend && data.gunluk_trend.length > 0) {
+                const ctx = document.getElementById('production-trend-chart').getContext('2d');
+                if (productionChart) productionChart.destroy();
+
+                const trend = data.gunluk_trend;
+                productionChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: trend.map(t => {
+                            const d = new Date(t.tarih);
+                            return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+                        }),
+                        datasets: [
+                            {
+                                label: 'Üretilen Porsiyon',
+                                data: trend.map(t => t.toplam_uretilen),
+                                borderColor: 'rgba(93,173,226,1)',
+                                backgroundColor: 'rgba(93,173,226,.1)',
+                                fill: true,
+                                tension: 0.3,
+                                borderWidth: 2,
+                            },
+                            {
+                                label: 'Kalan Porsiyon',
+                                data: trend.map(t => t.toplam_kalan),
+                                borderColor: 'rgba(231,76,60,.8)',
+                                backgroundColor: 'rgba(231,76,60,.1)',
+                                fill: true,
+                                tension: 0.3,
+                                borderWidth: 2,
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                labels: { color: '#AED6F1', font: { family: 'Inter' } }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { color: '#8892A4', font: { family: 'Inter' } },
+                                grid: { color: 'rgba(46,134,193,.1)' }
+                            },
+                            x: {
+                                ticks: { color: '#8892A4', font: { family: 'Inter', size: 10 } },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('Production trend error:', e);
+        }
+    }
+
+    async function loadModelStatus() {
+        const container = document.getElementById('model-status-body');
+        try {
+            const data = await apiFetch('/api/waste/model-status');
+            if (data.success || data.model_tipi) {
+                let html = '';
+                const items = [
+                    ['Model Tipi', data.model_tipi || '—'],
+                    ['Eğitim Verisi', `${data.egitim_veri_sayisi || '—'} kayıt`],
+                    ['Son Eğitim', data.son_egitim_tarihi || '—'],
+                    ['MAE Skoru', data.mae || '—'],
+                    ['R2 Skoru', data.r2 || '—'],
+                    ['Durum', data.model_yuklu ? '✅ Aktif' : '⚠️ Fallback'],
+                ];
+                for (const [label, value] of items) {
+                    html += `<div class="summary-item">
+                        <span>${label}</span>
+                        <span class="s-value">${value}</span>
+                    </div>`;
+                }
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<p class="text-dim">Model bilgisi alınamadı.</p>';
+            }
+        } catch (e) {
+            container.innerHTML = '<p class="text-dim">Model durumu yüklenemedi.</p>';
+        }
+    }
 
     // ═══ PUANLAMA GRAFİKLERİ ═══════════════════════════════════════
     let topRatedChart = null;
@@ -368,23 +681,29 @@
     const KAT_LABELS = {
         corba: 'Çorbalar',
         ana_yemek: 'Ana Yemekler',
-        pilav: 'Yan Yemek',
+        yan_yemek: 'Yan Yemekler',
         tatli: 'Tatlılar',
         salata: 'Salatalar'
     };
 
     async function loadRatingCharts() {
         try {
-            const data = await apiFetch('/api/ratings/weekly-report');
-            if (!data.success) return;
+            // Haftalık rapor (grafikler için) ve 30 günlük yemek listesi (dropdown için) paralel çek
+            const [data, allRated] = await Promise.all([
+                apiFetch('/api/ratings/weekly-report'),
+                apiFetch('/api/ratings/all-rated-meals?gun=30'),
+            ]);
 
-            drawTopRatedChart(data.en_begenilen || []);
-            drawBottomRatedChart(data.en_az_begenilen || []);
-            drawCategoryRatingChart(data.kategori_ortalama || {});
+            if (data.success) {
+                drawTopRatedChart(data.en_begenilen || []);
+                drawBottomRatedChart(data.en_az_begenilen || []);
+                drawCategoryRatingChart(data.kategori_ortalama || {});
+            }
 
-            // Yemek dropdown'ını doldur
+            // Yemek dropdown'ını son 30 günün TÜM puanlanan yemeklerinden doldur
             const select = document.getElementById('trend-yemek-select');
-            (data.tum_yemekler || []).forEach(y => {
+            const yemekListesi = (allRated.success ? allRated.yemekler : data.tum_yemekler) || [];
+            yemekListesi.forEach(y => {
                 const opt = document.createElement('option');
                 opt.value = y.yemek_adi;
                 opt.textContent = `${y.yemek_adi} (${y.ortalama}⭐)`;
@@ -501,6 +820,7 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 cutout: '55%',
                 plugins: {
                     legend: {
@@ -566,6 +886,241 @@
             });
         } catch (e) {
             console.error('Trend chart error:', e);
+        }
+    }
+
+    // ═══ GELİŞMİŞ ANALİTİK GRAFİKLERİ ═══════════════════════════
+    let israfTrendLineChart = null;
+    let topIsrafBarChart = null;
+    let kategoriRadarChart = null;
+
+    async function loadIsrafTrendLine() {
+        try {
+            const data = await apiFetch('/api/analytics/israf-trend?gun=30');
+            if (!data.success || !data.trend || !data.trend.length) return;
+
+            const ctx = document.getElementById('israf-trend-line-chart').getContext('2d');
+            if (israfTrendLineChart) israfTrendLineChart.destroy();
+
+            const trend = data.trend;
+            const ortLine = Array(trend.length).fill(data.genel_ortalama);
+
+            israfTrendLineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: trend.map(t => {
+                        const d = new Date(t.tarih);
+                        return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+                    }),
+                    datasets: [
+                        {
+                            label: 'Günlük İsraf (%)',
+                            data: trend.map(t => t.ort_israf),
+                            borderColor: 'rgba(231,76,60,1)',
+                            backgroundColor: 'rgba(231,76,60,.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2.5,
+                            pointRadius: 3,
+                            pointBackgroundColor: 'rgba(231,76,60,1)',
+                        },
+                        {
+                            label: `Ortalama (%${data.genel_ortalama})`,
+                            data: ortLine,
+                            borderColor: 'rgba(243,156,18,.6)',
+                            borderDash: [8, 4],
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { labels: { color: '#AED6F1', font: { family: 'Inter' } } },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ` ${ctx.dataset.label}: %${ctx.parsed.y}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true, max: 100,
+                            title: { display: true, text: 'İsraf %', color: '#8892A4' },
+                            ticks: { color: '#8892A4', font: { family: 'Inter' } },
+                            grid: { color: 'rgba(46,134,193,.1)' }
+                        },
+                        x: {
+                            ticks: { color: '#8892A4', font: { family: 'Inter', size: 10 } },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('İsraf trend line error:', e);
+        }
+    }
+
+    async function loadTopIsrafBar() {
+        try {
+            const data = await apiFetch('/api/analytics/top-israf?limit=8&gun=30');
+            if (!data.success) return;
+
+            const ctx = document.getElementById('top-israf-bar-chart').getContext('2d');
+            if (topIsrafBarChart) topIsrafBarChart.destroy();
+
+            const items = data.en_cok_israf || [];
+            if (!items.length) return;
+
+            topIsrafBarChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: items.map(i => i.yemek_adi.length > 20 ? i.yemek_adi.slice(0, 18) + '…' : i.yemek_adi),
+                    datasets: [{
+                        label: 'İsraf Oranı (%)',
+                        data: items.map(i => i.ort_israf),
+                        backgroundColor: items.map(i =>
+                            i.ort_israf >= 50 ? 'rgba(231,76,60,.7)' :
+                            i.ort_israf >= 25 ? 'rgba(243,156,18,.7)' :
+                            'rgba(72,201,176,.7)'
+                        ),
+                        borderColor: items.map(i =>
+                            i.ort_israf >= 50 ? 'rgba(231,76,60,1)' :
+                            i.ort_israf >= 25 ? 'rgba(243,156,18,1)' :
+                            'rgba(72,201,176,1)'
+                        ),
+                        borderWidth: 2,
+                        borderRadius: 8,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    scales: {
+                        x: { min: 0, max: 100, ticks: { color: '#8892A4', font: { family: 'Inter' } }, grid: { color: 'rgba(46,134,193,.1)' } },
+                        y: { ticks: { color: '#AED6F1', font: { family: 'Inter', size: 11 } }, grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ` İsraf: %${ctx.parsed.x} (${items[ctx.dataIndex].kayit_sayisi} kayıt)`
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('Top israf bar error:', e);
+        }
+    }
+
+    async function loadHaftalikKarsilastirma() {
+        const container = document.getElementById('haftalik-karsilastirma-body');
+        try {
+            const data = await apiFetch('/api/analytics/haftalik-karsilastirma');
+            if (!data.success) { container.innerHTML = '<p class="text-dim">Veri alınamadı.</p>'; return; }
+
+            const ok = data.iyilesti_mi;
+            const arrow = data.degisim > 0 ? '↑' : data.degisim < 0 ? '↓' : '→';
+            const color = ok ? '#79efc4' : data.degisim > 0 ? '#e74c3c' : '#f1c40f';
+
+            let html = '';
+            const items = [
+                ['Geçen Hafta İsrafı', `%${data.gecen_hafta.ort_israf}`],
+                ['Bu Hafta İsrafı', `%${data.bu_hafta.ort_israf}`],
+                ['Değişim', `<span style="color:${color};font-weight:700">${arrow} %${Math.abs(data.degisim)}</span>`],
+                ['Durum', ok ? '<span style="color:#79efc4">✅ İyileşme</span>' : data.degisim > 0 ? '<span style="color:#e74c3c">⚠️ Kötüleşme</span>' : '<span style="color:#f1c40f">→ Stabil</span>'],
+                ['Bu Hafta Kayıt', `${data.bu_hafta.kayit_sayisi} yemek`],
+            ];
+            for (const [label, value] of items) {
+                html += `<div class="summary-item"><span>${label}</span><span class="s-value">${value}</span></div>`;
+            }
+            container.innerHTML = html;
+        } catch (e) {
+            container.innerHTML = '<p class="text-dim">Haftalık veri yüklenemedi.</p>';
+        }
+    }
+
+    async function loadMaliyetAnalizi() {
+        const container = document.getElementById('maliyet-analiz-body');
+        try {
+            const data = await apiFetch('/api/analytics/maliyet?gun=30');
+            if (!data.success) { container.innerHTML = '<p class="text-dim">Veri alınamadı.</p>'; return; }
+
+            const fmt = (n) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(n);
+
+            let html = '';
+            const items = [
+                ['Toplam Üretim', `${data.toplam_uretilen_porsiyon} porsiyon`],
+                ['İsraf Edilen', `<span style="color:#e74c3c">${data.toplam_israf_porsiyon} porsiyon (%${data.israf_orani_yuzde})</span>`],
+                ['Toplam Üretim Maliyeti', fmt(data.toplam_uretim_maliyeti_tl)],
+                ['İsraf Maliyeti', `<span style="color:#e74c3c;font-weight:700">${fmt(data.israf_maliyeti_tl)}</span>`],
+                ['AI Tasarruf Potansiyeli', `<span style="color:#79efc4;font-weight:700">${fmt(data.ai_tasarruf_potansiyeli_tl)}</span>`],
+            ];
+            for (const [label, value] of items) {
+                html += `<div class="summary-item"><span>${label}</span><span class="s-value">${value}</span></div>`;
+            }
+            html += `<div style="margin-top:12px;padding:10px;background:rgba(72,201,176,.06);border-radius:8px;font-size:.8rem;color:#79efc4;text-align:center">`;
+            html += `💡 AI menü optimizasyonu ile ayda tahmini <strong>${fmt(data.ai_tasarruf_potansiyeli_tl)}</strong> tasarruf edilebilir`;
+            html += '</div>';
+            container.innerHTML = html;
+        } catch (e) {
+            container.innerHTML = '<p class="text-dim">Maliyet verisi yüklenemedi.</p>';
+        }
+    }
+
+    async function loadKategoriRadar() {
+        try {
+            const data = await apiFetch('/api/analytics/kategori-dagilim?gun=30');
+            if (!data.success || !data.dagilim || !data.dagilim.length) return;
+
+            const ctx = document.getElementById('kategori-radar-chart').getContext('2d');
+            if (kategoriRadarChart) kategoriRadarChart.destroy();
+
+            const d = data.dagilim;
+            kategoriRadarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: d.map(i => i.kategori_label),
+                    datasets: [{
+                        label: 'İsraf Oranı (%)',
+                        data: d.map(i => i.ort_israf),
+                        backgroundColor: 'rgba(231,76,60,.15)',
+                        borderColor: 'rgba(231,76,60,.8)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(231,76,60,1)',
+                        pointRadius: 5,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { color: '#8892A4', font: { family: 'Inter', size: 10 }, backdropColor: 'transparent' },
+                            grid: { color: 'rgba(46,134,193,.15)' },
+                            angleLines: { color: 'rgba(46,134,193,.15)' },
+                            pointLabels: { color: '#AED6F1', font: { family: 'Inter', size: 12 } },
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ` ${d[ctx.dataIndex].kategori_label}: %${ctx.parsed.r} israf (${d[ctx.dataIndex].kayit_sayisi} kayıt)`
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('Kategori radar error:', e);
         }
     }
 </script>

@@ -1,0 +1,309 @@
+{% extends "base_admin.html" %}
+{% block title %}What-If Simülasyon{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">🔮 What-If Simülasyon Aracı</h2>
+            <p class="section-desc">Menüdeki yemekleri değiştirin, ML modeli ile tahmini israf ve maliyet değişimini görün</p>
+        </div>
+
+        <!-- Menü Yükleme -->
+        <div class="chart-card" id="menu-loader">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <button class="btn btn-primary" onclick="loadCurrentMenu()">📋 Bugünkü Menüyü Yükle</button>
+                <span style="color:var(--clr-muted); font-size:13px;">veya aşağıdan manuel seçim yapın</span>
+                <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+                    <label style="color:var(--clr-muted); font-size:13px;">Üretilen Porsiyon:</label>
+                    <input type="number" id="uretilen-porsiyon" value="200" min="1" max="2000" step="10"
+                           style="width:80px; padding:6px 10px; border:1px solid var(--clr-border); border-radius:8px; background:var(--clr-surface); color:var(--clr-text); font-size:14px; text-align:center;" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Simülasyon Slotları -->
+        <div id="sim-slots" style="margin-top:20px; display:grid; gap:16px;">
+            <!-- JS ile doldurulacak -->
+        </div>
+
+        <!-- Simülasyonu Çalıştır -->
+        <div style="margin-top:24px; text-align:center;">
+            <button class="btn btn-primary" onclick="runSimulation()" id="run-btn" style="padding:14px 40px; font-size:16px;">
+                🚀 Simülasyonu Çalıştır
+            </button>
+        </div>
+
+        <!-- Sonuçlar -->
+        <div id="sim-results" style="margin-top:32px; display:none;">
+            <div class="section-header">
+                <h2 class="section-title">📊 Simülasyon Sonuçları</h2>
+                <p class="section-desc" id="sim-results-desc"></p>
+            </div>
+
+            <!-- Özet Kartlar -->
+            <div class="admin-summary-grid" id="sim-summary-cards"></div>
+
+            <!-- Karşılaştırma Tablosu -->
+            <div id="sim-comparison" style="margin-top:20px;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let yemekListesi = {};
+    let menuSlots = ['corba', 'ana_yemek', 'yan_yemek', 'tatli', 'salata'];
+    let slotLabels = {
+        corba: '🥣 Çorba', ana_yemek: '🍖 Ana Yemek',
+        yan_yemek: '🍚 Yan Yemek', tatli: '🍰 Tatlı', salata: '🥗 Salata'
+    };
+
+    // ─── Yemek listesini yükle ─────────────────────────────
+    async function loadYemekListesi() {
+        try {
+            const data = await apiFetch('/api/v1/simulation/yemek-listesi');
+            if (data.success) {
+                yemekListesi = data.kategoriler;
+                buildSlots();
+            }
+        } catch (e) { console.error('Yemek listesi hata:', e); }
+    }
+
+    // ─── Slotları oluştur ──────────────────────────────────
+    function buildSlots() {
+        const container = document.getElementById('sim-slots');
+        container.innerHTML = '';
+
+        menuSlots.forEach(slot => {
+            const items = yemekListesi[slot] || [];
+            const optionsHtml = items.map(y =>
+                `<option value="${y.ad}" data-pop="${y.populerlik}" data-cost="${y.birim_maliyet}">${y.ad} (⭐${y.populerlik.toFixed(2)})</option>`
+            ).join('');
+
+            container.innerHTML += `
+                <div class="chart-card" style="padding:20px;">
+                    <h3 style="margin-bottom:12px; color:var(--clr-text);">${slotLabels[slot] || slot}</h3>
+                    <div style="display:grid; grid-template-columns:1fr 40px 1fr; gap:12px; align-items:center;">
+                        <div>
+                            <label style="font-size:12px; color:var(--clr-muted); display:block; margin-bottom:4px;">Mevcut Yemek</label>
+                            <select id="mevcut-${slot}" class="sim-select" onchange="checkChange('${slot}')">
+                                <option value="">— Seçiniz —</option>
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                        <div style="text-align:center; font-size:24px; color:var(--clr-muted);">→</div>
+                        <div>
+                            <label style="font-size:12px; color:var(--clr-muted); display:block; margin-bottom:4px;">Yeni Yemek (değişiklik)</label>
+                            <select id="yeni-${slot}" class="sim-select" onchange="checkChange('${slot}')">
+                                <option value="">— Aynı —</option>
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                    </div>
+                    <div id="slot-badge-${slot}" style="margin-top:8px;"></div>
+                </div>
+            `;
+        });
+    }
+
+    // ─── Değişiklik badge ──────────────────────────────────
+    function checkChange(slot) {
+        const mevcut = document.getElementById(`mevcut-${slot}`).value;
+        const yeni = document.getElementById(`yeni-${slot}`).value;
+        const badge = document.getElementById(`slot-badge-${slot}`);
+
+        if (yeni && yeni !== mevcut) {
+            badge.innerHTML = `<span style="display:inline-block; padding:4px 12px; border-radius:20px; background:rgba(245,158,11,.15); color:#f59e0b; font-size:12px; font-weight:600;">⚡ Değişiklik: ${mevcut || '?'} → ${yeni}</span>`;
+        } else {
+            badge.innerHTML = '';
+        }
+    }
+
+    // ─── Bugünkü menüyü yükle ──────────────────────────────
+    async function loadCurrentMenu() {
+        try {
+            const data = await apiFetch('/api/v1/simulation/menu-bugun');
+            if (data.success && data.menu) {
+                for (const [slot, yemek] of Object.entries(data.menu)) {
+                    const sel = document.getElementById(`mevcut-${slot}`);
+                    if (sel) {
+                        // Tam eşleşme veya en yakın
+                        let found = false;
+                        for (let opt of sel.options) {
+                            if (opt.value === yemek || opt.value.toLowerCase() === yemek.toLowerCase()) {
+                                sel.value = opt.value;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            // Yakın eşleşme
+                            for (let opt of sel.options) {
+                                if (opt.value.toLowerCase().includes(yemek.toLowerCase().slice(0, 8))) {
+                                    sel.value = opt.value;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                showToast(`${data.tarih} (${data.gun}) menüsü yüklendi ✅`, 'success');
+            } else {
+                showToast('Menü bulunamadı, manuel seçim yapın.', 'warning');
+            }
+        } catch (e) { showToast('Menü yüklenemedi.', 'error'); }
+    }
+
+    // ─── Simülasyonu çalıştır ──────────────────────────────
+    async function runSimulation() {
+        const degisiklikler = [];
+        menuSlots.forEach(slot => {
+            const mevcut = document.getElementById(`mevcut-${slot}`).value;
+            const yeni = document.getElementById(`yeni-${slot}`).value;
+            if (mevcut && yeni && mevcut !== yeni) {
+                degisiklikler.push({ slot, mevcut_yemek: mevcut, yeni_yemek: yeni });
+            }
+        });
+
+        if (degisiklikler.length === 0) {
+            showToast('En az bir yemek değişikliği yapın.', 'warning');
+            return;
+        }
+
+        const uretilen = parseInt(document.getElementById('uretilen-porsiyon').value) || 200;
+
+        document.getElementById('run-btn').disabled = true;
+        document.getElementById('run-btn').textContent = '⏳ Hesaplanıyor...';
+
+        try {
+            const data = await apiFetch('/api/v1/simulation/what-if', {
+                method: 'POST',
+                body: JSON.stringify({ degisiklikler, uretilen_porsiyon: uretilen })
+            });
+
+            if (data.success) {
+                renderResults(data);
+                showToast('Simülasyon tamamlandı ✅', 'success');
+            } else {
+                showToast(data.message || 'Simülasyon hatası.', 'error');
+            }
+        } catch (e) {
+            showToast('Simülasyon çalıştırılamadı.', 'error');
+        } finally {
+            document.getElementById('run-btn').disabled = false;
+            document.getElementById('run-btn').textContent = '🚀 Simülasyonu Çalıştır';
+        }
+    }
+
+    // ─── Sonuçları göster ──────────────────────────────────
+    function renderResults(data) {
+        const resultsDiv = document.getElementById('sim-results');
+        resultsDiv.style.display = 'block';
+
+        // Açıklama
+        document.getElementById('sim-results-desc').textContent =
+            `${data.ozet.degisiklik_sayisi} değişiklik simüle edildi — ${data.tarih}`;
+
+        // Özet kartlar
+        const tasarruf = data.ozet.toplam_tasarruf_tl;
+        const tasarrufRenk = tasarruf > 0 ? '#22c55e' : (tasarruf < 0 ? '#ef4444' : '#999');
+        const tasarrufIcon = tasarruf > 0 ? '✅' : (tasarruf < 0 ? '⚠️' : '➡️');
+
+        document.getElementById('sim-summary-cards').innerHTML = `
+            <div class="admin-stat-card">
+                <div class="stat-icon">📌</div>
+                <div class="stat-value">${data.ozet.toplam_mevcut_kayip_tl.toLocaleString('tr-TR')} ₺</div>
+                <div class="stat-label">Mevcut Kayıp</div>
+                <div class="stat-sub">Değişiklik öncesi</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="stat-icon">🔄</div>
+                <div class="stat-value">${data.ozet.toplam_yeni_kayip_tl.toLocaleString('tr-TR')} ₺</div>
+                <div class="stat-label">Yeni Kayıp</div>
+                <div class="stat-sub">Değişiklik sonrası</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="stat-icon">${tasarrufIcon}</div>
+                <div class="stat-value" style="color:${tasarrufRenk}">${tasarruf > 0 ? '+' : ''}${tasarruf.toLocaleString('tr-TR')} ₺</div>
+                <div class="stat-label">Tahmini Tasarruf</div>
+                <div class="stat-sub" style="color:${tasarrufRenk}">${tasarruf > 0 ? 'Tasarruf sağlanır' : (tasarruf < 0 ? 'Maliyet artar' : 'Değişiklik yok')}</div>
+            </div>
+        `;
+
+        // Detay tablosu
+        let html = `<div class="chart-card" style="overflow-x:auto;">
+            <h3>📋 Detaylı Karşılaştırma</h3>
+            <table class="styled-table" style="margin-top:12px;">
+                <thead><tr>
+                    <th>Slot</th>
+                    <th>Mevcut Yemek</th><th>İsraf %</th><th>Kayıp (₺)</th><th>Pop.</th>
+                    <th style="text-align:center;">→</th>
+                    <th>Yeni Yemek</th><th>İsraf %</th><th>Kayıp (₺)</th><th>Pop.</th>
+                    <th>Fark</th><th>Öneri</th>
+                </tr></thead>
+                <tbody>`;
+
+        data.sonuclar.forEach(s => {
+            const farkRenk = s.fark.israf_orani < 0 ? '#22c55e' : (s.fark.israf_orani > 0 ? '#ef4444' : '#999');
+            const farkOk = s.fark.israf_orani < 0 ? '↓' : (s.fark.israf_orani > 0 ? '↑' : '→');
+            const oneriBadge = {
+                degistir: '<span style="padding:3px 10px; border-radius:12px; background:#22c55e22; color:#22c55e; font-size:11px; font-weight:700;">✅ Değiştir</span>',
+                dusun: '<span style="padding:3px 10px; border-radius:12px; background:#f59e0b22; color:#f59e0b; font-size:11px; font-weight:700;">🤔 Düşün</span>',
+                degistirme: '<span style="padding:3px 10px; border-radius:12px; background:#ef444422; color:#ef4444; font-size:11px; font-weight:700;">❌ Değiştirme</span>',
+            }[s.oneri] || '';
+
+            html += `<tr>
+                <td><strong>${slotLabels[s.slot] || s.slot}</strong></td>
+                <td>${s.mevcut.yemek_adi}</td>
+                <td>%${s.mevcut.israf_orani}</td>
+                <td>${s.mevcut.maliyet_kayip_tl.toLocaleString('tr-TR')} ₺</td>
+                <td>⭐${s.mevcut.populerlik}</td>
+                <td style="text-align:center; font-size:18px;">→</td>
+                <td>${s.yeni.yemek_adi}</td>
+                <td>%${s.yeni.israf_orani}</td>
+                <td>${s.yeni.maliyet_kayip_tl.toLocaleString('tr-TR')} ₺</td>
+                <td>⭐${s.yeni.populerlik}</td>
+                <td style="color:${farkRenk}; font-weight:700;">${farkOk} %${Math.abs(s.fark.israf_orani)} / ${s.fark.maliyet_kayip_tl > 0 ? '+' : ''}${s.fark.maliyet_kayip_tl.toLocaleString('tr-TR')} ₺</td>
+                <td>${oneriBadge}</td>
+            </tr>`;
+        });
+
+        html += '</tbody></table></div>';
+        document.getElementById('sim-comparison').innerHTML = html;
+
+        // Scroll to results
+        resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ─── Init ──────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        loadYemekListesi();
+    });
+</script>
+
+<style>
+    .sim-select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--clr-border);
+        border-radius: 10px;
+        background: var(--clr-surface);
+        color: var(--clr-text);
+        font-size: 14px;
+        font-family: inherit;
+        cursor: pointer;
+        transition: border-color .2s;
+    }
+    .sim-select:focus {
+        outline: none;
+        border-color: var(--clr-primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
+    }
+    .sim-select option {
+        background: var(--clr-surface);
+        color: var(--clr-text);
+    }
+</style>
+{% endblock %}

@@ -48,7 +48,7 @@
     }
     .kategori-badge.corba { background: rgba(243,156,18,.15); color: #F39C12; }
     .kategori-badge.ana_yemek { background: rgba(231,76,60,.15); color: #E74C3C; }
-    .kategori-badge.pilav { background: rgba(155,89,182,.15); color: #9B59B6; }
+    .kategori-badge.yan_yemek { background: rgba(155,89,182,.15); color: #9B59B6; }
     .kategori-badge.tatli { background: rgba(72,201,176,.15); color: #48C9B0; }
     .kategori-badge.salata { background: rgba(46,204,113,.15); color: #2ECC71; }
 
@@ -146,7 +146,7 @@
         <div class="prod-form-card" id="daily-report" style="display:none;">
             <h3>📊 Günlük Tüketim Raporu</h3>
             <div class="prod-report-grid" id="daily-stats"></div>
-            <div class="chart-canvas-wrap" style="max-height:320px;">
+            <div class="chart-canvas-wrap" style="height:320px;">
                 <canvas id="daily-chart"></canvas>
             </div>
         </div>
@@ -155,7 +155,7 @@
         <div class="prod-form-card" id="weekly-report" style="display:none;">
             <h3>📈 Haftalık İsraf Trendi</h3>
             <div class="prod-report-grid" id="weekly-stats"></div>
-            <div class="chart-canvas-wrap" style="max-height:320px;">
+            <div class="chart-canvas-wrap" style="height:320px;">
                 <canvas id="weekly-chart"></canvas>
             </div>
         </div>
@@ -202,7 +202,7 @@
             const m = menuData.data;
             if (m.corba) yemekler.push({ ad: m.corba, kategori: 'corba' });
             if (m.ana_yemek) yemekler.push({ ad: m.ana_yemek, kategori: 'ana_yemek' });
-            if (m.pilav) yemekler.push({ ad: m.pilav, kategori: 'pilav' });
+            if (m.yan_yemek) yemekler.push({ ad: m.yan_yemek, kategori: 'yan_yemek' });
             if (m.tatli) yemekler.push({ ad: m.tatli, kategori: 'tatli' });
             if (m.salata) yemekler.push({ ad: m.salata, kategori: 'salata' });
         }
@@ -415,6 +415,7 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: { legend: { labels: { color: '#AED6F1' } } },
                 scales: {
                     y: { min: 0, max: 100, ticks: { color: '#8892A4', callback: v => v + '%' }, grid: { color: 'rgba(46,134,193,.1)' } },
@@ -473,6 +474,7 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: { legend: { labels: { color: '#AED6F1' } } },
                 scales: {
                     y: { min: 0, max: 100, ticks: { color: '#8892A4', callback: v => v + '%' }, grid: { color: 'rgba(46,134,193,.1)' } },
@@ -484,7 +486,7 @@
 
     // ─── Helpers ─────────────────────────────────────────────────
     function formatKategori(k) {
-        const map = { corba: 'Çorba', ana_yemek: 'Ana Yemek', pilav: 'Yan Yemek', tatli: 'Tatlı', salata: 'Salata' };
+        const map = { corba: 'Çorba', ana_yemek: 'Ana Yemek', yan_yemek: 'Yan Yemek', tatli: 'Tatlı', salata: 'Salata' };
         return map[k] || k;
     }
 </script>

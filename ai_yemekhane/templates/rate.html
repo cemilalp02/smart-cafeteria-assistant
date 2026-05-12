@@ -9,6 +9,15 @@
             <p class="section-desc">Anonim olarak yemekleri puanla, görüşlerini paylaş!</p>
         </div>
 
+        <!-- Motivasyon -->
+        <div class="motivation-banner" data-reveal>
+            <span class="motivation-icon">🌱</span>
+            <div>
+                <strong>Senin puanın israfı azaltmaya yardımcı oluyor!</strong>
+                <p>Her puanlama, yapay zekâ modelimize veri sağlıyor ve gelecek haftanın menüsünü daha iyi yapmamıza yardımcı oluyor.</p>
+            </div>
+        </div>
+
         <!-- Puanlama Formu -->
         <div id="rating-form-area">
             <div class="rating-loading" id="rating-loading">
@@ -38,7 +47,7 @@
     const KATEGORI_ICON = {
         corba: '🥣',
         ana_yemek: '🍖',
-        pilav: '🍚',
+        yan_yemek: '🍚',
         tatli: '🍰',
         salata: '🥗'
     };
@@ -46,12 +55,19 @@
     const KATEGORI_LABEL = {
         corba: 'Çorba',
         ana_yemek: 'Ana Yemek',
-        pilav: 'Yan Yemek',
+        yan_yemek: 'Yan Yemek',
         tatli: 'Tatlı',
         salata: 'Salata'
     };
 
-    // ─── Menüyü yükleyip puanlama kartlarını oluştur ──────────────
+    const PUAN_EMOJI = {
+        1: '😢',
+        2: '😕',
+        3: '😐',
+        4: '😊',
+        5: '🤩'
+    };
+
     async function loadMenuForRating() {
         const area = document.getElementById('rating-form-area');
         try {
@@ -67,7 +83,7 @@
 
             const menu = data.data;
             const bugun = menu.tarih;
-            const kategoriler = ['corba', 'ana_yemek', 'pilav', 'tatli', 'salata'];
+            const kategoriler = ['corba', 'ana_yemek', 'yan_yemek', 'tatli', 'salata'];
             let html = '<div class="rating-cards-grid">';
 
             kategoriler.forEach(kat => {
@@ -83,18 +99,38 @@
                             <div class="rating-yemek-adi">${yemek}</div>
                         </div>
                     </div>
+                    <div class="rating-emoji-display" id="emoji-${kat}">
+                        <span class="rating-emoji-big">⭐</span>
+                    </div>
                     <div class="rating-stars" id="stars-${kat}">
                         ${[1, 2, 3, 4, 5].map(i => `
                             <span class="star" data-kat="${kat}" data-yemek="${yemek}" data-puan="${i}" onclick="selectStar(this)">☆</span>
                         `).join('')}
                     </div>
                     <div class="rating-puan-text" id="puan-text-${kat}">Puan seçin</div>
-                    <textarea class="rating-yorum" id="yorum-${kat}" placeholder="Yorumunuz (opsiyonel)..." maxlength="500"></textarea>
+                    <div class="self-report-section" id="self-report-${kat}">
+                        <div class="self-report-label">🗑️ Ne kadar yemek artırdınız?</div>
+                        <div class="self-report-options">
+                            <button class="sr-btn" data-kat="${kat}" data-value="0" onclick="selectSelfReport(this)">
+                                <span class="sr-icon">✅</span><span class="sr-text">Hiç</span>
+                            </button>
+                            <button class="sr-btn" data-kat="${kat}" data-value="1" onclick="selectSelfReport(this)">
+                                <span class="sr-icon">🟢</span><span class="sr-text">Az<br><small>&lt;%25</small></span>
+                            </button>
+                            <button class="sr-btn" data-kat="${kat}" data-value="2" onclick="selectSelfReport(this)">
+                                <span class="sr-icon">🟡</span><span class="sr-text">Orta<br><small>%25-50</small></span>
+                            </button>
+                            <button class="sr-btn" data-kat="${kat}" data-value="3" onclick="selectSelfReport(this)">
+                                <span class="sr-icon">🔴</span><span class="sr-text">Çok<br><small>&gt;%50</small></span>
+                            </button>
+                        </div>
+                    </div>
+                    <textarea class="rating-yorum" id="yorum-${kat}" placeholder="Yorumunuz (opsiyonel)... Detaylı yorumlar AI modeline yardımcı olur!" maxlength="500"></textarea>
                     <button class="btn btn-primary rating-btn" onclick="submitRating('${kat}', '${yemek}', '${bugun}')">
                         ⭐ Puanla
                     </button>
                     <div class="rating-success" id="success-${kat}" style="display:none;">
-                        ✅ Teşekkürler! Puanınız kaydedildi.
+                        ✅ Teşekkürler! Puanınız kaydedildi ve AI modeline iletildi.
                     </div>
                 </div>`;
             });
@@ -111,15 +147,25 @@
         }
     }
 
-    // ─── Yıldız seçimi ────────────────────────────────────────────
     let selectedPuanlar = {};
+    let selectedSelfReports = {};
+
+    function selectSelfReport(el) {
+        const kat = el.dataset.kat;
+        const value = parseInt(el.dataset.value);
+        selectedSelfReports[kat] = value;
+
+        const buttons = document.querySelectorAll(`#self-report-${kat} .sr-btn`);
+        buttons.forEach(b => {
+            b.classList.toggle('sr-active', parseInt(b.dataset.value) === value);
+        });
+    }
 
     function selectStar(el) {
         const kat = el.dataset.kat;
         const puan = parseInt(el.dataset.puan);
         selectedPuanlar[kat] = puan;
 
-        // Yıldızları güncelle
         const stars = document.querySelectorAll(`#stars-${kat} .star`);
         stars.forEach(s => {
             const sp = parseInt(s.dataset.puan);
@@ -127,11 +173,16 @@
             s.classList.toggle('active', sp <= puan);
         });
 
+        // Emoji güncelle
+        const emojiEl = document.getElementById(`emoji-${kat}`);
+        if (emojiEl) {
+            emojiEl.innerHTML = `<span class="rating-emoji-big rating-emoji-pop">${PUAN_EMOJI[puan]}</span>`;
+        }
+
         const puanLabels = ['', 'Çok Kötü', 'Kötü', 'Orta', 'İyi', 'Mükemmel'];
         document.getElementById(`puan-text-${kat}`).textContent = `${puan}/5 — ${puanLabels[puan]}`;
     }
 
-    // ─── Puan gönder ──────────────────────────────────────────────
     async function submitRating(kat, yemek, tarih) {
         const puan = selectedPuanlar[kat];
         if (!puan) {
@@ -144,6 +195,7 @@
         btn.disabled = true;
         btn.textContent = '⏳ Gönderiliyor...';
 
+        const selfReport = selectedSelfReports[kat] !== undefined ? selectedSelfReports[kat] : null;
         const data = await apiFetch('/api/rate-meal', {
             method: 'POST',
             body: JSON.stringify({
@@ -151,7 +203,8 @@
                 yemek_adi: yemek,
                 kategori: kat,
                 puan: puan,
-                yorum: yorum || null
+                yorum: yorum || null,
+                israf_self_report: selfReport
             })
         });
 
@@ -161,7 +214,6 @@
             document.getElementById(`stars-${kat}`).style.pointerEvents = 'none';
             document.getElementById(`yorum-${kat}`).disabled = true;
             showToast(data.message, 'success');
-            // Ortalama puanları yenile
             loadTodayAverages();
         } else {
             showToast(data.message || 'Bir hata oluştu.', 'error');
@@ -170,7 +222,6 @@
         }
     }
 
-    // ─── Bugünün ortalama puanlarını yükle ─────────────────────────
     async function loadTodayAverages() {
         const container = document.getElementById('today-avg-container');
         try {
@@ -204,12 +255,18 @@
                         <div class="avg-rating-stars">${starsFull}${starsEmpty}</div>
                         <div class="avg-rating-score">${r.ortalama}/5</div>
                         <div class="avg-rating-votes">${r.toplam_oy} oy</div>
+                        ${r.self_report_sayisi > 0 ? `
+                        <div class="avg-self-report">
+                            <span class="sr-badge">
+                                🗑️ ${r.ort_self_report !== null ? ['Hiç','Az','Orta','Çok'][Math.round(r.ort_self_report)] : '-'}
+                                <small>(${r.self_report_sayisi} bildirim)</small>
+                            </span>
+                        </div>` : ''}
                     </div>`;
             });
 
             container.innerHTML = html;
         } catch (e) {
-            // Quietly fail
         }
     }
 

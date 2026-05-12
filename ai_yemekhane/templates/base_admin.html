@@ -4,24 +4,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="AI Tabanlı Akıllı Yemekhane Asistan Sistemi - Yönetici Paneli">
-    <title>{% block title %}Yönetim{% endblock %} | AI Yemekhane Yönetici</title>
+    <meta name="description" content="AI tabanlı akıllı yemekhane sistemi yönetim ve raporlama paneli">
+    <title>{% block title %}Yönetim{% endblock %} | Akıllı Yemekhane Yönetim Merkezi</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/animations.css">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/motion.css">
     {% block head %}{% endblock %}
 </head>
 
-<body>
-    <!-- ═══ ADMIN NAVBAR ═══ -->
+<body class="app-shell ui-forge {% block body_class %}shell-admin{% endblock %}">
+    <div class="site-aurora site-aurora-left" aria-hidden="true"></div>
+    <div class="site-aurora site-aurora-right" aria-hidden="true"></div>
+    <div class="site-grid" aria-hidden="true"></div>
+
     <nav class="navbar navbar-admin">
         <div class="nav-container">
             <a href="/admin" class="nav-logo">
-                <span class="logo-icon">🛡️</span>
-                <span class="logo-text">Yönetici Paneli</span>
+                <span class="logo-mark logo-mark-admin" aria-hidden="true"></span>
+                <span class="logo-copy">
+                    <span class="logo-text">Yönetim Merkezi</span>
+                </span>
             </a>
+            <div class="nav-meta">
+                <span class="nav-status nav-status-admin">Yönetim</span>
+            </div>
             <button class="hamburger" aria-label="Menü">
                 <span></span><span></span><span></span>
             </button>
@@ -32,25 +47,29 @@
                 <li><a href="/feedback-analysis">Geri Bildirim</a></li>
                 <li><a href="/menu">Menü Yönetimi</a></li>
                 <li><a href="/report">Raporlar</a></li>
+                <li><a href="/admin/simulation">Simülasyon</a></li>
                 <li><a href="/docs" target="_blank">API Docs</a></li>
-                <li><a href="/admin/logout" class="nav-btn nav-btn-logout">🚪 Çıkış</a></li>
+                <li><a href="/admin/logout" class="nav-btn nav-btn-logout">Çıkış</a></li>
             </ul>
         </div>
     </nav>
 
-    <!-- ═══ MAIN CONTENT ═══ -->
-    {% block content %}{% endblock %}
+    <main class="site-main">
+        {% block content %}{% endblock %}
+    </main>
 
-    <!-- ═══ FOOTER ═══ -->
     <footer class="footer">
         <div class="container">
-            <p>🎓 AI Tabanlı Akıllı Yemekhane Asistan Sistemi — Yönetici Paneli</p>
-            <p class="footer-tech">Python • FastAPI • SQLite • YOLO • Gemini AI • Chart.js</p>
+            <p>Yönetim merkezi; yemekhane üretim, puanlama, israf analizi ve rapor akışlarını tek panelde toplar.</p>
+            <p class="footer-tech">FastAPI • SQLite • scikit-learn • Gemini AI • Chart.js</p>
         </div>
     </footer>
 
-    <!-- ═══ SCRIPTS ═══ -->
     <script src="/static/js/app.js"></script>
+    <script src="/static/js/animations.js"></script>
+    <script src="/static/js/theme.js"></script>
+    <script src="/static/js/layout.js"></script>
+    <script src="/static/js/motion.js"></script>
     {% block scripts %}{% endblock %}
 </body>
 

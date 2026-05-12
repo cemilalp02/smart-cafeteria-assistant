@@ -1,0 +1,46 @@
+🚀 Projeyi Çalıştırma Komutları
+1. Python Bağımlılıklarını Yükle
+bash
+cd ai_yemekhane
+pip install -r requirements.txt
+2. .env Dosyası Oluştur
+Proje dizininde (c:\Users\cemil\Desktop\AI-Smart-Cafeteria-Waste-Reduction/ai_yemekhane/) bir .env dosyası oluşturun:
+
+env
+GEMINI_API_KEY=buraya-gemini-api-keyinizi-yazin
+ADMIN_PASSWORD=admin123
+SECRET_KEY=dev-secret-key-degistir
+DEBUG=True
+PORT=8001
+3. Veritabanını Hazırla (İlk Kurulum)
+bash
+cd ai_yemekhane
+python scripts/data/load_menu_data.py
+python scripts/data/seed_data.py
+4. Sunucuyu Başlat
+bash
+cd ai_yemekhane
+python main.py
+Açılınca: http://localhost:8001
+
+5. Sayfalar
+Sayfa	Adres
+Ana Sayfa	http://localhost:8001/
+Günün Menüsü	http://localhost:8001/today-menu
+Chatbot	http://localhost:8001/chat
+Puanlama	http://localhost:8001/rate
+Oylama	http://localhost:8001/vote
+Admin Paneli	http://localhost:8001/admin
+Raporlar	http://localhost:8001/report
+API Docs (Swagger)	http://localhost:8001/docs
+Admin giriş şifresi: admin123
+
+6. Testleri Çalıştır
+bash
+cd ai_yemekhane
+pytest tests/ -v
+7. Mobil Uygulama (Opsiyonel)
+bash
+cd ai_yemekhane/mobile_app
+npm install
+npm run start

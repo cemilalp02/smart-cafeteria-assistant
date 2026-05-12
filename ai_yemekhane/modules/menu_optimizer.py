@@ -16,11 +16,13 @@ Kullanılan teknolojiler:
   - joblib (model kayıt / yükleme)
 """
 
+import json
+import logging
 import os
 import random
 import hashlib
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 import numpy as np
@@ -32,7 +34,9 @@ from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from sklearn.preprocessing import LabelEncoder
 
-from models import SessionLocal, MenuPuanlama, Alert, UretimLog
+from models import SessionLocal, MenuPuanlama, Alert, UretimLog, Menu, MenuOneriLog
+
+logger = logging.getLogger(__name__)
 
 # ─── Sabitler ──────────────────────────────────────────────────────
 GUNLER = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"]
@@ -43,12 +47,89 @@ MEVSIM_MAP = {1: "kış", 2: "kış", 3: "ilkbahar", 4: "ilkbahar", 5: "ilkbahar
               11: "sonbahar", 12: "kış"}
 MEVSIM_NUM = {"kış": 0, "ilkbahar": 1, "yaz": 2, "sonbahar": 3}
 
-KATEGORI_KOLONLARI = ["corba", "ana_yemek", "pilav_makarna", "tatli", "salata"]
+KATEGORI_KOLONLARI = ["corba", "ana_yemek", "yan_yemek", "tatli", "salata"]
+
+# ─── Beslenme Dengesi Hedefleri ────────────────────────────────────
+# Referans: Sağlık Bakanlığı üniversite yemekhanesi öğle yemeği önerileri
+BESLENME_HEDEF = {
+    "kalori_min": 650,       # kcal — minimum günlük öğle yemeği
+    "kalori_max": 950,       # kcal — maximum günlük öğle yemeği
+    "protein_min": 25,       # gram — minimum protein
+    "kalori_ideal": 800,     # kcal — ideal merkez
+}
+
+# Sebze yemeği tespiti için anahtar kelimeler
+SEBZE_ANAHTAR = [
+    "ıspanak", "ispanak", "brokoli", "karnabahar", "pırasa", "pirasa",
+    "kabak", "patlıcan", "biber", "domates", "bamya", "bezelye",
+    "fasulye", "börülce", "borulce", "enginar", "kereviz", "havuç",
+    "havuc", "mantar", "turlu", "türlü", "sebze", "zeytinyağlı",
+    "zeytinyagli", "salata", "sote", "kavurma", "dolma", "sarma",
+]
+
+# ─── Et Türü Anahtar Kelimeleri (Constraint: hafta max 2) ────────
+ET_TURU_ANAHTAR = {
+    "tavuk": [
+        "tavuk", "kanat", "pane", "chicken", "but", "pirzola",
+        "büryan", "fajita", "tantuni tavuk", "döner tavuk",
+    ],
+    "kirmizi_et": [
+        "et ", "köfte", "kebab", "kebabı", "dana", "kuzu", "kavurma",
+        "güveç", "rosto", "haşlama", "sote et", "tandır", "döner et",
+        "iskender", "ciğer",
+    ],
+    "balik": [
+        "balık", "hamsi", "uskumru", "levrek", "çipura", "somon",
+        "sardalya", "mezgit", "palamut",
+    ],
+}
+
+# ─── Allerjen Grupları (Constraint: aynı gün max 3 grup) ────────
+ALLERJEN_GRUPLAR = {
+    "gluten": [
+        "makarna", "börek", "ekmek", "pide", "mantı", "erişte",
+        "yufka", "lavaş", "bulgur", "şehriye", "kuskus",
+    ],
+    "sut": [
+        "peynir", "süt", "yoğurt", "krema", "beşamel", "kaşar",
+        "muhallebi", "keşkül", "puding", "sütlaç",
+    ],
+    "yumurta": [
+        "yumurta", "pane", "mücver", "omlet",
+    ],
+}
+
+# ─── Multi-Objective Optimizasyon Ağırlıkları ────────────────────
+# Admin dashboard'dan ayarlanabilir; varsayılan değerler
+OPTIMIZATION_WEIGHTS = {
+    "populerlik": 0.35,     # Popülerlik maximizasyonu
+    "israf": 0.30,          # İsraf minimizasyonu
+    "beslenme": 0.20,       # Beslenme dengesi
+    "maliyet": 0.15,        # Maliyet optimizasyonu
+}
+
+# Tahmini porsiyon maliyeti (TL) — kategori bazlı
+KATEGORI_MALIYET = {
+    "corba": 8.0,
+    "ana_yemek": 25.0,
+    "yan_yemek": 10.0,
+    "tatli": 12.0,
+    "salata": 7.0,
+}
+
+# Haftalık günlük ortalama bütçe hedefi (TL)
+GUNLUK_BUTCE_HEDEF = 65.0
+
+# Haftalık constraint limitleri
+HAFTALIK_ET_LIMIT = 2          # Aynı et türü haftada max 2 kez
+MIN_SEBZE_GUN = 1              # Haftada min 1 gün ağırlıklı sebze
+MAX_AYNI_GUN_ALLERJEN = 3      # Aynı günde max 3 allerjen grubu
 
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "..", "models_data")
 MODEL_PATH = os.path.join(MODEL_DIR, "menu_popularity_model.joblib")
 ENCODERS_PATH = os.path.join(MODEL_DIR, "label_encoders.joblib")
 FEATURES_PATH = os.path.join(MODEL_DIR, "feature_columns.joblib")
+OPTIMIZATION_WEIGHTS_PATH = os.path.join(MODEL_DIR, "optimization_weights.json")
 
 # ─── Popülerlik puanları (gerçek menü verisi bazlı) ───────────────
 # 270 yemek - gerçek üniversite menü verisi
@@ -485,6 +566,9 @@ def load_menu_csv(csv_path: str) -> pd.DataFrame:
     """menu_data.csv dosyasını yükler ve temel dönüşümleri yapar."""
     df = pd.read_csv(csv_path, encoding="utf-8")
     df["tarih"] = pd.to_datetime(df["tarih"])
+    # Legacy CSV uyumu: 'pilav_makarna' kolonu artık 'yan_yemek' olarak adlandırılıyor
+    if "pilav_makarna" in df.columns and "yan_yemek" not in df.columns:
+        df = df.rename(columns={"pilav_makarna": "yan_yemek"})
     df = df.sort_values("tarih").reset_index(drop=True)
     return df
 
@@ -504,9 +588,7 @@ def melt_to_long(df: pd.DataFrame) -> pd.DataFrame:
         for kat in KATEGORI_KOLONLARI:
             yemek = row.get(kat, None)
             if pd.notna(yemek) and str(yemek).strip():
-                # CSV'deki "pilav_makarna" kolonu, uygulamadaki "pilav"
-                # kategorisine karşılık gelir; eğitim ve runtime tutarlı olmalı.
-                kategori = "pilav" if kat == "pilav_makarna" else kat
+                kategori = kat
                 rows.append({
                     "tarih": tarih,
                     "gun": gun,
@@ -892,7 +974,186 @@ def predict_popularity(
 
 
 # ═══════════════════════════════════════════════════════════════════
-# 9) HAFTALIK MENÜ OPTİMİZASYONU
+# 8.5) MULTI-OBJECTIVE & CONSTRAINT YARDIMCI FONKSİYONLAR
+# ═══════════════════════════════════════════════════════════════════
+
+def _load_optimization_weights() -> dict[str, float]:
+    """Kaydedilmiş ağırlıkları yükler; yoksa varsayılanları döndürür."""
+    try:
+        if os.path.exists(OPTIMIZATION_WEIGHTS_PATH):
+            with open(OPTIMIZATION_WEIGHTS_PATH, "r", encoding="utf-8") as f:
+                w = json.load(f)
+            # Validasyon
+            if all(k in w for k in OPTIMIZATION_WEIGHTS):
+                return w
+    except Exception:
+        pass
+    return dict(OPTIMIZATION_WEIGHTS)
+
+
+def save_optimization_weights(weights: dict[str, float]) -> bool:
+    """Admin dashboard'dan gelen ağırlıkları kaydeder."""
+    try:
+        required_keys = {"populerlik", "israf", "beslenme", "maliyet"}
+        if not required_keys.issubset(weights.keys()):
+            return False
+        total = sum(weights[k] for k in required_keys)
+        if total <= 0:
+            return False
+        # Normalize et (toplam = 1.0)
+        normalized = {k: round(weights[k] / total, 4) for k in required_keys}
+        os.makedirs(MODEL_DIR, exist_ok=True)
+        with open(OPTIMIZATION_WEIGHTS_PATH, "w", encoding="utf-8") as f:
+            json.dump(normalized, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception:
+        return False
+
+
+def _detect_et_turu(yemek_adi: str) -> str | None:
+    """Yemek adından et türünü tespit eder. Bulamazsa None döner."""
+    ad_lower = yemek_adi.lower()
+    for tur, keywords in ET_TURU_ANAHTAR.items():
+        for kw in keywords:
+            if kw in ad_lower:
+                return tur
+    return None
+
+
+def _detect_allerjenler(yemek_adi: str) -> set[str]:
+    """Yemek adından içerdiği allerjen gruplarını tespit eder."""
+    ad_lower = yemek_adi.lower()
+    sonuc = set()
+    for grup, keywords in ALLERJEN_GRUPLAR.items():
+        for kw in keywords:
+            if kw in ad_lower:
+                sonuc.add(grup)
+                break
+    return sonuc
+
+
+def _is_sebze_yemegi(yemek_adi: str) -> bool:
+    """Yemek adının sebze yemeği olup olmadığını kontrol eder."""
+    ad_lower = yemek_adi.lower()
+    return any(sk in ad_lower for sk in SEBZE_ANAHTAR)
+
+
+def _build_israf_map(db, tarih: date) -> dict[str, float]:
+    """Son 30 günlük yemek bazlı ortalama israf oranlarını döndürür."""
+    from sqlalchemy import func as _sqla_f
+    try:
+        son_30_gun = tarih - timedelta(days=30)
+        rows = (
+            db.query(
+                UretimLog.yemek_adi,
+                _sqla_f.avg(UretimLog.israf_orani).label("ort_israf"),
+                _sqla_f.count(UretimLog.id).label("kayit"),
+            )
+            .filter(
+                UretimLog.tarih >= son_30_gun,
+                UretimLog.israf_orani.isnot(None),
+            )
+            .group_by(UretimLog.yemek_adi)
+            .all()
+        )
+        result = {}
+        for row in rows:
+            if row.kayit and row.kayit >= 2:
+                key = _normalize_meal_key(row.yemek_adi)
+                result[key] = float(row.ort_israf or 0)
+        return result
+    except Exception:
+        return {}
+
+
+def _compute_multi_objective_score(
+    *,
+    populerlik_skor: float,
+    israf_orani: float,
+    beslenme_skoru: float,
+    maliyet_skoru: float,
+    weights: dict[str, float],
+) -> float:
+    """
+    Çok amaçlı optimizasyon skor fonksiyonu.
+
+    Her bileşen 0-1 arasında normalize edilmiş olmalıdır:
+      - populerlik_skor: 0-1, yüksek = iyi
+      - israf_orani: 0-1 (0-100 / 100), düşük = iyi → (1 - israf) ile çevrilir
+      - beslenme_skoru: 0-1, yüksek = iyi
+      - maliyet_skoru: 0-1, yüksek = uygun bütçe
+    """
+    israf_normalized = max(0.0, 1.0 - israf_orani)
+
+    score = (
+        weights.get("populerlik", 0.35) * populerlik_skor
+        + weights.get("israf", 0.30) * israf_normalized
+        + weights.get("beslenme", 0.20) * beslenme_skoru
+        + weights.get("maliyet", 0.15) * maliyet_skoru
+    )
+    return round(max(0.0, min(1.0, score)), 4)
+
+
+def _compute_beslenme_skoru(
+    gun_kalori: float,
+    gun_protein: float,
+    aday_kalori: float,
+    aday_protein: float,
+) -> float:
+    """
+    Günlük beslenme durumuna göre 0-1 arası skor döndürür.
+    İdeal kalori aralığına yakınlık + protein yeterliliği ölçer.
+    """
+    tahmini_kalori = gun_kalori + aday_kalori
+    tahmini_protein = gun_protein + aday_protein
+
+    # Kalori skoru: ideal merkezden (800) uzaklık
+    ideal = BESLENME_HEDEF["kalori_ideal"]
+    kalori_fark = abs(tahmini_kalori - ideal) / ideal
+    kalori_skor = max(0.0, 1.0 - kalori_fark)
+
+    # Kalori aşım/düşüş cezası
+    if tahmini_kalori > BESLENME_HEDEF["kalori_max"]:
+        asim = (tahmini_kalori - BESLENME_HEDEF["kalori_max"]) / 300
+        kalori_skor -= min(asim, 0.4)
+    elif tahmini_kalori < BESLENME_HEDEF["kalori_min"] * 0.7:
+        kalori_skor -= 0.2
+
+    # Protein skoru
+    protein_skor = min(1.0, tahmini_protein / BESLENME_HEDEF["protein_min"])
+
+    return round(max(0.0, kalori_skor * 0.6 + protein_skor * 0.4), 3)
+
+
+def _compute_maliyet_skoru(
+    gun_maliyet: float,
+    aday_kategori: str,
+    aday_maliyet: float | None = None,
+) -> float:
+    """
+    Günlük maliyet durumuna göre 0-1 arası bütçe uygunluk skoru döndürür.
+    Bütçe hedefini aşmamak daha yüksek skor verir.
+
+    Args:
+        gun_maliyet: O güne kadar birikmiş maliyet (TL)
+        aday_kategori: Aday yemeğin kategorisi (fallback için)
+        aday_maliyet: Aday yemeğin gerçek birim maliyeti. None ise KATEGORI_MALIYET kullanılır.
+    """
+    if aday_maliyet is None:
+        aday_maliyet = KATEGORI_MALIYET.get(aday_kategori, 15.0)
+    tahmini_toplam = gun_maliyet + aday_maliyet
+
+    if tahmini_toplam <= GUNLUK_BUTCE_HEDEF:
+        # Bütçe altında — tam skor
+        return 1.0
+    else:
+        # Bütçe aşımı — orantılı penaltı
+        asim_oran = (tahmini_toplam - GUNLUK_BUTCE_HEDEF) / GUNLUK_BUTCE_HEDEF
+        return round(max(0.0, 1.0 - asim_oran * 2), 3)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 9) HAFTALIK MENÜ OPTİMİZASYONU (Multi-Objective + Constraint)
 # ═══════════════════════════════════════════════════════════════════
 def generate_weekly_menu(
     yemek_listesi: list[dict],
@@ -900,22 +1161,33 @@ def generate_weekly_menu(
     model=None,
     encoders: dict | None = None,
     feature_cols: list | None = None,
+    custom_weights: dict[str, float] | None = None,
 ) -> list[dict]:
     """
-    Kısıt tabanlı haftalık menü optimizasyonu.
+    Multi-objective + constraint-based haftalık menü optimizasyonu.
 
-    Kısıtlar:
+    Multi-Objective Hedefler (ağırlıklı):
+      - Popülerlik maximizasyonu
+      - İsraf minimizasyonu
+      - Beslenme dengesi (kalori, protein hedefleri)
+      - Maliyet optimizasyonu
+
+    Hard Constraints:
       - Aynı yemek haftada en fazla 2 kez
       - Her gün farklı çorba
-      - Popülerlik skoru en yüksek kombinasyon tercih edilir
+      - Aynı et türü (tavuk/kırmızı et/balık) haftada max 2 kez
+      - Haftada min 1 gün ağırlıklı sebze menüsü
+      - Aynı gün max 3 allerjen grubu
+      - KRİTİK uyarılı yemekler otomatik elenir
 
     Args:
-        yemek_listesi: DB'den gelen yemek dict listesi soru
+        yemek_listesi: DB'den gelen yemek dict listesi
         baslangic_tarihi: Menünün başlangıç tarihi
         model/encoders/feature_cols: Eğitilmiş ML model (opsiyonel)
+        custom_weights: Özel optimizasyon ağırlıkları (opsiyonel)
 
     Returns:
-        list[dict]: 5 günlük optimize edilmiş menü
+        list[dict]: 5 günlük optimize edilmiş menü (beslenme + maliyet özeti dahil)
     """
     # Varsayılan başlangıç: gelecek Pazartesi
     if baslangic_tarihi is None:
@@ -929,65 +1201,143 @@ def generate_weekly_menu(
     if model is None:
         model, encoders, feature_cols = load_trained_model()
 
+    # ── Optimizasyon ağırlıklarını yükle ──
+    weights = custom_weights if custom_weights else _load_optimization_weights()
+
     # Yemekleri kategoriye göre grupla
     havuz: dict[str, list[dict]] = {
-        "corba": [], "ana_yemek": [], "pilav": [], "tatli": [], "salata": [],
+        "corba": [], "ana_yemek": [], "yan_yemek": [], "tatli": [], "salata": [],
     }
     for y in yemek_listesi:
         kat = y.get("kategori", "")
         if kat in havuz:
             havuz[kat].append(y)
 
-    # Haftalık seçim takibi (kısıt: haftada en fazla 2 kez)
+    # Besin değeri lookup: yemek adı → {kalori, protein, karbonhidrat, yag}
+    besin_lookup: dict[str, dict] = {}
+    for y in yemek_listesi:
+        besin_lookup[y["ad"]] = {
+            "kalori": float(y.get("kalori", 0) or 0),
+            "protein": float(y.get("protein", 0) or 0),
+            "karbonhidrat": float(y.get("karbonhidrat", 0) or 0),
+            "yag": float(y.get("yag", 0) or 0),
+        }
+
+    # Maliyet lookup: yemek adı → birim_maliyet (TL)
+    # Öncelik: Yemek.birim_maliyet → fallback KATEGORI_MALIYET
+    maliyet_lookup: dict[str, float] = {}
+    for y in yemek_listesi:
+        birim = y.get("birim_maliyet")
+        if birim is not None:
+            try:
+                maliyet_lookup[y["ad"]] = float(birim)
+                continue
+            except (TypeError, ValueError):
+                pass
+        maliyet_lookup[y["ad"]] = KATEGORI_MALIYET.get(y.get("kategori", ""), 15.0)
+
+    def _maliyet_for(ad: str, kategori: str) -> float:
+        """Yemek adı için maliyet (DB öncelikli, fallback kategori)."""
+        if ad in maliyet_lookup:
+            return maliyet_lookup[ad]
+        return KATEGORI_MALIYET.get(kategori, 15.0)
+
+    # ── İsraf haritasını batch olarak oluştur (her aday için ayrı DB sorgusu yerine) ──
+    israf_map: dict[str, float] = {}
+    try:
+        db_israf = SessionLocal()
+        israf_map = _build_israf_map(db_israf, baslangic_tarihi)
+        db_israf.close()
+    except Exception:
+        pass
+
+    # ── KRİTİK uyarılı yemekleri toplu al ──
+    kritik_yemekler: set[str] = set()
+    try:
+        db_krt = SessionLocal()
+        kritik_alerts = db_krt.query(Alert.yemek_adi).filter(
+            Alert.seviye == "KRITIK",
+            Alert.aktif == True,
+            Alert.yemek_adi.isnot(None),
+        ).all()
+        kritik_yemekler = {a.yemek_adi for a in kritik_alerts}
+        db_krt.close()
+    except Exception:
+        pass
+
+    # ── Gerçek puan haritasını toplu al ──
+    puan_map: dict[str, dict] = {}
+    try:
+        db_puan = SessionLocal()
+        puan_map = _build_rating_signal_map(db_puan)
+        db_puan.close()
+    except Exception:
+        pass
+
+    # ── Haftalık constraint takibi ──
     haftalik_kullanim: dict[str, int] = {}
-    secilen_corba: set[str] = set()  # Her gün farklı çorba
+    haftalik_et_sayac: dict[str, int] = {
+        "tavuk": 0, "kirmizi_et": 0, "balik": 0,
+    }
+    haftalik_sebze_gun_sayisi = 0
 
     haftalik_menu = []
 
     for i, gun in enumerate(GUNLER):
         tarih = baslangic_tarihi + timedelta(days=i)
-        gun_menusu = {"tarih": str(tarih), "gun": gun}
+        gun_menusu: dict[str, Any] = {"tarih": str(tarih), "gun": gun}
 
-        for kat_key in ["corba", "ana_yemek", "pilav", "tatli", "salata"]:
+        # ── Günlük takip ──
+        gun_kalori = 0.0
+        gun_protein = 0.0
+        gun_karbonhidrat = 0.0
+        gun_yag = 0.0
+        gun_maliyet = 0.0
+        gun_sebze_var = False
+        gun_allerjenler: set[str] = set()
+        gun_skor_detay: dict[str, float] = {}
+
+        # Son günlerdeyiz ve sebze günü dolmadıysa → bonus artır
+        kalan_gun = len(GUNLER) - i
+        sebze_acil = (
+            haftalik_sebze_gun_sayisi < MIN_SEBZE_GUN
+            and kalan_gun <= MIN_SEBZE_GUN
+        )
+
+        for kat_key in ["corba", "ana_yemek", "yan_yemek", "tatli", "salata"]:
             adaylar = havuz.get(kat_key, [])
             if not adaylar:
                 gun_menusu[kat_key] = "Belirtilmedi"
                 continue
 
-            # Adayları skorla
-            skorlu = []
-
-            # KRİTİK uyarılı yemekleri filtrele
-            try:
-                kritik_yemekler = set()
-                db_temp = SessionLocal()
-                kritik_alerts = db_temp.query(Alert.yemek_adi).filter(
-                    Alert.seviye == "KRITIK",
-                    Alert.aktif == True,
-                    Alert.yemek_adi.isnot(None),
-                ).all()
-                kritik_yemekler = {a.yemek_adi for a in kritik_alerts}
-                db_temp.close()
-            except Exception:
-                kritik_yemekler = set()
+            skorlu: list[tuple[dict, float]] = []
 
             for aday in adaylar:
                 ad = aday["ad"]
 
-                # KRİTİK uyarılı yemek → atla
+                # ── Hard Constraint 1: KRİTİK uyarılı yemek → atla ──
                 if ad in kritik_yemekler:
                     continue
 
-                # Kısıt kontrolü
-                if haftalik_kullanim.get(ad, 0) >= 2:
-                    continue  # Haftada 2'den fazla → geç
-                if kat_key == "corba" and ad in secilen_corba:
-                    continue  # Aynı çorba tekrar → geç
+                # ── Hard Constraint 2: Her yemek haftada en fazla 1 kez ──
+                if haftalik_kullanim.get(ad, 0) >= 1:
+                    continue
 
-                # Skor hesapla
+                # ── Hard Constraint 4: Et türü haftada max 2 ──
+                et_turu = _detect_et_turu(ad)
+                if et_turu and haftalik_et_sayac.get(et_turu, 0) >= HAFTALIK_ET_LIMIT:
+                    continue
+
+                # ── Hard Constraint 5: Günlük allerjen çeşitliliği ──
+                aday_allerjenler = _detect_allerjenler(ad)
+                birlesmis_allerjen = gun_allerjenler | aday_allerjenler
+                if len(birlesmis_allerjen) > MAX_AYNI_GUN_ALLERJEN:
+                    continue
+
+                # ── Popülerlik Skoru ──
                 if model is not None and encoders is not None:
                     tekrar = haftalik_kullanim.get(ad, 0)
-                    skor = predict_popularity(
+                    pop_skor = predict_popularity(
                         model, encoders, feature_cols,
                         yemek_adi=ad,
                         kategori=kat_key,
@@ -996,33 +1346,55 @@ def generate_weekly_menu(
                         tekrar_7gun=tekrar,
                     )
                 else:
-                    # Model yoksa baz popülerlik + random
-                    skor = YEMEK_BAZI_POPULERLIK.get(ad, 0.5) + random.uniform(-0.05, 0.05)
+                    pop_skor = YEMEK_BAZI_POPULERLIK.get(ad, 0.5) + random.uniform(-0.05, 0.05)
 
-                skorlu.append((aday, skor))
-
-            # Gerçek puan bazlı bonus/penaltı
-            try:
-                puan_info = get_meal_average_rating(ad)
-                if puan_info["ortalama"] is not None:
+                # Gerçek puan feedback
+                meal_key = _normalize_meal_key(ad)
+                puan_info = puan_map.get(meal_key)
+                if puan_info and puan_info.get("toplam_oy", 0) > 0:
                     ort = puan_info["ortalama"]
-                    if ort < 2.5:
-                        skor -= 0.15  # Düşük puanlı yemeklere penaltı
+                    if ort < 2.0:
+                        pop_skor -= 0.20
+                    elif ort < 2.5:
+                        pop_skor -= 0.12
+                    elif ort > 4.5:
+                        pop_skor += 0.15
                     elif ort > 4.0:
-                        skor += 0.10  # Yüksek puanlı yemeklere bonus
-            except Exception:
-                pass
+                        pop_skor += 0.08
+                pop_skor = max(0.0, min(1.0, pop_skor))
 
-            # İsraf skoru penaltısı
-            try:
-                from modules.waste_analyzer import calculate_waste_score
-                israf = calculate_waste_score(ad)
-                if israf["israf_skoru"] is not None and israf["israf_skoru"] > 50:
-                    skor -= 0.12  # Yüksek israf skoru → daha az öner
-                elif israf["israf_skoru"] is not None and israf["israf_skoru"] > 35:
-                    skor -= 0.06  # Orta israf → hafif penaltı
-            except Exception:
-                pass
+                # ── İsraf Skoru ──
+                israf_oran = israf_map.get(meal_key, 20.0)  # varsayılan %20
+                israf_normalized = min(1.0, israf_oran / 100.0)
+
+                # ── Beslenme Skoru ──
+                besin = besin_lookup.get(ad, {})
+                aday_kalori = besin.get("kalori", 0)
+                aday_protein = besin.get("protein", 0)
+                beslenme_s = _compute_beslenme_skoru(
+                    gun_kalori, gun_protein, aday_kalori, aday_protein,
+                )
+
+                # Sebze bonusu: son günler + sebze günü eksikse
+                if _is_sebze_yemegi(ad):
+                    if kat_key in ("ana_yemek", "salata") and not gun_sebze_var:
+                        beslenme_s = min(1.0, beslenme_s + 0.10)
+                    if sebze_acil:
+                        beslenme_s = min(1.0, beslenme_s + 0.15)
+
+                # ── Maliyet Skoru ──
+                maliyet_s = _compute_maliyet_skoru(gun_maliyet, kat_key, _maliyet_for(ad, kat_key))
+
+                # ── Multi-Objective Birleşik Skor ──
+                final_skor = _compute_multi_objective_score(
+                    populerlik_skor=pop_skor,
+                    israf_orani=israf_normalized,
+                    beslenme_skoru=beslenme_s,
+                    maliyet_skoru=maliyet_s,
+                    weights=weights,
+                )
+
+                skorlu.append((aday, final_skor))
 
             # En yüksek skora göre sırala ve ilkini seç
             if skorlu:
@@ -1032,15 +1404,74 @@ def generate_weekly_menu(
                 gun_menusu[kat_key] = ad_secilen
                 gun_menusu[f"{kat_key}_skor"] = round(skor, 3)
 
-                # Kısıt güncelle
+                # ── Constraint state güncelle ──
                 haftalik_kullanim[ad_secilen] = haftalik_kullanim.get(ad_secilen, 0) + 1
-                if kat_key == "corba":
-                    secilen_corba.add(ad_secilen)
+
+                et_t = _detect_et_turu(ad_secilen)
+                if et_t:
+                    haftalik_et_sayac[et_t] = haftalik_et_sayac.get(et_t, 0) + 1
+
+                gun_allerjenler |= _detect_allerjenler(ad_secilen)
+
+                if _is_sebze_yemegi(ad_secilen):
+                    gun_sebze_var = True
+
+                # ── Günlük beslenme + maliyet takibi güncelle ──
+                besin_s = besin_lookup.get(ad_secilen, {})
+                gun_kalori += besin_s.get("kalori", 0)
+                gun_protein += besin_s.get("protein", 0)
+                gun_karbonhidrat += besin_s.get("karbonhidrat", 0)
+                gun_yag += besin_s.get("yag", 0)
+                gun_maliyet += _maliyet_for(ad_secilen, kat_key)
             else:
-                # Tüm adaylar kısıtla elendiyse rastgele seç
-                secilen = random.choice(adaylar)
+                # Tüm adaylar kısıtla elendiyse → en az tekrar edeni seç
+                adaylar_sorted = sorted(
+                    adaylar,
+                    key=lambda a: haftalik_kullanim.get(a["ad"], 0),
+                )
+                secilen = adaylar_sorted[0]
                 gun_menusu[kat_key] = secilen["ad"]
                 gun_menusu[f"{kat_key}_skor"] = 0.5
+                haftalik_kullanim[secilen["ad"]] = haftalik_kullanim.get(secilen["ad"], 0) + 1
+
+                besin_s = besin_lookup.get(secilen["ad"], {})
+                gun_kalori += besin_s.get("kalori", 0)
+                gun_protein += besin_s.get("protein", 0)
+                gun_karbonhidrat += besin_s.get("karbonhidrat", 0)
+                gun_yag += besin_s.get("yag", 0)
+                gun_maliyet += _maliyet_for(secilen["ad"], kat_key)
+
+        # Sebze günü sayacını güncelle
+        if gun_sebze_var:
+            haftalik_sebze_gun_sayisi += 1
+
+        # ── Günlük beslenme özeti ──
+        kalori_durum = "Dengeli"
+        if gun_kalori < BESLENME_HEDEF["kalori_min"]:
+            kalori_durum = "Dusuk kalorili"
+        elif gun_kalori > BESLENME_HEDEF["kalori_max"]:
+            kalori_durum = "Yuksek kalorili"
+
+        gun_menusu["beslenme"] = {
+            "toplam_kalori": round(gun_kalori, 1),
+            "toplam_protein": round(gun_protein, 1),
+            "toplam_karbonhidrat": round(gun_karbonhidrat, 1),
+            "toplam_yag": round(gun_yag, 1),
+            "kalori_durum": kalori_durum,
+            "protein_yeterli": gun_protein >= BESLENME_HEDEF["protein_min"],
+            "sebze_var": gun_sebze_var,
+        }
+
+        gun_menusu["maliyet"] = {
+            "tahmini_gunluk_tl": round(gun_maliyet, 1),
+            "butce_durum": "Uygun" if gun_maliyet <= GUNLUK_BUTCE_HEDEF else "Asim",
+        }
+
+        gun_menusu["constraint_info"] = {
+            "allerjen_gruplari": sorted(gun_allerjenler),
+            "et_turleri_haftalik": dict(haftalik_et_sayac),
+            "sebze_gun_sayisi": haftalik_sebze_gun_sayisi,
+        }
 
         haftalik_menu.append(gun_menusu)
 
@@ -1054,7 +1485,7 @@ def calculate_menu_score(haftalik_menu: list[dict]) -> dict:
     """Haftalık menünün toplam ve ortalama popülerlik skorunu hesaplar."""
     tum_skorlar = []
     for gun_menu in haftalik_menu:
-        for kat in ["corba", "ana_yemek", "pilav", "tatli", "salata"]:
+        for kat in ["corba", "ana_yemek", "yan_yemek", "tatli", "salata"]:
             skor_key = f"{kat}_skor"
             if skor_key in gun_menu:
                 tum_skorlar.append(gun_menu[skor_key])
@@ -1110,3 +1541,242 @@ def retrain_with_ratings(
             print("✅ Model gerçek puanlama verisi ile yeniden eğitildi ve kaydedildi.")
 
     return result
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 12) A/B TEST: AI ÖNERİSİ KAYDET
+# ═══════════════════════════════════════════════════════════════════
+def save_menu_suggestion(
+    haftalik_menu: list[dict],
+    baslangic_tarihi: date,
+    db=None,
+) -> dict[str, Any]:
+    """
+    AI tarafından oluşturulan haftalık menü önerisini MenuOneriLog tablosuna kaydeder.
+    A/B test karşılaştırması için kullanılır.
+    """
+    close_db = False
+    if db is None:
+        db = SessionLocal()
+        close_db = True
+
+    try:
+        kayit_sayisi = 0
+        for gun_menu in haftalik_menu:
+            tarih_str = gun_menu.get("tarih")
+            tarih = date.fromisoformat(tarih_str) if tarih_str else baslangic_tarihi
+
+            beslenme = gun_menu.get("beslenme", {})
+
+            # Skor bileşenlerini topla
+            skorlar = []
+            for kat in ["corba", "ana_yemek", "yan_yemek", "tatli", "salata"]:
+                sk = gun_menu.get(f"{kat}_skor")
+                if sk is not None:
+                    skorlar.append(sk)
+            ort_skor = sum(skorlar) / len(skorlar) if skorlar else 0.0
+
+            log = MenuOneriLog(
+                hafta_baslangic=baslangic_tarihi,
+                gun=gun_menu.get("gun", ""),
+                tarih=tarih,
+                corba=gun_menu.get("corba"),
+                ana_yemek=gun_menu.get("ana_yemek"),
+                yan_yemek=gun_menu.get("yan_yemek"),
+                tatli=gun_menu.get("tatli"),
+                salata=gun_menu.get("salata"),
+                toplam_skor=round(ort_skor, 3),
+                beslenme_skoru=None,
+                israf_skoru=None,
+                maliyet_skoru=None,
+                populerlik_skoru=round(ort_skor, 3),
+                toplam_kalori=beslenme.get("toplam_kalori"),
+                toplam_protein=beslenme.get("toplam_protein"),
+            )
+            db.add(log)
+            kayit_sayisi += 1
+
+        db.commit()
+        logger.info("A/B test: %d gunluk AI menu onerisi kaydedildi.", kayit_sayisi)
+        return {
+            "success": True,
+            "message": f"{kayit_sayisi} gunluk AI menu onerisi kaydedildi.",
+            "hafta_baslangic": str(baslangic_tarihi),
+            "kayit_sayisi": kayit_sayisi,
+        }
+    except Exception as e:
+        db.rollback()
+        logger.warning("A/B test kaydi basarisiz: %s", e)
+        return {"success": False, "message": str(e)}
+    finally:
+        if close_db:
+            db.close()
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 13) A/B TEST: AI ÖNERİSİ vs GERÇEK MENÜ KARŞILAŞTIRMASI
+# ═══════════════════════════════════════════════════════════════════
+def compare_ai_vs_actual(
+    hafta_baslangic: date,
+    db=None,
+) -> dict[str, Any]:
+    """
+    Belirli bir hafta için AI menü önerisi ile gerçek uygulanan menüyü karşılaştırır.
+
+    Karşılaştırma metrikleri:
+      - Örtüşme oranı (aynı yemek seçilme yüzdesi)
+      - AI önerisinin tahmini israfı vs gerçek israf
+      - Beslenme dengesi farkı
+    """
+    close_db = False
+    if db is None:
+        db = SessionLocal()
+        close_db = True
+
+    try:
+        from sqlalchemy import func as _sqla_f
+
+        hafta_bitis = hafta_baslangic + timedelta(days=5)
+
+        # ── AI önerilerini al ──
+        ai_oneriler = (
+            db.query(MenuOneriLog)
+            .filter(MenuOneriLog.hafta_baslangic == hafta_baslangic)
+            .order_by(MenuOneriLog.tarih)
+            .all()
+        )
+        if not ai_oneriler:
+            return {
+                "success": False,
+                "message": f"{hafta_baslangic} haftasi icin AI onerisi bulunamadi.",
+            }
+
+        # ── Gerçek menüyü al (Menu tablosundan) ──
+        gercek_menuler = (
+            db.query(Menu)
+            .filter(Menu.tarih >= hafta_baslangic, Menu.tarih < hafta_bitis)
+            .order_by(Menu.tarih)
+            .all()
+        )
+
+        # ── Gerçek israf verilerini al ──
+        israf_rows = (
+            db.query(
+                UretimLog.yemek_adi,
+                _sqla_f.avg(UretimLog.israf_orani).label("ort_israf"),
+            )
+            .filter(
+                UretimLog.tarih >= hafta_baslangic,
+                UretimLog.tarih < hafta_bitis,
+                UretimLog.israf_orani.isnot(None),
+            )
+            .group_by(UretimLog.yemek_adi)
+            .all()
+        )
+        gercek_israf_map = {
+            _normalize_meal_key(r.yemek_adi): float(r.ort_israf)
+            for r in israf_rows if r.ort_israf is not None
+        }
+
+        # ── Karşılaştırma hesapla ──
+        kategoriler = ["corba", "ana_yemek", "yan_yemek", "tatli", "salata"]
+        toplam_eslesme = 0
+        toplam_slot = 0
+        ai_israf_toplam = 0.0
+        gercek_israf_toplam = 0.0
+        israf_karsilastirma_sayisi = 0
+        ai_kalori_toplam = 0.0
+
+        gunluk_detay = []
+
+        for ai_oneri in ai_oneriler:
+            gun_detay = {
+                "tarih": str(ai_oneri.tarih),
+                "gun": ai_oneri.gun,
+                "eslesme": {},
+            }
+
+            # Aynı tarihteki gerçek menüyü bul
+            gercek = None
+            for gm in gercek_menuler:
+                if gm.tarih == ai_oneri.tarih:
+                    gercek = gm
+                    break
+
+            for kat in kategoriler:
+                ai_yemek = getattr(ai_oneri, kat, None)
+                gercek_yemek = getattr(gercek, kat, None) if gercek else None
+                toplam_slot += 1
+
+                eslesti = False
+                if ai_yemek and gercek_yemek:
+                    ai_key = _normalize_meal_key(ai_yemek)
+                    gercek_key = _normalize_meal_key(gercek_yemek)
+                    eslesti = ai_key == gercek_key
+                    if eslesti:
+                        toplam_eslesme += 1
+
+                gun_detay["eslesme"][kat] = {
+                    "ai_oneri": ai_yemek,
+                    "gercek": gercek_yemek,
+                    "eslesti": eslesti,
+                }
+
+                # İsraf karşılaştırması
+                if ai_yemek:
+                    ai_key_israf = _normalize_meal_key(ai_yemek)
+                    ai_israf = gercek_israf_map.get(ai_key_israf)
+                    if ai_israf is not None:
+                        ai_israf_toplam += ai_israf
+                        israf_karsilastirma_sayisi += 1
+                if gercek_yemek:
+                    gercek_key_israf = _normalize_meal_key(gercek_yemek)
+                    g_israf = gercek_israf_map.get(gercek_key_israf)
+                    if g_israf is not None:
+                        gercek_israf_toplam += g_israf
+
+            # Kalori karşılaştırması
+            if ai_oneri.toplam_kalori:
+                ai_kalori_toplam += ai_oneri.toplam_kalori
+
+            gunluk_detay.append(gun_detay)
+
+        # ── Özet hesapla ──
+        eslesme_orani = (toplam_eslesme / toplam_slot * 100) if toplam_slot > 0 else 0
+        ai_ort_israf = (ai_israf_toplam / israf_karsilastirma_sayisi) if israf_karsilastirma_sayisi > 0 else None
+        gercek_ort_israf = (gercek_israf_toplam / israf_karsilastirma_sayisi) if israf_karsilastirma_sayisi > 0 else None
+
+        israf_farki = None
+        if ai_ort_israf is not None and gercek_ort_israf is not None:
+            israf_farki = round(gercek_ort_israf - ai_ort_israf, 2)
+
+        return {
+            "success": True,
+            "hafta_baslangic": str(hafta_baslangic),
+            "ai_oneri_gun_sayisi": len(ai_oneriler),
+            "gercek_menu_gun_sayisi": len(gercek_menuler),
+            "ozet": {
+                "eslesme_orani": round(eslesme_orani, 1),
+                "toplam_eslesme": toplam_eslesme,
+                "toplam_slot": toplam_slot,
+                "ai_ort_israf": round(ai_ort_israf, 2) if ai_ort_israf is not None else None,
+                "gercek_ort_israf": round(gercek_ort_israf, 2) if gercek_ort_israf is not None else None,
+                "israf_farki_puan": israf_farki,
+                "israf_yorum": (
+                    f"AI onerisi %{abs(israf_farki):.1f} daha az israf uretecekti"
+                    if israf_farki and israf_farki > 0
+                    else (
+                        f"Gercek menu %{abs(israf_farki):.1f} daha az israf uretti"
+                        if israf_farki and israf_farki < 0
+                        else "Israf verisi yetersiz veya esit"
+                    )
+                ),
+            },
+            "gunluk_detay": gunluk_detay,
+        }
+    except Exception as e:
+        logger.warning("A/B test karsilastirmasi basarisiz: %s", e)
+        return {"success": False, "message": str(e)}
+    finally:
+        if close_db:
+            db.close()

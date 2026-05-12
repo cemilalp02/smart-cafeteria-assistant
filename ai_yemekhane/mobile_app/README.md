@@ -16,12 +16,12 @@ npm install
 Ornek:
 
 ```env
-EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:8000
+EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:8001
 ```
 
 Notlar:
 - Android emulator icin localhost yerine `10.0.2.2` kullan.
-- Fiziksel cihaz icin backend makinesinin LAN IP'sini kullan (ornek: `http://192.168.1.20:8000`).
+- Fiziksel cihaz icin backend makinesinin LAN IP'sini kullan (ornek: `http://192.168.1.20:8001`).
 
 ## Calistirma
 
@@ -39,6 +39,5 @@ npm run ios
 ## Ilk Surum Ekranlari
 
 - `Menu`: `/api/menu/today`
-- `Tani`: `/api/recognize-food`
 - `Puan`: `/api/rate-meal`
 - `Chat`: `/api/chat`

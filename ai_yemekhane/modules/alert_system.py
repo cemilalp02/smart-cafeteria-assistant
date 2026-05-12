@@ -12,6 +12,7 @@ Seviyeler: KRİTİK (kırmızı), UYARI (turuncu), DİKKAT (sarı), BİLGİ (mav
 
 from __future__ import annotations
 
+import time
 from datetime import date, timedelta
 from typing import Any, Optional
 
@@ -27,6 +28,18 @@ SEVIYE_RENK = {
     "DIKKAT": "yellow",
     "BILGI": "blue",
 }
+
+
+# ─── TTL Cache ────────────────────────────────────────────────────
+# Kural değerlendirmesi ağırdır — 5 dakika cache'lenir.
+_ACTIVE_ALERTS_CACHE: dict[str, Any] = {"data": None, "ts": 0.0}
+_CACHE_TTL_SECONDS = 300  # 5 dakika
+
+
+def invalidate_alerts_cache():
+    """Cache'i manuel olarak temizler (yeni puanlama geldiğinde çağrılabilir)."""
+    _ACTIVE_ALERTS_CACHE["data"] = None
+    _ACTIVE_ALERTS_CACHE["ts"] = 0.0
 
 
 def _get_weekly_averages(yemek_adi: str, hafta_sayisi: int, db: Session) -> list[Optional[float]]:
@@ -121,9 +134,9 @@ def check_and_generate_alerts(db: Optional[Session] = None) -> list[dict[str, An
                         yeni_uyarilar.append({"seviye": "DIKKAT", "yemek": yemek, "mesaj": mesaj})
 
         # ─── KURAL 4: Kategori genelinde düşüş → BİLGİ ──────────
-        kategoriler = ["corba", "ana_yemek", "pilav", "tatli", "salata"]
+        kategoriler = ["corba", "ana_yemek", "yan_yemek", "tatli", "salata"]
         kat_labels = {
-            "corba": "Çorba", "ana_yemek": "Ana Yemek", "pilav": "Yan Yemek",
+            "corba": "Çorba", "ana_yemek": "Ana Yemek", "yan_yemek": "Yan Yemek",
             "tatli": "Tatlı", "salata": "Salata",
         }
 
@@ -194,15 +207,30 @@ def _create_alert_if_new(db: Session, seviye: str, yemek_adi: Optional[str], mes
     db.add(yeni)
 
 
-def get_active_alerts(db: Optional[Session] = None) -> dict[str, Any]:
-    """Aktif uyarıları döndürür."""
+def get_active_alerts(
+    db: Optional[Session] = None,
+    force_refresh: bool = False,
+) -> dict[str, Any]:
+    """Aktif uyarıları döndürür. 5 dakikalık TTL cache kullanır.
+
+    Args:
+        db: DB session (opsiyonel)
+        force_refresh: True ise cache atlanıp kurallar yeniden çalıştırılır.
+    """
+    # Cache kontrolü (5 dakika)
+    now_ts = time.time()
+    if not force_refresh and _ACTIVE_ALERTS_CACHE["data"] is not None:
+        if now_ts - _ACTIVE_ALERTS_CACHE["ts"] < _CACHE_TTL_SECONDS:
+            cached = _ACTIVE_ALERTS_CACHE["data"]
+            return {**cached, "_cached": True}
+
     close_db = False
     if db is None:
         db = SessionLocal()
         close_db = True
 
     try:
-        # Önce kuralları çalıştır
+        # Önce kuralları çalıştır (ağır iş)
         check_and_generate_alerts(db=db)
 
         alerts = (
@@ -222,7 +250,7 @@ def get_active_alerts(db: Optional[Session] = None) -> dict[str, Any]:
             .all()
         )
 
-        return {
+        result = {
             "success": True,
             "toplam": len(alerts),
             "alerts": [a.to_dict() for a in alerts],
@@ -233,6 +261,12 @@ def get_active_alerts(db: Optional[Session] = None) -> dict[str, Any]:
                 "bilgi": sum(1 for a in alerts if a.seviye == "BILGI"),
             },
         }
+
+        # Cache'e yaz
+        _ACTIVE_ALERTS_CACHE["data"] = result
+        _ACTIVE_ALERTS_CACHE["ts"] = now_ts
+
+        return {**result, "_cached": False}
     finally:
         if close_db:
             db.close()

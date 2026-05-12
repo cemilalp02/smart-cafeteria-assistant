@@ -3,18 +3,21 @@
 
 {% block content %}
 <div class="page-wrapper">
-    <div class="container" style="max-width: 700px;">
+    <div class="container" style="max-width: 800px;">
         <div class="section-header">
-            <h2 class="section-title">🗓️ Günün Menüsü</h2>
-            <p class="section-desc">Bugünkü yemekhane menüsü</p>
+            <h2 class="section-title">Günün Menüsü</h2>
+            <p class="section-desc">Bugünkü yemekhane menüsü ve besin değerleri</p>
         </div>
 
-        <div class="menu-today-card">
-            <div class="menu-today-header">
-                <h3>🍽️ Bugünkü Menü</h3>
+        <div class="menu-today-card panel-card" style="padding: 0; overflow: hidden;">
+            <div class="menu-today-header" style="padding: 24px 28px; border-bottom: 1px solid var(--clr-border);">
+                <div>
+                    <span class="panel-kicker">Günlük Menü</span>
+                    <h3>🍽️ Bugünkü Menü</h3>
+                </div>
                 <span class="date-badge" id="today-date">—</span>
             </div>
-            <div class="menu-today-body" id="menu-body">
+            <div class="menu-today-body" id="menu-body" style="padding: 8px 28px 24px;">
                 <div class="menu-empty-state">
                     <div class="empty-icon">⏳</div>
                     <p>Menü yükleniyor...</p>
@@ -22,15 +25,98 @@
             </div>
         </div>
 
-        <!-- Haftalık Özet -->
-        <div class="card" style="margin-top: 24px; padding: 24px;">
-            <h3 style="margin-bottom: 16px;">📅 Bu Haftanın Menüsü</h3>
+        <!-- Haftalık Menü -->
+        <div class="panel-card" style="margin-top: 24px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                <div>
+                    <span class="panel-kicker">Haftalık Görünüm</span>
+                    <h3>📅 Bu Haftanın Menüsü</h3>
+                </div>
+                <span class="tech-tag" style="font-size: .75rem;">ML Optimize</span>
+            </div>
             <div id="weekly-menu-body">
                 <p class="text-dim" style="text-align:center;">Yükleniyor...</p>
             </div>
         </div>
+
+        <!-- Bugünün Besin Değerleri -->
+        <div class="panel-card" style="margin-top: 24px;">
+            <div style="margin-bottom: 20px;">
+                <span class="panel-kicker">Besin Analizi</span>
+                <h3>🔬 Bugünün Toplam Besin Değerleri</h3>
+            </div>
+            <div class="nutrition-summary-grid" id="nutrition-summary">
+                <div class="nutrition-summary-item">
+                    <div class="ns-icon" style="background: rgba(255, 107, 107, .15); color: #ff6b6b;">🔥</div>
+                    <div class="ns-value" id="total-cal">—</div>
+                    <div class="ns-label">Toplam Kalori</div>
+                </div>
+                <div class="nutrition-summary-item">
+                    <div class="ns-icon" style="background: rgba(72, 201, 176, .15); color: #48c9b0;">💪</div>
+                    <div class="ns-value" id="total-protein">—</div>
+                    <div class="ns-label">Protein</div>
+                </div>
+                <div class="nutrition-summary-item">
+                    <div class="ns-icon" style="background: rgba(93, 173, 226, .15); color: #5dade2;">🌾</div>
+                    <div class="ns-value" id="total-carb">—</div>
+                    <div class="ns-label">Karbonhidrat</div>
+                </div>
+                <div class="nutrition-summary-item">
+                    <div class="ns-icon" style="background: rgba(243, 156, 18, .15); color: #f39c12;">🧈</div>
+                    <div class="ns-value" id="total-fat">—</div>
+                    <div class="ns-label">Yağ</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Menü Önerisi vs Gerçek Menü -->
+        <div class="panel-card" style="margin-top: 24px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                <div>
+                    <span class="panel-kicker">AI Analiz</span>
+                    <h3>🤖 AI Menü Önerisi vs Mevcut Menü</h3>
+                </div>
+                <span class="tech-tag" style="font-size: .75rem; background: rgba(168,85,247,.15); color: #c084fc;">GradientBoosting</span>
+            </div>
+            <div id="ai-recommendation-body">
+                <p class="text-dim" style="text-align:center;">AI önerisi yükleniyor...</p>
+            </div>
+        </div>
+
+        <!-- İsraf Tahmini -->
+        <div class="panel-card" style="margin-top: 24px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                <div>
+                    <span class="panel-kicker">Tahminsel Analiz</span>
+                    <h3>📈 İsraf Tahmini ve Trend</h3>
+                </div>
+                <span class="tech-tag" style="font-size: .75rem; background: rgba(50,185,131,.15); color: #79efc4;">ML Tahmin</span>
+            </div>
+            <div id="waste-prediction-body">
+                <p class="text-dim" style="text-align:center;">Tahmin yükleniyor...</p>
+            </div>
+        </div>
+        <!-- QR Kod ile Puanlama -->
+        <div class="panel-card" style="margin-top: 24px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                <div>
+                    <span class="panel-kicker">Hızlı Puanlama</span>
+                    <h3>📱 QR Kod ile Puanla</h3>
+                </div>
+                <span class="tech-tag" style="font-size: .75rem; background: rgba(34,212,160,.15); color: #22d4a0;">Self-Report</span>
+            </div>
+            <div style="text-align: center;">
+                <p class="text-dim" style="margin-bottom: 16px;">Bu QR kodu telefonunuzla okutarak hızlıca puanlama yapabilirsiniz. Tepsi teslim noktasına asılabilir.</p>
+                <div id="qr-code-container" style="display: inline-block; padding: 16px; background: #fff; border-radius: 16px; margin-bottom: 12px;"></div>
+                <p class="text-dim" style="font-size: .8rem; margin-top: 8px;">veya doğrudan <a href="/rate" style="color: var(--clr-primary-l); text-decoration: underline;">puanlama sayfasına gidin</a></p>
+            </div>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 {% endblock %}
 
 {% block scripts %}
@@ -47,43 +133,77 @@
             const data = await apiFetch('/api/menu/today');
             if (data.success && data.data) {
                 const m = data.data;
-                bodyEl.innerHTML = `
-                    <div class="menu-item-row">
-                        <span class="menu-item-cat">🥣 Çorba</span>
-                        <span class="menu-item-name">${m.corba || '—'}</span>
-                    </div>
-                    <div class="menu-item-row">
-                        <span class="menu-item-cat">🥩 Ana Yemek</span>
-                        <span class="menu-item-name">${m.ana_yemek || '—'}</span>
-                    </div>
-                    <div class="menu-item-row">
-                        <span class="menu-item-cat">🍚 Yan Yemek</span>
-                        <span class="menu-item-name">${m.pilav || '—'}</span>
-                    </div>
-                    <div class="menu-item-row">
-                        <span class="menu-item-cat">🍰 Tatlı</span>
-                        <span class="menu-item-name">${m.tatli || '—'}</span>
-                    </div>
-                    <div class="menu-item-row">
-                        <span class="menu-item-cat">🥗 Salata</span>
-                        <span class="menu-item-name">${m.salata || '—'}</span>
-                    </div>
-                `;
+                const categories = [
+                    { key: 'corba', icon: '🥣', label: 'Çorba' },
+                    { key: 'ana_yemek', icon: '🥩', label: 'Ana Yemek' },
+                    { key: 'yan_yemek', icon: '🍚', label: 'Yan Yemek' },
+                    { key: 'tatli', icon: '🍰', label: 'Tatlı' },
+                    { key: 'salata', icon: '🥗', label: 'Salata / İçecek' }
+                ];
+
+                let html = '';
+                let totalCal = 0, totalPro = 0, totalCarb = 0, totalFat = 0;
+
+                for (const cat of categories) {
+                    const name = m[cat.key] || '—';
+                    html += `
+                        <div class="menu-item-row-enhanced">
+                            <div class="menu-item-left">
+                                <span class="menu-item-icon">${cat.icon}</span>
+                                <div>
+                                    <span class="menu-item-cat-label">${cat.label}</span>
+                                    <span class="menu-item-name-lg">${name}</span>
+                                </div>
+                            </div>
+                            <div class="menu-item-right" id="nutrition-${cat.key}">
+                                <span class="mini-cal">—</span>
+                            </div>
+                        </div>`;
+                }
+
+                bodyEl.innerHTML = html;
+
+                // Besin değerlerini yükle
+                for (const cat of categories) {
+                    const name = m[cat.key];
+                    if (name && name !== '—') {
+                        try {
+                            const nData = await apiFetch(`/api/nutrition/${encodeURIComponent(name)}`);
+                            if (nData.success && nData.data) {
+                                const n = nData.data;
+                                const cal = n.kalori || 0;
+                                const pro = n.protein || 0;
+                                const carb = n.karbonhidrat || 0;
+                                const fat = n.yag || 0;
+                                totalCal += cal; totalPro += pro; totalCarb += carb; totalFat += fat;
+
+                                const el = document.getElementById(`nutrition-${cat.key}`);
+                                if (el) {
+                                    el.innerHTML = `<span class="mini-cal">${cal} kcal</span>`;
+                                }
+                            }
+                        } catch (e) {}
+                    }
+                }
+
+                const fmt = (v) => parseFloat(v.toFixed(1));
+                document.getElementById('total-cal').textContent = totalCal ? `${Math.round(totalCal)} kcal` : '—';
+                document.getElementById('total-protein').textContent = totalPro ? `${fmt(totalPro)}g` : '—';
+                document.getElementById('total-carb').textContent = totalCarb ? `${fmt(totalCarb)}g` : '—';
+                document.getElementById('total-fat').textContent = totalFat ? `${fmt(totalFat)}g` : '—';
             } else {
                 bodyEl.innerHTML = `
                     <div class="menu-empty-state">
                         <div class="empty-icon">📋</div>
                         <p>Bugün için menü verisi bulunamadı.</p>
-                    </div>
-                `;
+                    </div>`;
             }
         } catch (e) {
             bodyEl.innerHTML = `
                 <div class="menu-empty-state">
                     <div class="empty-icon">⚠️</div>
                     <p>Menü yüklenemedi.</p>
-                </div>
-            `;
+                </div>`;
         }
     }
 
@@ -93,10 +213,10 @@
             const data = await apiFetch('/api/predict-menu', { method: 'POST', body: JSON.stringify({}) });
             if (data.success && data.data && data.data.length) {
                 const rows = data.data.map(day => `
-                    <div class="menu-item-row" style="padding: 10px 0;">
-                        <span style="font-weight:600; min-width:100px; color:var(--clr-primary-l);">${day.gun}</span>
-                        <span style="font-size:.85rem; color:var(--clr-text-dim);">
-                            ${day.corba || ''} • ${day.ana_yemek || ''} • ${day.pilav || ''} • ${day.tatli || ''}
+                    <div class="weekly-day-row">
+                        <span class="weekly-day-name">${day.gun}</span>
+                        <span class="weekly-day-meals">
+                            ${day.corba || ''} • ${day.ana_yemek || ''} • ${day.yan_yemek || ''} • ${day.tatli || ''}
                         </span>
                     </div>
                 `).join('');
@@ -109,9 +229,159 @@
         }
     }
 
+    async function loadAIRecommendation() {
+        const container = document.getElementById('ai-recommendation-body');
+        try {
+            const data = await apiFetch('/api/predict-menu', { method: 'POST', body: JSON.stringify({}) });
+            if (data.success && data.data && data.data.length > 0) {
+                const todayName = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'][new Date().getDay()];
+                const aiToday = data.data.find(d => d.gun === todayName);
+                
+                // Gerçek menüyü de al
+                let realMenu = null;
+                try {
+                    const rm = await apiFetch('/api/menu/today');
+                    if (rm.success && rm.data) realMenu = rm.data;
+                } catch(e) {}
+
+                if (aiToday && realMenu) {
+                    const cats = [
+                        {key: 'corba', icon: '🥣', label: 'Çorba'},
+                        {key: 'ana_yemek', icon: '🥩', label: 'Ana Yemek'},
+                        {key: 'yan_yemek', icon: '🍚', label: 'Yan Yemek'},
+                        {key: 'tatli', icon: '🍰', label: 'Tatlı'},
+                    ];
+                    let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">';
+                    html += '<div style="text-align:center;padding:12px;background:rgba(168,85,247,.08);border-radius:12px;"><strong style="color:#c084fc;">🤖 AI Önerisi</strong></div>';
+                    html += '<div style="text-align:center;padding:12px;background:rgba(50,185,131,.08);border-radius:12px;"><strong style="color:#79efc4;">📋 Mevcut Menü</strong></div>';
+                    html += '</div>';
+
+                    for (const cat of cats) {
+                        const ai = aiToday[cat.key] || '—';
+                        const real = realMenu[cat.key] || '—';
+                        const match = ai.toLowerCase() === real.toLowerCase();
+                        const matchStyle = match ? 'color: #79efc4;' : 'color: #ffd792;';
+                        html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px;">
+                            <div style="padding:10px 14px;background:rgba(168,85,247,.05);border-radius:8px;font-size:.9rem;">
+                                <span>${cat.icon}</span> <span style="opacity:.6;font-size:.75rem;">${cat.label}</span><br>
+                                <span style="font-weight:600;">${ai}</span>
+                            </div>
+                            <div style="padding:10px 14px;background:rgba(50,185,131,.05);border-radius:8px;font-size:.9rem;">
+                                <span>${cat.icon}</span> <span style="opacity:.6;font-size:.75rem;">${cat.label}</span><br>
+                                <span style="font-weight:600;">${real}</span>
+                                ${match ? ' <span style="font-size:.7rem;color:#79efc4;">✓ Eşleşiyor</span>' : ''}
+                            </div>
+                        </div>`;
+                    }
+
+                    // Skor bilgisi
+                    if (aiToday.skor) {
+                        html += `<div style="margin-top:16px;padding:12px 16px;background:rgba(93,173,226,.08);border-radius:10px;font-size:.85rem;">
+                            <strong>📊 AI Menü Skoru:</strong> <span style="color:#5dade2;font-weight:700;">${aiToday.skor}/100</span>
+                            <span style="opacity:.6;margin-left:8px;">— Beslenme dengesi, popülerlik ve çeşitlilik baz alındı</span>
+                        </div>`;
+                    }
+
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p class="text-dim" style="text-align:center;padding:16px;">Bugün için AI önerisi ve menü karşılaştırması yapılamadı.</p>';
+                }
+            } else {
+                container.innerHTML = '<p class="text-dim" style="text-align:center;padding:16px;">AI menü önerisi üretilemiyor. Model verisi yetersiz olabilir.</p>';
+            }
+        } catch (e) {
+            container.innerHTML = '<p class="text-dim" style="text-align:center;padding:16px;">AI önerisi yüklenemedi.</p>';
+        }
+    }
+
+    async function loadWastePrediction() {
+        const container = document.getElementById('waste-prediction-body');
+        try {
+            const data = await apiFetch('/api/predictions/weekly');
+            if (data.success && data.tahmin_israf_skoru !== undefined) {
+                const waste = data.tahmin_israf_skoru;
+                const trend = data.trend_yon_tr || data.trend_yon || 'stabil';
+                const seviye = data.tahmin_seviye || '—';
+                const guven = data.guven || '—';
+
+                // Renk belirleme
+                let barColor = '#79efc4';
+                if (waste >= 50) barColor = '#ff6b6b';
+                else if (waste >= 30) barColor = '#ffd792';
+                else if (waste >= 15) barColor = '#5dade2';
+
+                let html = `
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;">
+                        <div style="text-align:center;padding:16px;background:rgba(255,255,255,.03);border-radius:12px;">
+                            <div style="font-size:2rem;font-weight:800;color:${barColor};">%${waste}</div>
+                            <div style="font-size:.75rem;opacity:.6;">Tahmini İsraf</div>
+                        </div>
+                        <div style="text-align:center;padding:16px;background:rgba(255,255,255,.03);border-radius:12px;">
+                            <div style="font-size:1.3rem;font-weight:700;">${trend}</div>
+                            <div style="font-size:.75rem;opacity:.6;">Trend Yönü</div>
+                        </div>
+                        <div style="text-align:center;padding:16px;background:rgba(255,255,255,.03);border-radius:12px;">
+                            <div style="font-size:1.3rem;font-weight:700;">${seviye}</div>
+                            <div style="font-size:.75rem;opacity:.6;">Seviye (${guven})</div>
+                        </div>
+                    </div>
+                    <div style="background:rgba(255,255,255,.05);border-radius:8px;height:12px;overflow:hidden;margin-bottom:16px;">
+                        <div style="height:100%;width:${Math.min(waste, 100)}%;background:${barColor};border-radius:8px;transition:width 1s ease;"></div>
+                    </div>`;
+
+                // Haftalık geçmiş
+                if (data.haftalik_gecmis && data.haftalik_gecmis.length > 0) {
+                    html += '<div style="margin-top:8px;"><strong style="font-size:.85rem;">Haftalık Geçmiş:</strong>';
+                    html += '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">';
+                    for (const h of data.haftalik_gecmis) {
+                        html += `<div style="flex:1;min-width:120px;padding:10px;background:rgba(255,255,255,.03);border-radius:8px;font-size:.8rem;text-align:center;">
+                            <div style="opacity:.5;">${h.hafta}</div>
+                            <div style="font-weight:700;">%${h.israf_skoru}</div>
+                            <div style="opacity:.4;">puan: ${h.ort_puan}</div>
+                        </div>`;
+                    }
+                    html += '</div></div>';
+                }
+
+                // Öneriler
+                if (data.oneriler && data.oneriler.length > 0) {
+                    html += '<div style="margin-top:16px;padding:14px;background:rgba(93,173,226,.06);border-radius:10px;">';
+                    html += '<strong style="font-size:.85rem;">💡 Öneriler:</strong><ul style="margin:8px 0 0;padding-left:18px;font-size:.85rem;opacity:.8;">';
+                    for (const o of data.oneriler) {
+                        html += `<li style="margin-bottom:4px;">${o}</li>`;
+                    }
+                    html += '</ul></div>';
+                }
+
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<p class="text-dim" style="text-align:center;padding:16px;">Yeterli veri olmadığı için tahmin yapılamıyor.</p>';
+            }
+        } catch (e) {
+            container.innerHTML = '<p class="text-dim" style="text-align:center;padding:16px;">Tahmin yüklenemedi.</p>';
+        }
+    }
+
+    function generateQRCode() {
+        const container = document.getElementById('qr-code-container');
+        if (!container) return;
+        try {
+            const rateUrl = window.location.origin + '/rate';
+            const qr = qrcode(0, 'M');
+            qr.addData(rateUrl);
+            qr.make();
+            container.innerHTML = qr.createSvgTag(5, 0);
+        } catch (e) {
+            container.innerHTML = '<p style="color:#666; padding:20px;">QR kod oluşturulamadı</p>';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         loadTodayMenu();
         loadWeeklyMenu();
+        loadAIRecommendation();
+        loadWastePrediction();
+        generateQRCode();
     });
 </script>
 {% endblock %}

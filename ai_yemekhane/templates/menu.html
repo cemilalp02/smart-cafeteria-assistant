@@ -2,6 +2,7 @@
 {% block title %}Menü Optimizasyonu{% endblock %}
 
 {% block head %}
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" as="script">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 {% endblock %}
 
@@ -98,7 +99,7 @@
                         <td><strong>${m.gun}</strong></td>
                         <td>${m.corba || '—'}</td>
                         <td>${m.ana_yemek || '—'}</td>
-                        <td>${m.pilav || '—'}</td>
+                        <td>${m.yan_yemek || '—'}</td>
                         <td>${m.tatli || '—'}</td>
                         <td>${m.salata || '—'}</td>
                     </tr>
@@ -168,7 +169,7 @@
                 <td>${day.tarih}</td>
                 <td>${day.corba || '—'}</td>
                 <td>${day.ana_yemek || '—'}</td>
-                <td>${day.pilav || '—'}</td>
+                <td>${day.yan_yemek || '—'}</td>
                 <td>${day.tatli || '—'}</td>
                 <td>${day.salata || '—'}</td>
             </tr>

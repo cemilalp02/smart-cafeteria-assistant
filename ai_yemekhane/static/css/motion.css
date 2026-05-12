@@ -1,0 +1,452 @@
+/* ════════════════════════════════════════════════════════════
+   ELEGANCE LAYER v2 — Bold food-themed motion
+   ════════════════════════════════════════════════════════════
+   Geri al: bu dosyayı sil + base*.html'den link satırını kaldır
+   ════════════════════════════════════════════════════════════ */
+
+:root {
+    --el-saffron: #F5B83D;
+    --el-spice: #E08A4B;
+    --el-paprika: #D2543C;
+    --el-mint: #6FCF97;
+    --el-curry: #C99A2E;
+    --el-steam: rgba(245, 184, 61, 0.18);
+    --el-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --el-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --el-spring-strong: cubic-bezier(0.5, 1.8, 0.5, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .el-reveal { opacity: 1 !important; transform: none !important; }
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ───────────────────────────────────────────────────────────
+   1) SAYFA YÜKLENİRKEN HİSSEDİLEN GİRİŞ
+   ─────────────────────────────────────────────────────────── */
+body.app-shell .site-main {
+    animation: elPageEnter 0.9s var(--el-ease) both !important;
+}
+
+@keyframes elPageEnter {
+    0% {
+        opacity: 0;
+        transform: translateY(40px) scale(0.985);
+        filter: blur(6px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+body.app-shell .navbar {
+    animation: elNavSlide 0.7s var(--el-ease) both !important;
+}
+
+@keyframes elNavSlide {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ───────────────────────────────────────────────────────────
+   2) ARKA PLAN — Floating Food Particles
+   ─────────────────────────────────────────────────────────── */
+body.app-shell::before {
+    content: '🍅 🌶️ 🥄 🍲 🥗 🍞 🧂 🌿 🍋 🥕';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+    font-size: 32px;
+    line-height: 200vh;
+    word-spacing: 18vw;
+    opacity: 0.04;
+    filter: blur(0.5px);
+    animation: elFoodDrift 80s linear infinite;
+}
+
+@keyframes elFoodDrift {
+    from { transform: translateY(0) rotate(0deg); }
+    to { transform: translateY(-100vh) rotate(360deg); }
+}
+
+/* ───────────────────────────────────────────────────────────
+   3) BUTONLAR — Belirgin Hover & Tıklama
+   ─────────────────────────────────────────────────────────── */
+button,
+.btn,
+.nav-btn,
+a.nav-btn,
+input[type="submit"],
+input[type="button"] {
+    position: relative !important;
+    overflow: hidden !important;
+    transition:
+        transform 0.3s var(--el-spring-strong),
+        box-shadow 0.4s var(--el-ease),
+        filter 0.3s var(--el-ease),
+        letter-spacing 0.3s var(--el-ease) !important;
+    will-change: transform;
+}
+
+button:not(:disabled):hover,
+.btn:not(:disabled):hover,
+.nav-btn:hover,
+a.nav-btn:hover,
+input[type="submit"]:not(:disabled):hover {
+    transform: translateY(-4px) scale(1.03) !important;
+    box-shadow:
+        0 16px 40px -12px rgba(245, 184, 61, 0.45),
+        0 6px 16px -4px rgba(210, 84, 60, 0.3),
+        0 0 0 1px rgba(245, 184, 61, 0.4) inset !important;
+    filter: brightness(1.12) saturate(1.18) !important;
+    letter-spacing: 0.03em !important;
+}
+
+button:not(:disabled):active,
+.btn:not(:disabled):active,
+.nav-btn:active {
+    transform: translateY(-1px) scale(0.97) !important;
+    transition: transform 0.1s ease-out !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   4) RIPPLE EFEKTİ — Tıklama Anı
+   ─────────────────────────────────────────────────────────── */
+.el-ripple {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    background: radial-gradient(
+        circle,
+        rgba(245, 184, 61, 0.85) 0%,
+        rgba(224, 138, 75, 0.5) 35%,
+        rgba(210, 84, 60, 0.2) 65%,
+        transparent 80%
+    );
+    transform: scale(0);
+    opacity: 0.85;
+    animation: elRipple 0.85s var(--el-ease) forwards;
+    z-index: 1;
+}
+
+@keyframes elRipple {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* ───────────────────────────────────────────────────────────
+   5) KARTLAR — Belirgin Lift & Glow
+   ─────────────────────────────────────────────────────────── */
+.prod-form-card,
+.prod-stat-card,
+.stat-card,
+.summary-card,
+.feature-card,
+.metric-card,
+.dash-card,
+.grid-tile,
+.card,
+[class*="-card"]:not(.card-grid):not(.card-stack) {
+    transition:
+        transform 0.45s var(--el-spring),
+        box-shadow 0.45s var(--el-ease),
+        border-color 0.45s var(--el-ease),
+        background-color 0.4s var(--el-ease) !important;
+    will-change: transform;
+}
+
+.prod-form-card:hover,
+.stat-card:hover,
+.feature-card:hover,
+.metric-card:hover,
+.dash-card:hover,
+.grid-tile:hover,
+.summary-card:hover {
+    transform: translateY(-8px) !important;
+    box-shadow:
+        0 28px 60px -20px rgba(245, 184, 61, 0.28),
+        0 14px 28px -10px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(245, 184, 61, 0.3) inset !important;
+    border-color: rgba(245, 184, 61, 0.5) !important;
+}
+
+.prod-stat-card:hover {
+    transform: translateY(-4px) scale(1.04) !important;
+    box-shadow:
+        0 20px 40px -14px rgba(245, 184, 61, 0.3),
+        0 0 0 1px rgba(245, 184, 61, 0.35) inset !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   6) NAVIGATION — Gradient Underline
+   ─────────────────────────────────────────────────────────── */
+.nav-links li a {
+    position: relative !important;
+    transition: color 0.3s var(--el-ease), transform 0.3s var(--el-spring) !important;
+}
+
+.nav-links li a:not(.nav-btn)::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -8px;
+    width: 0;
+    height: 3px;
+    background: linear-gradient(
+        90deg,
+        var(--el-spice),
+        var(--el-saffron),
+        var(--el-paprika)
+    );
+    border-radius: 3px;
+    transform: translateX(-50%);
+    transition: width 0.4s var(--el-spring-strong);
+    box-shadow: 0 0 12px var(--el-saffron);
+}
+
+.nav-links li a:not(.nav-btn):hover {
+    color: var(--el-saffron) !important;
+    transform: translateY(-2px);
+}
+
+.nav-links li a:not(.nav-btn):hover::before {
+    width: 85%;
+}
+
+/* ───────────────────────────────────────────────────────────
+   7) LOGO — Hover Pulse + Tilt
+   ─────────────────────────────────────────────────────────── */
+.nav-logo {
+    transition: transform 0.4s var(--el-spring) !important;
+}
+
+.nav-logo:hover {
+    transform: scale(1.05);
+}
+
+.nav-logo:hover .logo-mark {
+    animation: elLogoSpin 0.9s var(--el-spring-strong) !important;
+}
+
+@keyframes elLogoSpin {
+    0% { transform: rotate(0) scale(1); }
+    40% { transform: rotate(-12deg) scale(1.18); }
+    70% { transform: rotate(8deg) scale(1.08); }
+    100% { transform: rotate(0) scale(1); }
+}
+
+/* ───────────────────────────────────────────────────────────
+   8) FORM INPUT — Saffron Focus Glow
+   ─────────────────────────────────────────────────────────── */
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none !important;
+    border-color: var(--el-saffron) !important;
+    box-shadow:
+        0 0 0 4px rgba(245, 184, 61, 0.2),
+        0 8px 24px -10px rgba(245, 184, 61, 0.4) !important;
+    transition:
+        border-color 0.3s var(--el-ease),
+        box-shadow 0.4s var(--el-ease) !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   9) SCROLL REVEAL
+   ─────────────────────────────────────────────────────────── */
+.el-reveal {
+    opacity: 0;
+    transform: translateY(40px) scale(0.96);
+    transition:
+        opacity 0.9s var(--el-ease),
+        transform 0.9s var(--el-spring);
+    will-change: opacity, transform;
+}
+
+.el-reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* Sıralı çocuk animasyonları */
+.el-reveal.is-visible > *:nth-child(1) { animation: elStagger 0.7s var(--el-ease) 0.0s both; }
+.el-reveal.is-visible > *:nth-child(2) { animation: elStagger 0.7s var(--el-ease) 0.08s both; }
+.el-reveal.is-visible > *:nth-child(3) { animation: elStagger 0.7s var(--el-ease) 0.16s both; }
+.el-reveal.is-visible > *:nth-child(4) { animation: elStagger 0.7s var(--el-ease) 0.24s both; }
+.el-reveal.is-visible > *:nth-child(5) { animation: elStagger 0.7s var(--el-ease) 0.32s both; }
+.el-reveal.is-visible > *:nth-child(6) { animation: elStagger 0.7s var(--el-ease) 0.40s both; }
+.el-reveal.is-visible > *:nth-child(n+7) { animation: elStagger 0.7s var(--el-ease) 0.48s both; }
+
+@keyframes elStagger {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ───────────────────────────────────────────────────────────
+   10) SCROLL PROGRESS BAR (Üstte)
+   ─────────────────────────────────────────────────────────── */
+.el-scroll-progress {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 0%;
+    height: 4px !important;
+    background: linear-gradient(
+        90deg,
+        var(--el-paprika),
+        var(--el-spice),
+        var(--el-saffron),
+        var(--el-curry)
+    );
+    z-index: 99999 !important;
+    transition: width 0.1s ease-out;
+    box-shadow:
+        0 0 12px var(--el-saffron),
+        0 2px 8px rgba(245, 184, 61, 0.4);
+}
+
+/* ───────────────────────────────────────────────────────────
+   11) BAŞLIKLAR — Subtle Color Shift
+   ─────────────────────────────────────────────────────────── */
+h1, h2, h3 {
+    transition: color 0.4s var(--el-ease), text-shadow 0.4s var(--el-ease);
+}
+
+h1:hover, h2:hover, h3:hover {
+    text-shadow: 0 0 20px rgba(245, 184, 61, 0.3);
+}
+
+/* ───────────────────────────────────────────────────────────
+   12) TABLO — Hover Slide + Glow
+   ─────────────────────────────────────────────────────────── */
+table tbody tr,
+.prod-table tbody tr {
+    transition:
+        background-color 0.3s var(--el-ease),
+        transform 0.3s var(--el-ease),
+        box-shadow 0.3s var(--el-ease) !important;
+}
+
+table tbody tr:hover,
+.prod-table tbody tr:hover {
+    transform: translateX(6px) !important;
+    background-color: rgba(245, 184, 61, 0.06) !important;
+    box-shadow: -4px 0 0 var(--el-saffron) !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   13) TOAST — Spring Slide-In
+   ─────────────────────────────────────────────────────────── */
+.toast,
+[class*="toast"]:not([class*="toast-container"]) {
+    animation: elToastIn 0.55s var(--el-spring-strong) both !important;
+}
+
+@keyframes elToastIn {
+    from {
+        opacity: 0;
+        transform: translateX(60px) scale(0.85);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+/* ───────────────────────────────────────────────────────────
+   14) HAMBURGER — Smooth Transitions
+   ─────────────────────────────────────────────────────────── */
+.hamburger span {
+    transition: transform 0.4s var(--el-spring), opacity 0.3s ease-out !important;
+}
+
+.hamburger:hover span {
+    background: var(--el-saffron) !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   15) CHART CANVAS HOVER LIFT
+   ─────────────────────────────────────────────────────────── */
+.chart-canvas-wrap {
+    transition: transform 0.4s var(--el-spring), box-shadow 0.4s var(--el-ease);
+}
+
+.chart-canvas-wrap:hover {
+    transform: scale(1.005);
+    box-shadow: 0 8px 32px -12px rgba(245, 184, 61, 0.2);
+}
+
+/* ───────────────────────────────────────────────────────────
+   16) LINK GENEL HOVER
+   ─────────────────────────────────────────────────────────── */
+a:not(.nav-btn):not(.btn) {
+    transition: color 0.25s var(--el-ease);
+}
+
+/* ───────────────────────────────────────────────────────────
+   17) FOOTER FADE
+   ─────────────────────────────────────────────────────────── */
+.footer {
+    animation: elFooterFade 1.2s var(--el-ease) 0.3s both;
+}
+
+@keyframes elFooterFade {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ───────────────────────────────────────────────────────────
+   18) BUHAR — Yemek Kartlarında
+   ─────────────────────────────────────────────────────────── */
+.el-steam-host {
+    position: relative;
+}
+
+.el-steam-host::after {
+    content: '♨️';
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-size: 18px;
+    opacity: 0;
+    transition: opacity 0.4s ease, transform 0.6s var(--el-ease);
+    pointer-events: none;
+}
+
+.el-steam-host:hover::after {
+    opacity: 0.9;
+    animation: elSteamFloat 2.4s ease-in-out infinite;
+}
+
+@keyframes elSteamFloat {
+    0%, 100% { transform: translateY(0) rotate(-3deg); opacity: 0.5; }
+    50% { transform: translateY(-8px) rotate(3deg); opacity: 1; }
+}
+
+/* ───────────────────────────────────────────────────────────
+   19) SAYFA ÇIKIŞ ANIMASYONU
+   ─────────────────────────────────────────────────────────── */
+body.el-leaving .site-main {
+    transition: opacity 0.35s ease-out, transform 0.35s ease-out !important;
+    opacity: 0 !important;
+    transform: translateY(-15px) scale(0.99) !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   20) SCROLL OVERFLOW SAFETY
+   ─────────────────────────────────────────────────────────── */
+html {
+    scroll-behavior: smooth;
+}
+
+body.app-shell {
+    overflow-x: hidden;
+}

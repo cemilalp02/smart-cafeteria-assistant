@@ -5,13 +5,13 @@
 <div class="page-wrapper">
     <div class="container" style="max-width: 440px; margin-top: 60px;">
         <div class="section-header" style="text-align: center;">
-            <h2 class="section-title">🔐 Yetkili Girişi</h2>
+            <h2 class="section-title">Yetkili Girişi</h2>
             <p class="section-desc">Yönetici paneline erişmek için şifrenizi girin</p>
         </div>
 
         {% if error %}
         <div class="alert-item alert-kritik" style="margin-bottom: 20px;">
-            <span class="alert-level-icon">🔴</span>
+            <span class="alert-level-icon">•</span>
             <div class="alert-content">
                 <div class="alert-msg">{{ error }}</div>
             </div>
@@ -22,23 +22,27 @@
             <form method="POST" action="/admin/login" id="admin-login-form">
                 <div style="margin-bottom: 20px;">
                     <label for="admin-password"
-                        style="display: block; margin-bottom: 8px; color: var(--text-primary); font-weight: 500;">
+                        style="display: block; margin-bottom: 8px; color: var(--clr-light); font-weight: 700;">
                         Yönetici Şifresi
                     </label>
-                    <input type="password" id="admin-password" name="password" placeholder="Şifrenizi girin..." required
-                        autofocus style="width: 100%; padding: 14px 16px; border-radius: 12px; border: 2px solid var(--glass-border);
-                               background: var(--glass-bg); color: var(--text-primary); font-size: 1rem;
-                               outline: none; transition: border-color 0.3s;"
-                        onfocus="this.style.borderColor='var(--primary)'"
-                        onblur="this.style.borderColor='var(--glass-border)'">
+                    <input
+                        type="password"
+                        id="admin-password"
+                        name="password"
+                        placeholder="Şifrenizi girin..."
+                        required
+                        autofocus
+                        style="width: 100%; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--clr-border); background: rgba(255,255,255,.04); color: var(--clr-light); font-size: 1rem; outline: none; transition: border-color 0.3s, box-shadow 0.3s;"
+                        onfocus="this.style.borderColor='rgba(132, 190, 255, .32)'; this.style.boxShadow='0 0 0 4px rgba(47, 128, 237, .12)'"
+                        onblur="this.style.borderColor='var(--clr-border)'; this.style.boxShadow='none'">
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 1.05rem;">
-                    🚀 Giriş Yap
+                    Giriş Yap
                 </button>
             </form>
 
             <div style="text-align: center; margin-top: 20px;">
-                <a href="/" style="color: var(--text-dim); font-size: 0.9rem;">← Ana Sayfaya Dön</a>
+                <a href="/" style="color: var(--clr-text-dim); font-size: 0.9rem;">← Ana Sayfaya Dön</a>
             </div>
         </div>
     </div>

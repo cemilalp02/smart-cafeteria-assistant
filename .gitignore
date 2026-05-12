@@ -1,44 +1,69 @@
-﻿# API Keys
+# ═══════════════════════════════════════════════════════════
+# AI Akıllı Yemekhane Asistan Sistemi — .gitignore
+# ═══════════════════════════════════════════════════════════
+
+# ─── API Keys & Environment ────────────────────────────────
 .env
 
-# Python
+# ─── Python ────────────────────────────────────────────────
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
+*.egg-info/
+*.egg
+dist/
+build/
 venv/
 env/
+.venv/
+.pytest_cache/
+.mypy_cache/
+pyrightconfig.json
 
-# Model files
+# ─── ML Model Files (large binaries) ──────────────────────
 *.pt
 *.pth
+ai_yemekhane/models_data/*.joblib
+ai_yemekhane/models_data/*.joblib.backup_*
+ai_yemekhane/models_data/*.json
+!ai_yemekhane/models_data/.gitkeep
 
-# Dataset
-food-101/
-datasets/
+# ─── Training Datasets (large, downloadable) ──────────────
+ai_yemekhane/datasets/
 archive/
-Turkish Food/
 
-# Excel source data (large files)
-aylara göre yemek listeleri/
+# ─── Training Runs (reproducible) ─────────────────────────
+ai_yemekhane/runs/
 
-# Database
+# ─── Database (runtime-generated) ─────────────────────────
 *.db
+*.db-journal
+*.sqlite3
 
-# IDE
+# ─── User Uploads (runtime) ───────────────────────────────
+ai_yemekhane/uploads/
+!ai_yemekhane/uploads/.gitkeep
+
+# ─── Node / Mobile App ────────────────────────────────────
+node_modules/
+.expo/
+*.lock
+npm-debug.log*
+
+# ─── IDE ───────────────────────────────────────────────────
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# OS
+# ─── OS ────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Temp files
-temp_*.py
-temp_*.json
-temp_*.txt
-
-# ML model data
-ai_yemekhane/models_data/
-
-# Kaggle
-*.kaggle/
+# ─── Temp & Backup Files ──────────────────────────────────
+temp_*
+tmp_*
+*.backup
+_backup_*/
+_archive*/

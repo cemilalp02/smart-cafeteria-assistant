@@ -21,12 +21,6 @@ scikit-learn==1.5.2
 pandas==2.2.3
 numpy==1.26.4
 
-# Görüntü İşleme - Yemek Tanıma
-ultralytics==8.3.2
-Pillow==10.4.0
-torch==2.4.1
-torchvision==0.19.1
-
 # Chatbot - Gemini API
 google-generativeai>=0.8.3
 
@@ -35,5 +29,31 @@ requests==2.32.3
 pydantic==2.9.2
 pyyaml==6.0.2
 
+# Gelişmiş ML - İsraf Tahmin Modeli (Ensemble: RF + GBR + XGBoost)
+xgboost>=2.0.0
+optuna>=3.6.0
+
 # PDF Rapor
 reportlab>=4.0
+
+# Push Notification
+httpx>=0.27.0
+
+# Veritabanı Migrasyonu
+alembic>=1.13.0
+
+# Explainable AI (XAI)
+shap>=0.44.0
+
+# İstatistiksel Testler (A/B Test Engine)
+scipy>=1.11.0
+
+# WebSocket desteği (uvicorn[standard] ile birlikte gelir)
+websockets>=12.0
+
+# Excel Export
+openpyxl>=3.1.0
+
+# Test & Lint
+pytest>=7.4.0
+ruff>=0.3.0

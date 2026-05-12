@@ -1,6 +1,0 @@
-bu ikisi terminale
-cd cUserscemilDownloadsGRADUATİON PROJECTai_yemekhane
-py main.py
-
-bu arama motoruna 
- http://localhost:8000

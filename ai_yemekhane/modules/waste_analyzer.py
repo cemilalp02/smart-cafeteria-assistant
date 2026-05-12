@@ -10,6 +10,8 @@ Not: ML modeli gercek hedef olarak UretimLog.israf_orani kullanir.
 
 from __future__ import annotations
 
+import json
+import logging
 import math
 import os
 import re
@@ -17,17 +19,33 @@ from datetime import date, datetime, timedelta
 from typing import Any, Optional
 
 import joblib
+import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, VotingRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import TimeSeriesSplit
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 from sqlalchemy import func as sqla_func
 from sqlalchemy.orm import Session
 
+try:
+    from xgboost import XGBRegressor
+    _HAS_XGBOOST = True
+except ImportError:
+    _HAS_XGBOOST = False
+
+try:
+    import optuna
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    _HAS_OPTUNA = True
+except ImportError:
+    _HAS_OPTUNA = False
+
 from models import MenuPuanlama, SessionLocal, UretimLog
+
+logger = logging.getLogger(__name__)
 
 # -------------------- Kural tabanli fallback --------------------
 ISRAF_MAP = {
@@ -55,6 +73,7 @@ def puan_to_israf_orani(puan: float) -> float:
 # -------------------- ML model sabitleri --------------------
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "..", "models_data")
 WASTE_MODEL_PATH = os.path.join(MODEL_DIR, "waste_predictor.joblib")
+WASTE_METRICS_PATH = os.path.join(MODEL_DIR, "waste_metrics.json")
 WASTE_FEATURE_COLUMNS = [
     "yemek_adi",
     "kategori",
@@ -63,7 +82,32 @@ WASTE_FEATURE_COLUMNS = [
     "uretilen_porsiyon",
     "rating_avg",
     "rating_count",
+    "onceki_hafta_israf",
+    "populerlik_skoru",
+    # ── Mevcut Ek Feature'lar ──
+    "mevsim",              # 0=kış, 1=ilkbahar, 2=yaz, 3=sonbahar
+    "hafta_ici_mi",        # 1=hafta içi, 0=hafta sonu
+    "son_3_gun_ort_israf", # Son 3 günün genel israf ortalaması
+    "kategori_ort_israf",  # Bu kategorinin genel ortalama israfı
+    "rating_std",          # Puanlama standart sapması
+    "menu_cesitlilik",     # O gün menüde kaç farklı yemek var
+    # ── Plan 1.2 Yeni Feature'lar ──
+    "ogrenci_sayisi_tahmini",  # Akademik takvime göre tahmini katılım (0-1)
+    "menu_cekiciligi",     # O günkü menünün ortalama popülerlik skoru
+    "gun_tipi",            # 0=normal, 1=hafta sonu, 2=tatil/sınav haftası
+    "onceki_gun_israf",    # Lag-1 — bir önceki günün genel israf ortalaması
+    # ── Self-Report Feature ──
+    "self_report_avg",     # Öğrenci israf self-report ortalaması (0-3, -1=veri yok)
 ]
+
+# ── Akademik takvim tahmini katılım oranları ──
+_GUN_TIPI_KATILIM = {
+    0: 1.0,   # Normal gün
+    1: 0.3,   # Hafta sonu
+    2: 0.5,   # Tatil / sınav haftası
+}
+
+WASTE_IMPORTANCE_PATH = os.path.join(MODEL_DIR, "waste_feature_importance.json")
 DEFAULT_RATING_AVG = 3.0
 DEFAULT_PRODUCTION = 100.0
 MIN_TRAIN_SAMPLES = 8
@@ -95,6 +139,48 @@ def _canonicalize_meal_name(name: str) -> str:
 def _meal_group_key(name: str) -> str:
     normalized = re.sub(r"\s+", " ", (name or "").strip())
     return normalized.casefold()
+
+
+# -------------------- Yeni Feature Hesaplama Yardımcıları --------------------
+
+_MEVSIM_NUM = {1: 0, 2: 0, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2, 9: 3, 10: 3, 11: 3, 12: 0}
+
+# Türkiye resmi tatil günleri (ay, gün) — yaygın olanlar
+_RESMI_TATILLER: set[tuple[int, int]] = {
+    (1, 1), (4, 23), (5, 1), (5, 19), (7, 15), (8, 30), (10, 29),
+}
+
+# Üniversite sınav haftaları (yaklaşık): Ocak 2. yarı, Haziran 1. yarı
+_SINAV_HAFTALARI: list[tuple[int, int, int]] = [
+    (1, 13, 31),   # Ocak 13–31 final
+    (6, 1, 15),    # Haziran 1–15 final
+]
+
+
+def _get_mevsim(tarih: date) -> int:
+    return _MEVSIM_NUM.get(tarih.month, 0)
+
+
+def _get_gun_tipi(tarih: date) -> int:
+    """0=normal, 1=hafta sonu, 2=tatil/sınav haftası"""
+    if (tarih.month, tarih.day) in _RESMI_TATILLER:
+        return 2
+    for ay, gun_bas, gun_son in _SINAV_HAFTALARI:
+        if tarih.month == ay and gun_bas <= tarih.day <= gun_son:
+            return 2
+    if tarih.weekday() >= 5:
+        return 1
+    return 0
+
+
+def _get_ogrenci_katilim_tahmini(tarih: date) -> float:
+    """Akademik takvime göre 0-1 arası tahmini katılım oranı."""
+    gun_tipi = _get_gun_tipi(tarih)
+    baz = _GUN_TIPI_KATILIM.get(gun_tipi, 1.0)
+    # Yaz aylarında (Temmuz-Ağustos) düşük katılım
+    if tarih.month in (7, 8):
+        baz *= 0.4
+    return round(baz, 2)
 
 
 def _build_rating_maps(
@@ -249,15 +335,97 @@ def _resolve_production_signal(
 
 
 def _build_training_dataframe(db: Session) -> pd.DataFrame:
-    """UretimLog (hedef) + puanlama sinyalleri ile egitim dataframe'i uretir."""
+    """UretimLog (hedef) + puanlama + temporal + populerlik + yeni sinyaller ile egitim dataframe'i uretir."""
     rating_day_map, rating_meal_map = _build_rating_maps(db)
     prod_day_map, prod_meal_map = _build_production_maps(db)
+
+    # Populerlik skorlari (menu_optimizer'dan)
+    try:
+        from modules.menu_optimizer import YEMEK_BAZI_POPULERLIK
+    except ImportError:
+        YEMEK_BAZI_POPULERLIK = {}
 
     logs = (
         db.query(UretimLog)
         .filter(UretimLog.uretilen_porsiyon > 0, UretimLog.israf_orani.isnot(None))
         .all()
     )
+
+    # Onceki hafta israf lookup: (yemek_adi, tarih) -> onceki hafta ayni yemegin israf orani
+    israf_lookup: dict[tuple[str, date], float] = {}
+    for log in logs:
+        key = (_canonicalize_meal_name(log.yemek_adi), log.tarih)
+        israf_lookup[key] = float(log.israf_orani or 0.0)
+
+    # Tarih bazli israf ortalamalari (son 3 gun icin)
+    tarih_israf: dict[date, list[float]] = {}
+    for log in logs:
+        tarih_israf.setdefault(log.tarih, []).append(float(log.israf_orani or 0.0))
+
+    # Kategori bazli israf ortalamalari
+    kategori_israf_acc: dict[str, list[float]] = {}
+    for log in logs:
+        kat = log.kategori or "diger"
+        kategori_israf_acc.setdefault(kat, []).append(float(log.israf_orani or 0.0))
+    kategori_ort_israf_map = {k: sum(v)/len(v) for k, v in kategori_israf_acc.items() if v}
+
+    # Tarih bazli menu cesitliligi
+    tarih_cesitlilik: dict[date, int] = {}
+    for log in logs:
+        tarih_cesitlilik[log.tarih] = tarih_cesitlilik.get(log.tarih, 0) + 1
+
+    # Rating standart sapma (yemek bazli)
+    from collections import defaultdict
+    rating_values: dict[str, list[float]] = defaultdict(list)
+    rating_rows = db.query(MenuPuanlama.yemek_adi, MenuPuanlama.puan).all()
+    for row in rating_rows:
+        key = _meal_group_key(row.yemek_adi)
+        rating_values[key].append(float(row.puan))
+    rating_std_map = {
+        k: float(np.std(v)) if len(v) > 1 else 0.0
+        for k, v in rating_values.items()
+    }
+
+    # Tarih bazli genel israf ortalamasi (onceki_gun_israf - Lag-1 icin)
+    tarih_ort_israf: dict[date, float] = {}
+    for t, vals in tarih_israf.items():
+        tarih_ort_israf[t] = sum(vals) / len(vals) if vals else 0.0
+
+    # Self-report ortalamaları: (tarih, yemek_key) -> ort self-report
+    self_report_map: dict[tuple[date, str], float] = {}
+    sr_rows = (
+        db.query(
+            MenuPuanlama.tarih,
+            MenuPuanlama.yemek_adi,
+            sqla_func.avg(MenuPuanlama.israf_self_report).label("ort_sr"),
+        )
+        .filter(MenuPuanlama.israf_self_report.isnot(None))
+        .group_by(MenuPuanlama.tarih, MenuPuanlama.yemek_adi)
+        .all()
+    )
+    for sr in sr_rows:
+        key = _meal_group_key(sr.yemek_adi)
+        self_report_map[(sr.tarih, key)] = float(sr.ort_sr) if sr.ort_sr is not None else -1.0
+
+    # Yemek bazli genel self-report ortalamasi (fallback)
+    sr_meal_acc: dict[str, list[float]] = defaultdict(list)
+    for sr in sr_rows:
+        key = _meal_group_key(sr.yemek_adi)
+        if sr.ort_sr is not None:
+            sr_meal_acc[key].append(float(sr.ort_sr))
+    sr_meal_map: dict[str, float] = {
+        k: sum(v) / len(v) for k, v in sr_meal_acc.items() if v
+    }
+
+    # Menu cekiciligi: o gunku menunun ortalama populerlik skoru
+    tarih_menu_cekicilik: dict[date, float] = {}
+    for log in logs:
+        meal_name_tmp = _canonicalize_meal_name(log.yemek_adi)
+        pop = YEMEK_BAZI_POPULERLIK.get(meal_name_tmp, 0.5)
+        tarih_menu_cekicilik.setdefault(log.tarih, []).append(pop)  # type: ignore[arg-type]
+    tarih_menu_cekicilik = {
+        t: sum(v) / len(v) for t, v in tarih_menu_cekicilik.items() if v  # type: ignore[union-attr]
+    }
 
     records: list[dict[str, Any]] = []
     for log in logs:
@@ -277,6 +445,36 @@ def _build_training_dataframe(db: Session) -> pd.DataFrame:
             prod_meal_map=prod_meal_map,
         )
 
+        # --- Mevcut Feature: onceki_hafta_israf ---
+        onceki_hafta_tarih = log.tarih - timedelta(days=7)
+        onceki_israf = israf_lookup.get((meal_name, onceki_hafta_tarih), -1.0)
+
+        # --- Mevcut Feature: populerlik_skoru ---
+        pop_skor = YEMEK_BAZI_POPULERLIK.get(meal_name, 0.5)
+
+        # --- Mevcut Ek Feature: mevsim ---
+        mevsim = _get_mevsim(log.tarih)
+
+        # --- Yeni Feature: hafta_ici_mi ---
+        hafta_ici = 1 if log.tarih.weekday() < 5 else 0
+
+        # --- Yeni Feature: son_3_gun_ort_israf ---
+        son_3_gun_israflar = []
+        for delta in range(1, 4):
+            onceki_tarih = log.tarih - timedelta(days=delta)
+            if onceki_tarih in tarih_israf:
+                son_3_gun_israflar.extend(tarih_israf[onceki_tarih])
+        son_3_gun_ort = sum(son_3_gun_israflar) / len(son_3_gun_israflar) if son_3_gun_israflar else -1.0
+
+        # --- Yeni Feature: kategori_ort_israf ---
+        kat_ort_israf = kategori_ort_israf_map.get(log.kategori or "diger", 20.0)
+
+        # --- Yeni Feature: rating_std ---
+        r_std = rating_std_map.get(meal_key, 0.0)
+
+        # --- Yeni Feature: menu_cesitlilik ---
+        cesitlilik = tarih_cesitlilik.get(log.tarih, 5)
+
         records.append(
             {
                 "yemek_adi": meal_name or "Bilinmeyen",
@@ -286,7 +484,30 @@ def _build_training_dataframe(db: Session) -> pd.DataFrame:
                 "uretilen_porsiyon": float(uretilen_porsiyon),
                 "rating_avg": float(rating_avg),
                 "rating_count": int(rating_count),
+                "onceki_hafta_israf": float(onceki_israf),
+                "populerlik_skoru": float(pop_skor),
+                # Yeni feature'lar
+                "mevsim": mevsim,
+                "hafta_ici_mi": hafta_ici,
+                "son_3_gun_ort_israf": son_3_gun_ort,
+                "kategori_ort_israf": kat_ort_israf,
+                "rating_std": r_std,
+                "menu_cesitlilik": cesitlilik,
+                # Plan 1.2 yeni feature'lar
+                "ogrenci_sayisi_tahmini": _get_ogrenci_katilim_tahmini(log.tarih),
+                "menu_cekiciligi": tarih_menu_cekicilik.get(log.tarih, 0.5),
+                "gun_tipi": _get_gun_tipi(log.tarih),
+                "onceki_gun_israf": tarih_ort_israf.get(
+                    log.tarih - timedelta(days=1), -1.0
+                ),
+                # Self-report feature
+                "self_report_avg": self_report_map.get(
+                    (log.tarih, meal_key),
+                    sr_meal_map.get(meal_key, -1.0),
+                ),
+                # Hedef + sıralama
                 "target_israf": float(log.israf_orani or 0.0),
+                "_tarih": log.tarih,  # time-series CV icin sıralama
             }
         )
 
@@ -295,6 +516,8 @@ def _build_training_dataframe(db: Session) -> pd.DataFrame:
 
     df = pd.DataFrame(records)
     df["target_israf"] = df["target_israf"].clip(lower=0, upper=100)
+    # Kronolojik siralama (time-series CV icin)
+    df = df.sort_values("_tarih").reset_index(drop=True)
     return df
 
 
@@ -321,6 +544,148 @@ def load_waste_model(force_reload: bool = False) -> dict[str, Any] | None:
         return None
 
 
+def _optuna_tune(
+    X: pd.DataFrame,
+    y: pd.Series,
+    preprocessor: ColumnTransformer,
+    sample_count: int,
+    n_trials: int = 30,
+) -> dict[str, Any]:
+    """
+    Optuna ile Bayesian hyperparameter tuning.
+    Optuna yoksa veya veri yetersizse bos dict dondurur (varsayilanlar kullanilir).
+    """
+    if not _HAS_OPTUNA or sample_count < 20:
+        return {}
+
+    try:
+        def objective(trial: "optuna.Trial") -> float:
+            params = {
+                "rf_n_estimators": trial.suggest_int("rf_n_estimators", 100, 600, step=50),
+                "rf_max_depth": trial.suggest_int("rf_max_depth", 5, 25),
+                "rf_min_samples_leaf": trial.suggest_int("rf_min_samples_leaf", 1, 8),
+                "gbr_n_estimators": trial.suggest_int("gbr_n_estimators", 100, 500, step=50),
+                "gbr_max_depth": trial.suggest_int("gbr_max_depth", 3, 15),
+                "gbr_learning_rate": trial.suggest_float("gbr_learning_rate", 0.01, 0.2, log=True),
+                "gbr_min_samples_leaf": trial.suggest_int("gbr_min_samples_leaf", 1, 8),
+            }
+            if _HAS_XGBOOST:
+                params["xgb_n_estimators"] = trial.suggest_int("xgb_n_estimators", 100, 500, step=50)
+                params["xgb_max_depth"] = trial.suggest_int("xgb_max_depth", 3, 12)
+                params["xgb_learning_rate"] = trial.suggest_float("xgb_learning_rate", 0.01, 0.2, log=True)
+
+            rf = RandomForestRegressor(
+                n_estimators=params["rf_n_estimators"],
+                max_depth=params["rf_max_depth"],
+                min_samples_leaf=params["rf_min_samples_leaf"],
+                random_state=42, n_jobs=-1,
+            )
+            gbr = GradientBoostingRegressor(
+                n_estimators=params["gbr_n_estimators"],
+                max_depth=params["gbr_max_depth"],
+                learning_rate=params["gbr_learning_rate"],
+                subsample=0.85,
+                min_samples_leaf=params["gbr_min_samples_leaf"],
+                random_state=42,
+            )
+            ests = [("rf", rf), ("gbr", gbr)]
+            if _HAS_XGBOOST:
+                xgb = XGBRegressor(
+                    n_estimators=params["xgb_n_estimators"],
+                    max_depth=params["xgb_max_depth"],
+                    learning_rate=params["xgb_learning_rate"],
+                    subsample=0.85, colsample_bytree=0.8,
+                    random_state=42, verbosity=0,
+                )
+                ests.append(("xgb", xgb))
+
+            pipe = Pipeline([
+                ("preprocessor", preprocessor),
+                ("regressor", VotingRegressor(estimators=ests)),
+            ])
+
+            n_sp = min(3, sample_count // 5)
+            tscv = TimeSeriesSplit(n_splits=max(2, n_sp))
+            scores = []
+            for tr_idx, te_idx in tscv.split(X):
+                pipe.fit(X.iloc[tr_idx], y.iloc[tr_idx])
+                pred = pipe.predict(X.iloc[te_idx])
+                scores.append(mean_absolute_error(y.iloc[te_idx], pred))
+            return float(np.mean(scores))
+
+        optuna.logging.set_verbosity(optuna.logging.WARNING)
+        study = optuna.create_study(direction="minimize")
+        logger.info("Optuna tuning basliyor: %d trial, timeout=120s ...", n_trials)
+        study.optimize(objective, n_trials=n_trials, timeout=120, show_progress_bar=False)
+        logger.info("Optuna best MAE: %.3f, params: %s", study.best_value, study.best_params)
+        return dict(study.best_params)
+    except Exception as e:
+        logger.warning("Optuna tuning basarisiz, varsayilan parametreler kullanilacak: %s", e)
+        return {}
+
+
+def _extract_feature_importance(
+    pipeline: Pipeline,
+    X: pd.DataFrame,
+) -> list[dict[str, Any]]:
+    """
+    Egitilmis pipeline'dan feature importance cikarir.
+    Her model icin ayri, sonra ensemble ortalamasi.
+    Admin dashboard'da gosterilmek uzere JSON-friendly liste dondurur.
+    """
+    try:
+        preprocessor: ColumnTransformer = pipeline.named_steps["preprocessor"]
+        regressor: VotingRegressor = pipeline.named_steps["regressor"]
+
+        # OHE sonrasi feature isimleri
+        try:
+            ohe = preprocessor.named_transformers_["cat"]
+            cat_feature_names = list(ohe.get_feature_names_out())
+        except Exception:
+            cat_feature_names = []
+        num_feature_names = [c for c in WASTE_FEATURE_COLUMNS if c not in ("yemek_adi", "kategori")]
+        all_feature_names = cat_feature_names + num_feature_names
+
+        # Her alt modelden importance topla
+        importances_sum = np.zeros(len(all_feature_names))
+        model_count = 0
+        for estimator in regressor.estimators_:
+            imp = None
+            if hasattr(estimator, "feature_importances_"):
+                imp = estimator.feature_importances_
+            if imp is not None and len(imp) == len(all_feature_names):
+                importances_sum += imp
+                model_count += 1
+
+        if model_count == 0:
+            return []
+
+        avg_importance = importances_sum / model_count
+
+        # OHE feature'lari orijinal kategorik sutuna geri topla
+        consolidated: dict[str, float] = {}
+        for i, fname in enumerate(all_feature_names):
+            # OHE feature'lari "cat__yemek_adi_XXX" seklinde
+            original_col = fname
+            for prefix in ("cat__yemek_adi_", "cat__kategori_"):
+                if fname.startswith(prefix):
+                    original_col = prefix.replace("cat__", "").rstrip("_")
+                    break
+            consolidated[original_col] = consolidated.get(original_col, 0.0) + float(avg_importance[i])
+
+        # Normalize ve sirala
+        total = sum(consolidated.values()) or 1.0
+        result = [
+            {"feature": k, "importance": round(v / total, 4), "importance_raw": round(v, 6)}
+            for k, v in consolidated.items()
+        ]
+        result.sort(key=lambda x: x["importance"], reverse=True)
+        return result
+    except Exception as e:
+        logger.warning("Feature importance cikarimi basarisiz: %s", e)
+        return []
+
+
 def train_waste_model_from_db(
     db: Optional[Session] = None,
     min_samples: int = MIN_TRAIN_SAMPLES,
@@ -331,7 +696,11 @@ def train_waste_model_from_db(
     Hedef:
       - UretimLog.israf_orani (gercek saha verisi)
     Ozellikler:
-      - yemek_adi, kategori, gun/ay, uretilen_porsiyon, puan ortalamasi, oy sayisi
+      - 20 feature: temel + temporal + populerlik + hava/takvim/cekicilik/lag-1
+    Model:
+      - Ensemble (RandomForest + GradientBoosting + XGBoost)
+      - Optuna Bayesian Hyperparameter Tuning
+      - Time-Series Cross-Validation
     """
     close_db = False
     if db is None:
@@ -361,17 +730,12 @@ def train_waste_model_from_db(
                 "min_samples": min_samples,
             }
 
+        # _tarih kolonu sadece siralama icin — modele verilmez
         X = df[WASTE_FEATURE_COLUMNS]
         y = df["target_israf"]
 
         cat_cols = ["yemek_adi", "kategori"]
-        num_cols = [
-            "gun_hafta",
-            "ay",
-            "uretilen_porsiyon",
-            "rating_avg",
-            "rating_count",
-        ]
+        num_cols = [c for c in WASTE_FEATURE_COLUMNS if c not in cat_cols]
 
         preprocessor = ColumnTransformer(
             transformers=[
@@ -379,35 +743,79 @@ def train_waste_model_from_db(
                 ("num", "passthrough", num_cols),
             ]
         )
-        regressor = RandomForestRegressor(
-            n_estimators=250,
-            max_depth=12,
-            min_samples_leaf=1,
+
+        # ── Optuna Bayesian Hyperparameter Tuning ──
+        best_params = _optuna_tune(X, y, preprocessor, sample_count)
+
+        # ── Ensemble: RandomForest + GradientBoosting + XGBoost ──
+        rf = RandomForestRegressor(
+            n_estimators=best_params.get("rf_n_estimators", 400),
+            max_depth=best_params.get("rf_max_depth", 15),
+            min_samples_leaf=best_params.get("rf_min_samples_leaf", 2),
+            min_samples_split=4,
             random_state=42,
             n_jobs=-1,
         )
+        gbr = GradientBoostingRegressor(
+            n_estimators=best_params.get("gbr_n_estimators", 350),
+            max_depth=best_params.get("gbr_max_depth", 10),
+            learning_rate=best_params.get("gbr_learning_rate", 0.05),
+            subsample=0.85,
+            min_samples_leaf=best_params.get("gbr_min_samples_leaf", 3),
+            random_state=42,
+        )
+
+        estimators = [("rf", rf), ("gbr", gbr)]
+        model_type_label = "Ensemble(RF+GBR"
+
+        if _HAS_XGBOOST:
+            xgb = XGBRegressor(
+                n_estimators=best_params.get("xgb_n_estimators", 300),
+                max_depth=best_params.get("xgb_max_depth", 8),
+                learning_rate=best_params.get("xgb_learning_rate", 0.05),
+                subsample=0.85,
+                colsample_bytree=0.8,
+                random_state=42,
+                verbosity=0,
+            )
+            estimators.append(("xgb", xgb))
+            model_type_label += "+XGBoost"
+
+        model_type_label += ")"
+        ensemble = VotingRegressor(estimators=estimators)
+
         pipeline = Pipeline(
             steps=[
                 ("preprocessor", preprocessor),
-                ("regressor", regressor),
+                ("regressor", ensemble),
             ]
         )
 
+        # ── Time-Series Cross-Validation (kronolojik split) ──
         metrics: dict[str, float | str]
         if sample_count >= 12:
-            X_train, X_test, y_train, y_test = train_test_split(
-                X,
-                y,
-                test_size=0.2,
-                random_state=42,
-            )
-            pipeline.fit(X_train, y_train)
-            y_pred = pipeline.predict(X_test)
+            n_splits = min(5, sample_count // 4)
+            tscv = TimeSeriesSplit(n_splits=max(2, n_splits))
+            cv_mae, cv_rmse, cv_r2 = [], [], []
+            for train_idx, test_idx in tscv.split(X):
+                X_tr, X_te = X.iloc[train_idx], X.iloc[test_idx]
+                y_tr, y_te = y.iloc[train_idx], y.iloc[test_idx]
+                pipeline.fit(X_tr, y_tr)
+                y_p = pipeline.predict(X_te)
+                cv_mae.append(mean_absolute_error(y_te, y_p))
+                cv_rmse.append(math.sqrt(mean_squared_error(y_te, y_p)))
+                r2_val = r2_score(y_te, y_p) if len(y_te) > 1 else 0.0
+                cv_r2.append(r2_val)
+
+            # Final fit on all data
+            pipeline.fit(X, y)
 
             metrics = {
-                "mae_test": round(float(mean_absolute_error(y_test, y_pred)), 3),
-                "rmse_test": round(float(math.sqrt(mean_squared_error(y_test, y_pred))), 3),
-                "r2_test": round(float(r2_score(y_test, y_pred)), 3),
+                "mae_cv": round(float(np.mean(cv_mae)), 3),
+                "rmse_cv": round(float(np.mean(cv_rmse)), 3),
+                "r2_cv": round(float(np.mean(cv_r2)), 3),
+                "cv_folds": len(cv_mae),
+                "validation": "TimeSeriesSplit",
             }
         else:
             pipeline.fit(X, y)
@@ -419,18 +827,43 @@ def train_waste_model_from_db(
                 "note": "Veri az oldugu icin train metrikleri raporlandi.",
             }
 
+        # ── Feature Importance Raporu ──
+        importance_report = _extract_feature_importance(pipeline, X)
+
         os.makedirs(MODEL_DIR, exist_ok=True)
         model_bundle = {
             "pipeline": pipeline,
             "feature_columns": list(WASTE_FEATURE_COLUMNS),
             "trained_at": datetime.utcnow().isoformat() + "Z",
             "sample_count": sample_count,
-            "model_type": "RandomForestRegressor",
+            "model_type": model_type_label,
+            "feature_importance": importance_report,
+            "optuna_params": best_params,
         }
         joblib.dump(model_bundle, WASTE_MODEL_PATH)
 
         global _cached_waste_model
         _cached_waste_model = model_bundle
+
+        # Metrikleri JSON dosyasina kaydet
+        metrics_data = {
+            "trained_at": model_bundle["trained_at"],
+            "sample_count": sample_count,
+            "model_type": model_type_label,
+            **metrics,
+        }
+        try:
+            with open(WASTE_METRICS_PATH, "w", encoding="utf-8") as f:
+                json.dump(metrics_data, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
+        # Feature importance ayri JSON olarak kaydet (admin dashboard icin)
+        try:
+            with open(WASTE_IMPORTANCE_PATH, "w", encoding="utf-8") as f:
+                json.dump(importance_report, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
 
         return {
             "success": True,
@@ -438,6 +871,9 @@ def train_waste_model_from_db(
             "model_path": WASTE_MODEL_PATH,
             "sample_count": sample_count,
             "metrics": metrics,
+            "model_type": model_type_label,
+            "feature_importance": importance_report,
+            "optuna_tuned": bool(best_params),
         }
     finally:
         if close_db:
@@ -459,18 +895,76 @@ def get_waste_model_status(db: Optional[Session] = None) -> dict[str, Any]:
             .scalar()
         ) or 0
 
+        # Kaydedilmis metrikleri oku
+        saved_metrics = {}
+        try:
+            if os.path.exists(WASTE_METRICS_PATH):
+                with open(WASTE_METRICS_PATH, "r", encoding="utf-8") as f:
+                    saved_metrics = json.load(f)
+        except Exception:
+            pass
+
+        # Feature importance bilgisi
+        has_importance = os.path.exists(WASTE_IMPORTANCE_PATH)
+
         return {
             "success": True,
-            "model_exists": model_bundle is not None,
+            "model_yuklu": model_bundle is not None,
+            "model_tipi": (model_bundle or {}).get("model_type", "Bilinmiyor"),
             "model_path": WASTE_MODEL_PATH,
-            "trained_at": (model_bundle or {}).get("trained_at"),
-            "model_sample_count": (model_bundle or {}).get("sample_count"),
+            "son_egitim_tarihi": saved_metrics.get("trained_at") or (model_bundle or {}).get("trained_at"),
+            "egitim_veri_sayisi": saved_metrics.get("sample_count") or (model_bundle or {}).get("sample_count"),
+            "mae": saved_metrics.get("mae_cv", saved_metrics.get("mae_test", saved_metrics.get("mae_train", "-"))),
+            "rmse": saved_metrics.get("rmse_cv", saved_metrics.get("rmse_test", saved_metrics.get("rmse_train", "-"))),
+            "r2": saved_metrics.get("r2_cv", saved_metrics.get("r2_test", saved_metrics.get("r2_train", "-"))),
+            "validation_method": saved_metrics.get("validation", "train_test_split"),
+            "cv_folds": saved_metrics.get("cv_folds"),
             "training_data_count": int(training_data_count),
             "fallback_active": model_bundle is None,
+            "feature_count": len(WASTE_FEATURE_COLUMNS),
+            "xgboost_active": _HAS_XGBOOST,
+            "optuna_active": _HAS_OPTUNA,
+            "feature_importance_available": has_importance,
         }
     finally:
         if close_db:
             db.close()
+
+
+def get_feature_importance_report() -> dict[str, Any]:
+    """
+    Admin dashboard icin feature importance raporu dondurur.
+    Egitilmis modelden veya kaydedilmis JSON'dan okur.
+    """
+    # Oncelik 1: Bellekteki modelden
+    model_bundle = load_waste_model()
+    if model_bundle and model_bundle.get("feature_importance"):
+        return {
+            "success": True,
+            "source": "model_bundle",
+            "model_type": model_bundle.get("model_type", "Bilinmiyor"),
+            "trained_at": model_bundle.get("trained_at"),
+            "features": model_bundle["feature_importance"],
+        }
+
+    # Oncelik 2: Kaydedilmis JSON dosyasindan
+    if os.path.exists(WASTE_IMPORTANCE_PATH):
+        try:
+            with open(WASTE_IMPORTANCE_PATH, "r", encoding="utf-8") as f:
+                features = json.load(f)
+            return {
+                "success": True,
+                "source": "saved_file",
+                "features": features,
+            }
+        except Exception:
+            pass
+
+    return {
+        "success": False,
+        "message": "Feature importance raporu bulunamadi. Once modeli egitin.",
+        "features": [],
+    }
 
 
 def _predict_waste_with_ml(
@@ -480,14 +974,103 @@ def _predict_waste_with_ml(
     ortalama_puan: float,
     toplam_oy: int,
     uretilen_porsiyon: float,
+    onceki_hafta_israf: float = -1.0,
+    populerlik_skoru: float = 0.5,
 ) -> float | None:
     model_bundle = load_waste_model()
     if model_bundle is None:
         return None
 
+    # Model yeterli veri ile egitilmemisse guvenilir degil → fallback kullan
+    sample_count = model_bundle.get("sample_count", 0)
+    if sample_count < 20:
+        return None
+
     pipeline = model_bundle.get("pipeline")
     if pipeline is None:
         return None
+
+    # Mevcut ek feature'lar icin runtime hesaplamalar
+    mevsim = _get_mevsim(tarih)
+    hafta_ici = 1 if tarih.weekday() < 5 else 0
+
+    # DB'den runtime sinyalleri cek
+    son_3_gun_ort = -1.0
+    kategori_ort = 20.0
+    rating_std = 0.0
+    menu_cesitlilik = 5
+    onceki_gun_israf_val = -1.0
+    menu_cekiciligi_val = 0.5
+    self_report_avg_val = -1.0
+    try:
+        db_temp = SessionLocal()
+
+        # Son 3 gun genel israf ortalamasi
+        uc_gun_once = tarih - timedelta(days=3)
+        son3 = db_temp.query(sqla_func.avg(UretimLog.israf_orani)).filter(
+            UretimLog.tarih >= uc_gun_once,
+            UretimLog.tarih < tarih,
+            UretimLog.israf_orani.isnot(None),
+        ).scalar()
+        if son3 is not None:
+            son_3_gun_ort = float(son3)
+
+        # Kategori ortalama israfi
+        kat_ort = db_temp.query(sqla_func.avg(UretimLog.israf_orani)).filter(
+            UretimLog.kategori == (kategori or "diger"),
+            UretimLog.israf_orani.isnot(None),
+        ).scalar()
+        if kat_ort is not None:
+            kategori_ort = float(kat_ort)
+
+        # Rating standart sapmasi
+        puanlar = [float(r.puan) for r in db_temp.query(MenuPuanlama.puan).filter(
+            MenuPuanlama.yemek_adi.ilike(f"%{yemek_adi}%")
+        ).all()]
+        if len(puanlar) > 1:
+            rating_std = float(np.std(puanlar))
+
+        # Bugunun menu cesitliligi
+        cesit = db_temp.query(sqla_func.count(UretimLog.id)).filter(
+            UretimLog.tarih == tarih,
+        ).scalar()
+        if cesit and cesit > 0:
+            menu_cesitlilik = int(cesit)
+
+        # ── Plan 1.2: onceki_gun_israf (Lag-1) ──
+        onceki_gun = tarih - timedelta(days=1)
+        lag1 = db_temp.query(sqla_func.avg(UretimLog.israf_orani)).filter(
+            UretimLog.tarih == onceki_gun,
+            UretimLog.israf_orani.isnot(None),
+        ).scalar()
+        if lag1 is not None:
+            onceki_gun_israf_val = float(lag1)
+
+        # ── Self-report ortalamasi ──
+        sr_val = db_temp.query(sqla_func.avg(MenuPuanlama.israf_self_report)).filter(
+            MenuPuanlama.yemek_adi.ilike(f"%{yemek_adi}%"),
+            MenuPuanlama.israf_self_report.isnot(None),
+        ).scalar()
+        if sr_val is not None:
+            self_report_avg_val = float(sr_val)
+
+        # ── Plan 1.2: menu_cekiciligi ──
+        try:
+            from modules.menu_optimizer import YEMEK_BAZI_POPULERLIK
+            bugun_yemekler = db_temp.query(UretimLog.yemek_adi).filter(
+                UretimLog.tarih == tarih,
+            ).distinct().all()
+            if bugun_yemekler:
+                pops = [YEMEK_BAZI_POPULERLIK.get(
+                    _canonicalize_meal_name(r.yemek_adi), 0.5
+                ) for r in bugun_yemekler]
+                menu_cekiciligi_val = sum(pops) / len(pops)
+        except ImportError:
+            pass
+
+        db_temp.close()
+    except Exception:
+        pass
 
     row = pd.DataFrame(
         [
@@ -499,6 +1082,22 @@ def _predict_waste_with_ml(
                 "uretilen_porsiyon": float(max(1.0, uretilen_porsiyon)),
                 "rating_avg": float(ortalama_puan),
                 "rating_count": int(max(0, toplam_oy)),
+                "onceki_hafta_israf": float(onceki_hafta_israf),
+                "populerlik_skoru": float(populerlik_skoru),
+                # Mevcut ek feature'lar
+                "mevsim": mevsim,
+                "hafta_ici_mi": hafta_ici,
+                "son_3_gun_ort_israf": son_3_gun_ort,
+                "kategori_ort_israf": kategori_ort,
+                "rating_std": rating_std,
+                "menu_cesitlilik": menu_cesitlilik,
+                # Plan 1.2 yeni feature'lar
+                "ogrenci_sayisi_tahmini": _get_ogrenci_katilim_tahmini(tarih),
+                "menu_cekiciligi": menu_cekiciligi_val,
+                "gun_tipi": _get_gun_tipi(tarih),
+                "onceki_gun_israf": onceki_gun_israf_val,
+                # Self-report feature
+                "self_report_avg": self_report_avg_val,
             }
         ]
     )
@@ -519,10 +1118,12 @@ def estimate_waste_ratio(
     toplam_oy: int | None,
     uretilen_porsiyon: float | None,
     uretim_israf_orani: float | None,
+    onceki_hafta_israf: float | None = None,
+    populerlik_skoru: float | None = None,
 ) -> tuple[float | None, str]:
     """
     Sirali karar:
-      1) ML model
+      1) ML model (ensemble)
       2) Gercek uretim israf ortalamasi
       3) Kural tabanli puan -> israf
       4) Veri yok
@@ -531,6 +1132,36 @@ def estimate_waste_ratio(
     rating_count = int(toplam_oy or 0)
     production = float(uretilen_porsiyon) if uretilen_porsiyon and uretilen_porsiyon > 0 else DEFAULT_PRODUCTION
 
+    # Onceki hafta israf verisini otomatik bul (verilmemisse)
+    prev_israf = float(onceki_hafta_israf) if onceki_hafta_israf is not None else -1.0
+    if prev_israf < 0:
+        try:
+            db_temp = SessionLocal()
+            onceki_tarih = tarih - timedelta(days=7)
+            prev_log = (
+                db_temp.query(UretimLog)
+                .filter(
+                    UretimLog.yemek_adi.ilike(f"%{yemek_adi}%"),
+                    UretimLog.tarih == onceki_tarih,
+                    UretimLog.israf_orani.isnot(None),
+                )
+                .first()
+            )
+            if prev_log and prev_log.israf_orani is not None:
+                prev_israf = float(prev_log.israf_orani)
+            db_temp.close()
+        except Exception:
+            pass
+
+    # Populerlik skorunu otomatik bul (verilmemisse)
+    pop_skor = float(populerlik_skoru) if populerlik_skoru is not None else 0.5
+    if populerlik_skoru is None:
+        try:
+            from modules.menu_optimizer import YEMEK_BAZI_POPULERLIK
+            pop_skor = YEMEK_BAZI_POPULERLIK.get(yemek_adi, 0.5)
+        except ImportError:
+            pass
+
     ml_pred = _predict_waste_with_ml(
         yemek_adi=yemek_adi,
         kategori=kategori,
@@ -538,6 +1169,8 @@ def estimate_waste_ratio(
         ortalama_puan=rating_avg,
         toplam_oy=rating_count,
         uretilen_porsiyon=production,
+        onceki_hafta_israf=prev_israf,
+        populerlik_skoru=pop_skor,
     )
     if ml_pred is not None:
         return ml_pred, "ml_model"

@@ -1,6 +1,11 @@
 {% extends "base_admin.html" %}
 {% block title %}Yönetici Dashboard{% endblock %}
 
+{% block head %}
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" as="script">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="page-wrapper">
     <div class="container">
@@ -63,7 +68,211 @@
             </div>
         </div>
 
-        <!-- 🔮 Tahminsel Analiz -->
+        <!-- �️ Öğrenci İsraf Self-Report -->
+        <div class="section-header" style="margin-top:40px;">
+            <h2 class="section-title">🗑️ Öğrenci İsraf Bildirimi</h2>
+            <p class="section-desc">Öğrencilerin yemek sonrası artık bildirimleri (Self-Report)</p>
+        </div>
+
+        <div class="admin-summary-grid">
+            <div class="admin-stat-card">
+                <div class="stat-icon">📋</div>
+                <div class="stat-value" id="sr-total">—</div>
+                <div class="stat-label">Toplam Bildirim</div>
+                <div class="stat-sub" id="sr-period">Son 30 gün</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value" id="sr-avg">—</div>
+                <div class="stat-label">Ort. İsraf Seviyesi</div>
+                <div class="stat-sub" id="sr-avg-label">—</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="stat-icon">⚠️</div>
+                <div class="stat-value" id="sr-worst">—</div>
+                <div class="stat-label">En Çok İsraf</div>
+                <div class="stat-sub" id="sr-worst-detail">—</div>
+            </div>
+        </div>
+
+        <div class="report-grid" style="margin-top:20px;">
+            <div>
+                <div class="chart-card">
+                    <h3>📈 Self-Report Günlük Trend</h3>
+                    <div class="chart-canvas-wrap"><canvas id="sr-trend-chart"></canvas></div>
+                </div>
+            </div>
+            <div>
+                <div class="chart-card">
+                    <h3>🥧 İsraf Dağılımı</h3>
+                    <div class="chart-canvas-wrap"><canvas id="sr-dagilim-chart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="sr-top-waste-table" style="margin-top: 16px;"></div>
+
+        <!-- ⚖️ IoT Tartı Verileri -->
+        <div class="section-header" style="margin-top:40px;">
+            <h2 class="section-title">⚖️ IoT Tartı Verileri</h2>
+            <p class="section-desc">Gerçek zamanlı israf ağırlık ölçümleri (kg)</p>
+        </div>
+
+        <div class="admin-summary-grid">
+            <div class="admin-stat-card">
+                <div class="stat-icon">⚖️</div>
+                <div class="stat-value" id="iot-today-kg">—</div>
+                <div class="stat-label">Bugünkü İsraf (kg)</div>
+                <div class="stat-sub" id="iot-today-count">—</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value" id="iot-monthly-kg">—</div>
+                <div class="stat-label">Aylık Toplam (kg)</div>
+                <div class="stat-sub" id="iot-monthly-avg">—</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="stat-icon">🔌</div>
+                <div class="stat-value" id="iot-source">—</div>
+                <div class="stat-label">Veri Kaynağı</div>
+                <div class="stat-sub" id="iot-source-detail">—</div>
+            </div>
+        </div>
+
+        <div class="report-grid" style="margin-top:20px;">
+            <div>
+                <div class="chart-card">
+                    <h3>📈 Günlük İsraf Ağırlık Trendi (kg)</h3>
+                    <div class="chart-canvas-wrap"><canvas id="iot-trend-chart"></canvas></div>
+                </div>
+            </div>
+            <div>
+                <div class="chart-card">
+                    <h3>🍽️ Bugünkü Yemek Bazlı İsraf (kg)</h3>
+                    <div class="chart-canvas-wrap"><canvas id="iot-daily-chart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:16px; display:flex; gap:12px; flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="runIoTSimulation(1)">🔄 Bugün Simüle Et</button>
+            <button class="btn" style="background:var(--clr-surface-2); color:var(--clr-text);" onclick="runIoTSimulation(30)">📅 Son 30 Gün Simüle Et</button>
+        </div>
+
+        <div id="iot-daily-table" style="margin-top: 16px;"></div>
+
+        <!-- � İsraf Maliyet Analizi -->
+        <div class="section-header" style="margin-top:40px;">
+            <h2 class="section-title">💰 İsraf Maliyet Analizi</h2>
+            <p class="section-desc">İsraf edilen yemeklerin parasal karşılığı (TL)</p>
+        </div>
+
+        <div class="admin-summary-grid">
+            <div class="admin-stat-card">
+                <div class="stat-icon">💸</div>
+                <div class="stat-value" id="maliyet-gunluk">—</div>
+                <div class="stat-label">Bugünkü Kayıp</div>
+                <div class="stat-sub" id="maliyet-gunluk-detay">—</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="stat-icon">📅</div>
+                <div class="stat-value" id="maliyet-haftalik">—</div>
+                <div class="stat-label">Bu Hafta Kayıp</div>
+                <div class="stat-sub" id="maliyet-haftalik-detay">—</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value" id="maliyet-aylik">—</div>
+                <div class="stat-label">Bu Ay Kayıp</div>
+                <div class="stat-sub" id="maliyet-degisim">—</div>
+            </div>
+        </div>
+
+        <div class="report-grid" style="margin-top:20px;">
+            <div>
+                <div class="chart-card">
+                    <h3>📈 Günlük İsraf Maliyet Trendi (TL)</h3>
+                    <div class="chart-canvas-wrap"><canvas id="maliyet-trend-chart"></canvas></div>
+                </div>
+            </div>
+            <div>
+                <div class="chart-card">
+                    <h3>🍽️ En Maliyetli İsraf Yemekler</h3>
+                    <div class="chart-canvas-wrap"><canvas id="maliyet-detay-chart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Maliyet Giriş Formu -->
+        <div style="margin-top:20px;">
+            <details class="chart-card" style="cursor:pointer;">
+                <summary style="font-weight:600; color:var(--clr-text); font-size:15px;">
+                    ✏️ Yemek Maliyeti Düzenle (birim TL/porsiyon)
+                </summary>
+                <div id="maliyet-form-container" style="margin-top:12px;">
+                    <p class="text-dim">Yükleniyor...</p>
+                </div>
+            </details>
+        </div>
+
+        <div id="maliyet-detay-table" style="margin-top:16px;"></div>
+
+        <!-- 📊 Karşılaştırmalı Dönem Raporu -->
+        <div class="section-header" style="margin-top:40px;">
+            <h2 class="section-title">📊 Karşılaştırmalı Dönem Raporu</h2>
+            <p class="section-desc">Bu dönem vs geçen dönem — ilerleme ve değişim analizi</p>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+            <button class="btn" id="donem-hafta-btn" onclick="loadDonemKarsilastirma('hafta')" style="padding:8px 18px; font-size:13px; background:var(--clr-surface-2); color:var(--clr-text); border:1px solid var(--clr-border); border-radius:8px;">Haftalık</button>
+            <button class="btn" id="donem-ay-btn" onclick="loadDonemKarsilastirma('ay')" style="padding:8px 18px; font-size:13px; background:var(--clr-primary); color:#fff; border:none; border-radius:8px;">Aylık</button>
+        </div>
+
+        <!-- Durum badge -->
+        <div id="donem-durum-badge" style="margin-bottom:16px;"></div>
+
+        <!-- Özet kartlar -->
+        <div class="admin-summary-grid" id="donem-summary-cards">
+            <div class="admin-stat-card">
+                <div class="stat-icon">📉</div>
+                <div class="stat-value" id="donem-israf-degisim">—</div>
+                <div class="stat-label">İsraf Değişimi</div>
+                <div class="stat-sub" id="donem-israf-detay">—</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-value" id="donem-maliyet-degisim">—</div>
+                <div class="stat-label">Maliyet Değişimi</div>
+                <div class="stat-sub" id="donem-maliyet-detay">—</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-value" id="donem-puan-degisim">—</div>
+                <div class="stat-label">Puan Değişimi</div>
+                <div class="stat-sub" id="donem-puan-detay">—</div>
+            </div>
+        </div>
+
+        <!-- Yan yana trend grafik -->
+        <div class="report-grid" style="margin-top:20px;">
+            <div>
+                <div class="chart-card">
+                    <h3>📈 Dönem Karşılaştırma — İsraf Trendi</h3>
+                    <div class="chart-canvas-wrap"><canvas id="donem-trend-chart"></canvas></div>
+                </div>
+            </div>
+            <div>
+                <div class="chart-card">
+                    <h3>🔄 En Çok Değişen Yemekler</h3>
+                    <div class="chart-canvas-wrap"><canvas id="donem-yemek-chart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Karşılaştırma tablosu -->
+        <div id="donem-karsilastirma-tablo" style="margin-top:16px;"></div>
+
+        <!-- � Tahminsel Analiz -->
         <div class="section-header" style="margin-top:40px;">
             <h2 class="section-title">🔮 Tahminsel Analiz</h2>
             <p class="section-desc">Gelecek hafta israf tahmini ve riskli yemekler</p>
@@ -96,9 +305,157 @@
         <!-- Riskli Yemekler Tablosu -->
         <div id="pred-risky-table" style="margin-top: 16px;"></div>
 
-        <!-- Menü Optimizasyonu -->
-        <div class="admin-actions" style="margin-top:32px;">
+        <!-- Menü Optimizasyonu & Simülasyon -->
+        <div class="admin-actions" style="margin-top:32px; display:flex; gap:12px; flex-wrap:wrap;">
             <button class="btn btn-primary" onclick="runOptimize()">🤖 Menü Optimizasyonu Çalıştır</button>
+            <a href="/admin/simulation" class="btn" style="background:var(--clr-surface-2); color:var(--clr-text); text-decoration:none; display:inline-flex; align-items:center; gap:6px;">🔮 What-If Simülasyon</a>
+            <button class="btn" onclick="generateVoteAlts()" style="background:#6366f1; color:#fff; border:none; display:inline-flex; align-items:center; gap:6px;">🗳️ Oylama Alternatifleri Oluştur</button>
+            <a href="/vote" class="btn" style="background:var(--clr-surface-2); color:var(--clr-text); text-decoration:none; display:inline-flex; align-items:center; gap:6px;" target="_blank">📊 Oylama Sayfası</a>
+        </div>
+
+        <!-- 🗳️ Menü Oylama Sonuçları -->
+        <div class="section-header" style="margin-top:40px;">
+            <h2 class="section-title">🗳️ Menü Oylama Sonuçları</h2>
+            <p class="section-desc">Öğrenci oylarıyla menü seçimi — gelecek hafta için</p>
+        </div>
+        <div id="admin-vote-status" style="margin-bottom:12px;"></div>
+        <div class="admin-summary-grid" id="admin-vote-cards">
+            <div class="admin-stat-card">
+                <div class="stat-icon">🗳️</div>
+                <div class="stat-value" id="vote-toplam-oy">—</div>
+                <div class="stat-label">Toplam Oy</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-value" id="vote-kazanan">—</div>
+                <div class="stat-label">Kazanan Menü</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="stat-icon">📅</div>
+                <div class="stat-value" id="vote-hafta">—</div>
+                <div class="stat-label">Oylama Haftası</div>
+            </div>
+        </div>
+        <div class="report-grid" style="margin-top:20px;">
+            <div>
+                <div class="chart-card">
+                    <h3>📊 Oy Dağılımı</h3>
+                    <div class="chart-canvas-wrap"><canvas id="admin-vote-chart"></canvas></div>
+                </div>
+            </div>
+            <div>
+                <div id="admin-vote-detay" class="chart-card" style="display:none;">
+                    <h3>📋 Alternatif Detayları</h3>
+                    <div id="admin-vote-detay-content"></div>
+                </div>
+            </div>
+        </div>
+        <!-- 🧠 Explainable AI (XAI) Dashboard -->
+        <div class="section-header" style="margin-top:40px;">
+            <h2 class="section-title">🧠 Explainable AI (XAI)</h2>
+            <p class="section-desc">ML modeli neden bu tahmini yaptı? Feature importance ve tek tahmin açıklaması</p>
+        </div>
+
+        <div id="xai-status" style="margin-bottom:16px;"></div>
+
+        <!-- Global Feature Importance -->
+        <div class="report-grid" style="margin-top:12px;">
+            <div>
+                <div class="chart-card">
+                    <h3>📊 Feature Importance (Model Geneli)</h3>
+                    <p style="font-size:.78rem; color:var(--clr-text-dim); margin-bottom:12px;">Her feature'ın israf tahminine olan etkisi</p>
+                    <div class="chart-canvas-wrap" style="min-height:360px;">
+                        <canvas id="xai-global-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="chart-card" id="xai-summary-card">
+                    <h3>📋 En Etkili Faktörler</h3>
+                    <div id="xai-top-features"></div>
+                    <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--clr-border);">
+                        <div style="font-size:.78rem; color:var(--clr-text-dim); margin-bottom:6px;">Model Bilgisi</div>
+                        <div id="xai-model-info" style="font-size:.82rem;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tek Yemek Açıklaması -->
+        <div class="chart-card" style="margin-top:20px;">
+            <h3>🔍 Tek Yemek Açıklaması</h3>
+            <p style="font-size:.78rem; color:var(--clr-text-dim); margin-bottom:16px;">Bir yemek seçin — model neden o tahmini yaptığını görün</p>
+            <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+                <div style="flex:1; min-width:200px;">
+                    <label style="font-size:.78rem; font-weight:700; color:var(--clr-text-dim); display:block; margin-bottom:4px;">Yemek Adı</label>
+                    <input id="xai-yemek" type="text" placeholder="Ör: Mercimek Çorba" style="width:100%; padding:10px 14px;">
+                </div>
+                <div style="min-width:160px;">
+                    <label style="font-size:.78rem; font-weight:700; color:var(--clr-text-dim); display:block; margin-bottom:4px;">Kategori</label>
+                    <select id="xai-kategori" style="width:100%; padding:10px 14px;">
+                        <option value="corba">Çorba</option>
+                        <option value="ana_yemek">Ana Yemek</option>
+                        <option value="yan_yemek">Yan Yemek</option>
+                        <option value="tatli">Tatlı</option>
+                        <option value="salata">Salata</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="runXaiExplain()" id="xai-explain-btn">🔎 Açıkla</button>
+            </div>
+            <div id="xai-explain-result" style="margin-top:20px;"></div>
+        </div>
+    </div>
+
+    <!-- 🚨 Anomali Tespiti (Öneri 4B) -->
+    <div class="section-header" style="margin-top:40px;">
+        <h2 class="section-title">🚨 Anomali Tespiti</h2>
+        <p class="section-desc">Z-score + Isolation Forest ile beklenmedik israf/tüketim sapmaları</p>
+    </div>
+    <div id="anomaly-status" style="margin-bottom:16px;"></div>
+
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px;">
+        <button class="btn btn-primary" onclick="runAnomalyDetection()" id="anomaly-detect-btn">🔍 Bugünü Tara</button>
+        <button class="btn" onclick="scanLast7Days()" id="anomaly-scan7-btn">📅 Son 7 Günü Tara</button>
+        <select id="anomaly-filter-siddet" onchange="loadAnomalies()" style="padding:10px 14px;">
+            <option value="">Tüm Şiddetler</option>
+            <option value="KRITIK">🔴 Kritik</option>
+            <option value="YUKSEK">🟠 Yüksek</option>
+            <option value="ORTA">🟡 Orta</option>
+            <option value="DUSUK">🔵 Düşük</option>
+        </select>
+        <label style="display:inline-flex; align-items:center; gap:6px; font-size:.85rem;">
+            <input type="checkbox" id="anomaly-show-resolved" onchange="loadAnomalies()"> Çözülmüşleri göster
+        </label>
+    </div>
+
+    <div class="report-grid" style="margin-top:12px;">
+        <div>
+            <div class="chart-card">
+                <h3>📊 Şiddet Dağılımı (Son 30 Gün)</h3>
+                <div class="chart-canvas-wrap" style="min-height:280px;">
+                    <canvas id="anomaly-siddet-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div>
+            <div class="chart-card">
+                <h3>📈 Günlük Trend</h3>
+                <div class="chart-canvas-wrap" style="min-height:280px;">
+                    <canvas id="anomaly-trend-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chart-card" style="margin-top:20px;">
+        <h3>🔥 En Sık Anomali Yaşayan Yemekler</h3>
+        <div id="anomaly-top-foods" style="margin-top:12px;"></div>
+    </div>
+
+    <div class="chart-card" style="margin-top:20px;">
+        <h3>📋 Tespit Edilen Anomaliler</h3>
+        <div id="anomaly-list" style="margin-top:12px;">
+            <p style="color:var(--clr-text-dim); font-size:.85rem;">Yükleniyor...</p>
         </div>
     </div>
 </div>
@@ -267,7 +624,7 @@
                         }]
                     },
                     options: {
-                        responsive: true, cutout: '55%',
+                        responsive: true, maintainAspectRatio: false, cutout: '55%',
                         plugins: { legend: { position: 'bottom', labels: { color: '#AED6F1', padding: 12 } } }
                     }
                 });
@@ -338,10 +695,1073 @@
         } catch (e) { showToast('Optimizasyon hatası.', 'error'); }
     }
 
+    // ─── Self-Report İstatistikleri ──────────────────────────────────
+    async function loadSelfReportStats() {
+        try {
+            const data = await apiFetch('/api/analytics/self-report?gun=30');
+            if (!data.success) return;
+
+            // Özet kartlar
+            document.getElementById('sr-total').textContent = data.toplam_bildirim || 0;
+            document.getElementById('sr-period').textContent = `Son ${data.donem_gun} gün`;
+
+            // Ortalama seviye
+            if (data.tum_yemekler && data.tum_yemekler.length > 0) {
+                const ortTotal = data.tum_yemekler.reduce((s, y) => s + y.ort_self_report * y.bildirim_sayisi, 0);
+                const topBild = data.tum_yemekler.reduce((s, y) => s + y.bildirim_sayisi, 0);
+                const genelOrt = topBild > 0 ? (ortTotal / topBild) : 0;
+                const labels = ['Hiç', 'Az', 'Orta', 'Çok'];
+                document.getElementById('sr-avg').textContent = genelOrt.toFixed(1) + '/3';
+                document.getElementById('sr-avg-label').textContent = labels[Math.round(genelOrt)];
+            }
+
+            // En çok israf bildirimi alan yemek
+            if (data.en_cok_israfa_maruz && data.en_cok_israfa_maruz.length > 0) {
+                const worst = data.en_cok_israfa_maruz[0];
+                document.getElementById('sr-worst').textContent = worst.self_report_label;
+                document.getElementById('sr-worst-detail').textContent = worst.yemek_adi;
+            }
+
+            // Günlük trend chart
+            if (data.gunluk_trend && data.gunluk_trend.length > 0) {
+                new Chart(document.getElementById('sr-trend-chart').getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: data.gunluk_trend.map(d => d.tarih),
+                        datasets: [{
+                            label: 'Ort. Self-Report',
+                            data: data.gunluk_trend.map(d => d.ort_self_report),
+                            borderColor: '#ff6b6b',
+                            backgroundColor: 'rgba(255,107,107,.15)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2,
+                            pointRadius: 3,
+                        }, {
+                            label: 'Bildirim Sayısı',
+                            data: data.gunluk_trend.map(d => d.bildirim_sayisi),
+                            borderColor: '#3b8bf2',
+                            backgroundColor: 'rgba(59,139,242,.1)',
+                            fill: false,
+                            tension: 0.4,
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            yAxisID: 'y1',
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        interaction: { mode: 'index', intersect: false },
+                        scales: {
+                            y: { min: 0, max: 3, title: { display: true, text: 'İsraf Seviyesi', color: '#ccc' }, ticks: { color: '#999' }, grid: { color: 'rgba(255,255,255,.06)' } },
+                            y1: { position: 'right', min: 0, title: { display: true, text: 'Bildirim', color: '#ccc' }, ticks: { color: '#999' }, grid: { display: false } },
+                            x: { ticks: { color: '#999', maxTicksLimit: 10 }, grid: { color: 'rgba(255,255,255,.06)' } }
+                        },
+                        plugins: { legend: { labels: { color: '#ccc' } } }
+                    }
+                });
+            }
+
+            // Dağılım chart
+            if (data.dagilim && Object.keys(data.dagilim).length > 0) {
+                new Chart(document.getElementById('sr-dagilim-chart').getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(data.dagilim),
+                        datasets: [{
+                            data: Object.values(data.dagilim),
+                            backgroundColor: ['#3ac47d', '#22d4a0', '#f5b731', '#ff6b6b'],
+                            borderWidth: 0,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom', labels: { color: '#ccc', padding: 16 } } }
+                    }
+                });
+            }
+
+            // En çok israf yemekler tablosu
+            if (data.en_cok_israfa_maruz && data.en_cok_israfa_maruz.length > 0) {
+                document.getElementById('sr-top-waste-table').innerHTML = `
+                    <div class="card" style="padding:20px;">
+                        <h3 style="margin-bottom:12px;">🗑️ En Çok İsraf Bildirilen Yemekler</h3>
+                        <table class="data-table">
+                            <thead><tr><th>Yemek</th><th>Kategori</th><th>Ort. İsraf</th><th>Bildirim</th><th>Puan</th></tr></thead>
+                            <tbody>
+                                ${data.en_cok_israfa_maruz.map(r => `
+                                    <tr>
+                                        <td>${r.yemek_adi}</td>
+                                        <td>${r.kategori}</td>
+                                        <td><span class="badge badge-${r.ort_self_report >= 2 ? 'danger' : 'warning'}">${r.self_report_label}</span></td>
+                                        <td>${r.bildirim_sayisi}</td>
+                                        <td>${r.ort_puan ? r.ort_puan + '/5' : '—'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+        } catch (e) { console.error('Self-report stats error:', e); }
+    }
+
+    // ─── IoT Tartı Verileri ──────────────────────────────────────────
+    async function loadIoTStats() {
+        try {
+            // Durum özeti
+            const status = await apiFetch('/api/v1/iot/status');
+            if (status.success) {
+                document.getElementById('iot-today-kg').textContent = status.bugun.toplam_israf_kg + ' kg';
+                document.getElementById('iot-today-count').textContent = status.bugun.olcum_sayisi + ' ölçüm';
+                document.getElementById('iot-monthly-kg').textContent = status.son_30_gun.toplam_israf_kg + ' kg';
+                document.getElementById('iot-monthly-avg').textContent = 'Günlük ort: ' + status.son_30_gun.ort_gunluk_kg + ' kg';
+
+                const kaynaklar = Object.keys(status.kaynak_dagilim || {});
+                if (kaynaklar.length > 0) {
+                    const anaKaynak = kaynaklar.reduce((a, b) => status.kaynak_dagilim[a] > status.kaynak_dagilim[b] ? a : b);
+                    const kaynakLabels = { iot_tarti: '🟢 IoT Tartı', simulasyon: '🟡 Simülasyon', manuel: '🔵 Manuel' };
+                    document.getElementById('iot-source').textContent = kaynakLabels[anaKaynak] || anaKaynak;
+                    document.getElementById('iot-source-detail').textContent = kaynaklar.map(k => `${k}: ${status.kaynak_dagilim[k]}`).join(', ');
+                } else {
+                    document.getElementById('iot-source').textContent = 'Veri yok';
+                    document.getElementById('iot-source-detail').textContent = 'Simülasyon çalıştırın';
+                }
+            }
+
+            // Trend chart
+            const trend = await apiFetch('/api/v1/iot/trend?gun=30');
+            if (trend.success && trend.trend && trend.trend.length > 0) {
+                new Chart(document.getElementById('iot-trend-chart').getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: trend.trend.map(d => d.tarih),
+                        datasets: [{
+                            label: 'Toplam İsraf (kg)',
+                            data: trend.trend.map(d => d.toplam_israf_kg),
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239,68,68,.15)',
+                            fill: true, tension: 0.4, borderWidth: 2, pointRadius: 3,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { min: 0, title: { display: true, text: 'kg', color: '#ccc' }, ticks: { color: '#999' }, grid: { color: 'rgba(255,255,255,.06)' } },
+                            x: { ticks: { color: '#999', maxTicksLimit: 10 }, grid: { color: 'rgba(255,255,255,.06)' } }
+                        },
+                        plugins: { legend: { labels: { color: '#ccc' } } }
+                    }
+                });
+            }
+
+            // Günlük yemek bazlı chart
+            const daily = await apiFetch('/api/v1/iot/daily');
+            if (daily.success && daily.yemekler && daily.yemekler.length > 0) {
+                new Chart(document.getElementById('iot-daily-chart').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: daily.yemekler.map(d => d.yemek_adi),
+                        datasets: [{
+                            label: 'İsraf (kg)',
+                            data: daily.yemekler.map(d => d.tartilan_israf_kg),
+                            backgroundColor: daily.yemekler.map(d =>
+                                d.kaynak === 'iot_tarti' ? 'rgba(34,197,94,.8)' :
+                                d.kaynak === 'simulasyon' ? 'rgba(245,158,11,.8)' : 'rgba(59,130,246,.8)'
+                            ),
+                            borderRadius: 8, borderWidth: 0,
+                        }]
+                    },
+                    options: {
+                        responsive: true, indexAxis: 'y',
+                        scales: {
+                            x: { title: { display: true, text: 'kg', color: '#ccc' }, ticks: { color: '#999' }, grid: { color: 'rgba(255,255,255,.06)' } },
+                            y: { ticks: { color: '#999' }, grid: { color: 'rgba(255,255,255,.06)' } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+
+                // Tablo
+                document.getElementById('iot-daily-table').innerHTML = `
+                    <div class="card" style="padding:20px;">
+                        <h3 style="margin-bottom:12px;">⚖️ Bugünün Tartı Verileri</h3>
+                        <div style="font-size:.8rem; color:var(--clr-text-dim); margin-bottom:12px;">
+                            Toplam: <strong>${daily.toplam_israf_kg} kg</strong> israf / ${daily.toplam_uretim_kg} kg üretim
+                            (Genel: <strong>%${daily.genel_israf_orani}</strong>)
+                        </div>
+                        <table class="data-table">
+                            <thead><tr><th>Yemek</th><th>Üretim (kg)</th><th>İsraf (kg)</th><th>İsraf %</th><th>Kaynak</th></tr></thead>
+                            <tbody>
+                                ${daily.yemekler.map(y => `
+                                    <tr>
+                                        <td>${y.yemek_adi}</td>
+                                        <td>${y.uretilen_kg_tahmini}</td>
+                                        <td><strong>${y.tartilan_israf_kg}</strong></td>
+                                        <td>%${y.israf_orani_hesaplanan}</td>
+                                        <td><span class="badge badge-${y.kaynak === 'iot_tarti' ? 'success' : y.kaynak === 'simulasyon' ? 'warning' : 'info'}">${y.kaynak || '?'}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+        } catch (e) { console.error('IoT stats error:', e); }
+    }
+
+    async function runIoTSimulation(gunSayisi) {
+        showToast(`Simülasyon çalıştırılıyor (${gunSayisi} gün)...`, 'info');
+        try {
+            const data = await apiFetch('/api/v1/iot/simulate', {
+                method: 'POST',
+                body: JSON.stringify({ gun_sayisi: gunSayisi, overwrite: false })
+            });
+            if (data.success) {
+                const toplam = data.toplam_simule_kg || data.toplam_simule_kg === 0 ? data.toplam_simule_kg : (data.detaylar || []).reduce((s, d) => s + d.simule_israf_kg, 0);
+                showToast(`Simülasyon tamamlandı! ${data.toplam_guncellenen || data.guncellenen || 0} kayıt güncellendi (${toplam} kg) ✅`, 'success');
+                loadIoTStats(); // Yenile
+            } else {
+                showToast(data.message || 'Simülasyon hatası.', 'error');
+            }
+        } catch (e) { showToast('Simülasyon çalıştırılamadı.', 'error'); }
+    }
+
+    // ─── Maliyet Analizi ─────────────────────────────────────────────
+    async function loadMaliyetStats() {
+        try {
+            // Özet kartlar
+            const analiz = await apiFetch('/api/v1/maliyet/analiz');
+            if (analiz.success) {
+                document.getElementById('maliyet-gunluk').textContent = analiz.gunluk.toplam_tl.toLocaleString('tr-TR') + ' ₺';
+                document.getElementById('maliyet-gunluk-detay').textContent = analiz.gunluk.tarih;
+                document.getElementById('maliyet-haftalik').textContent = analiz.haftalik.toplam_tl.toLocaleString('tr-TR') + ' ₺';
+                document.getElementById('maliyet-haftalik-detay').textContent = analiz.haftalik.baslangic + ' — ' + analiz.haftalik.bitis;
+                document.getElementById('maliyet-aylik').textContent = analiz.aylik.toplam_tl.toLocaleString('tr-TR') + ' ₺';
+
+                const degisim = analiz.degisim_pct;
+                const ok = degisim < 0 ? '↓' : (degisim > 0 ? '↑' : '→');
+                const renk = degisim < 0 ? '#22c55e' : (degisim > 0 ? '#ef4444' : '#999');
+                document.getElementById('maliyet-degisim').innerHTML =
+                    `<span style="color:${renk}">${ok} ${Math.abs(degisim)}% geçen aya göre</span>`;
+            }
+
+            // Trend chart
+            const trend = await apiFetch('/api/v1/maliyet/trend?gun=30');
+            if (trend.success && trend.trend && trend.trend.length > 0) {
+                new Chart(document.getElementById('maliyet-trend-chart').getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: trend.trend.map(d => d.tarih),
+                        datasets: [{
+                            label: 'Günlük Kayıp (₺)',
+                            data: trend.trend.map(d => d.maliyet_tl),
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245,158,11,.15)',
+                            fill: true, tension: 0.4, borderWidth: 2, pointRadius: 3,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { min: 0, title: { display: true, text: '₺', color: '#ccc' }, ticks: { color: '#999' }, grid: { color: 'rgba(255,255,255,.06)' } },
+                            x: { ticks: { color: '#999', maxTicksLimit: 10 }, grid: { color: 'rgba(255,255,255,.06)' } }
+                        },
+                        plugins: { legend: { labels: { color: '#ccc' } } }
+                    }
+                });
+            }
+
+            // Detay chart — en maliyetli yemekler
+            const detay = await apiFetch('/api/v1/maliyet/detay?gun=30');
+            if (detay.success && detay.yemekler && detay.yemekler.length > 0) {
+                const top10 = detay.yemekler.slice(0, 10);
+                new Chart(document.getElementById('maliyet-detay-chart').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: top10.map(d => d.yemek_adi),
+                        datasets: [{
+                            label: 'Toplam Kayıp (₺)',
+                            data: top10.map(d => d.toplam_kayip_tl),
+                            backgroundColor: 'rgba(245,158,11,.8)',
+                            borderRadius: 8, borderWidth: 0,
+                        }]
+                    },
+                    options: {
+                        responsive: true, indexAxis: 'y',
+                        scales: {
+                            x: { title: { display: true, text: '₺', color: '#ccc' }, ticks: { color: '#999' }, grid: { color: 'rgba(255,255,255,.06)' } },
+                            y: { ticks: { color: '#999' }, grid: { color: 'rgba(255,255,255,.06)' } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+
+                // Detay tablosu
+                const tableEl = document.getElementById('maliyet-detay-table');
+                tableEl.innerHTML = `
+                    <div class="chart-card">
+                        <h3>📋 Yemek Bazlı İsraf Maliyet Tablosu (Son 30 Gün)</h3>
+                        <p style="margin:4px 0 12px; font-size:13px; color:var(--clr-muted);">Toplam: <strong style="color:#f59e0b;">${detay.toplam_maliyet_tl.toLocaleString('tr-TR')} ₺</strong></p>
+                        <div style="overflow-x:auto;">
+                        <table style="width:100%; border-collapse:separate; border-spacing:0; font-size:14px;">
+                            <thead><tr style="background:rgba(99,102,241,.12); text-transform:uppercase; font-size:11px; letter-spacing:.5px;">
+                                <th style="padding:12px 16px; text-align:left; color:#a5b4fc; white-space:nowrap;">Yemek</th>
+                                <th style="padding:12px 16px; text-align:left; color:#a5b4fc; white-space:nowrap;">Kategori</th>
+                                <th style="padding:12px 16px; text-align:right; color:#a5b4fc; white-space:nowrap;">Kalan Porsiyon</th>
+                                <th style="padding:12px 16px; text-align:right; color:#a5b4fc; white-space:nowrap;">Birim (₺)</th>
+                                <th style="padding:12px 16px; text-align:right; color:#a5b4fc; white-space:nowrap;">Toplam Kayıp (₺)</th>
+                            </tr></thead>
+                            <tbody>
+                                ${top10.map((d, i) => `
+                                    <tr style="background:${i % 2 === 0 ? 'rgba(255,255,255,.02)' : 'transparent'}; border-bottom:1px solid rgba(255,255,255,.06);">
+                                        <td style="padding:10px 16px; white-space:nowrap;">${d.yemek_adi}</td>
+                                        <td style="padding:10px 16px;"><span style="background:rgba(99,102,241,.15); color:#a5b4fc; padding:3px 10px; border-radius:6px; font-size:12px;">${d.kategori}</span></td>
+                                        <td style="padding:10px 16px; text-align:right; font-variant-numeric:tabular-nums;">${d.toplam_kalan_porsiyon}</td>
+                                        <td style="padding:10px 16px; text-align:right; font-variant-numeric:tabular-nums;">${d.birim_maliyet_tl} ₺</td>
+                                        <td style="padding:10px 16px; text-align:right; font-weight:600; color:#f59e0b; font-variant-numeric:tabular-nums;">${d.toplam_kayip_tl.toLocaleString('tr-TR')} ₺</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (e) { console.error('Maliyet stats error:', e); }
+    }
+
+    // Maliyet giriş formu
+    async function loadMaliyetForm() {
+        try {
+            const data = await apiFetch('/api/v1/maliyet/yemekler');
+            if (!data.success) return;
+
+            const container = document.getElementById('maliyet-form-container');
+            const kategoriler = {};
+            data.yemekler.forEach(y => {
+                if (!kategoriler[y.kategori]) kategoriler[y.kategori] = [];
+                kategoriler[y.kategori].push(y);
+            });
+
+            let html = '<div style="display:grid; gap:16px;">';
+            for (const [kat, yemekler] of Object.entries(kategoriler)) {
+                html += `<div>
+                    <h4 style="color:var(--clr-primary); margin-bottom:8px; text-transform:capitalize;">${kat.replace('_', ' ')}</h4>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:8px;">`;
+                for (const y of yemekler) {
+                    const val = y.birim_maliyet !== null ? y.birim_maliyet : '';
+                    const placeholder = y.birim_maliyet_gosterim;
+                    html += `
+                        <div style="display:flex; align-items:center; gap:8px; background:var(--clr-surface-2); padding:8px 12px; border-radius:8px;">
+                            <span style="flex:1; font-size:13px; color:var(--clr-text);" title="${y.ad}">${y.ad.length > 25 ? y.ad.slice(0,25)+'…' : y.ad}</span>
+                            <input type="number" min="0" max="1000" step="0.5" value="${val}"
+                                   placeholder="${placeholder}"
+                                   style="width:80px; padding:4px 8px; border:1px solid var(--clr-border); border-radius:6px; background:var(--clr-surface); color:var(--clr-text); font-size:13px; text-align:right;"
+                                   data-yemek-id="${y.id}" class="maliyet-input" />
+                            <span style="font-size:12px; color:var(--clr-muted);">₺</span>
+                        </div>`;
+                }
+                html += '</div></div>';
+            }
+            html += `</div>
+                <div style="margin-top:16px; display:flex; gap:10px;">
+                    <button class="btn btn-primary" onclick="saveMaliyetler()">💾 Kaydet</button>
+                    <span id="maliyet-save-status" style="font-size:13px; color:var(--clr-muted); align-self:center;"></span>
+                </div>`;
+            container.innerHTML = html;
+        } catch (e) { console.error('Maliyet form error:', e); }
+    }
+
+    async function saveMaliyetler() {
+        const inputs = document.querySelectorAll('.maliyet-input');
+        const maliyetler = [];
+        inputs.forEach(inp => {
+            if (inp.value !== '') {
+                maliyetler.push({ yemek_id: parseInt(inp.dataset.yemekId), birim_maliyet: parseFloat(inp.value) });
+            }
+        });
+        if (maliyetler.length === 0) { showToast('Hiç maliyet girilmedi.', 'warning'); return; }
+
+        try {
+            const res = await apiFetch('/api/v1/maliyet/toplu-guncelle', {
+                method: 'PUT',
+                body: JSON.stringify({ maliyetler })
+            });
+            if (res.success) {
+                showToast(`${res.guncellenen} yemek maliyeti güncellendi ✅`, 'success');
+                document.getElementById('maliyet-save-status').textContent = `${res.guncellenen} yemek güncellendi`;
+                loadMaliyetStats(); // Grafikleri yenile
+            } else {
+                showToast(res.message || 'Hata.', 'error');
+            }
+        } catch (e) { showToast('Kaydetme hatası.', 'error'); }
+    }
+
+    // details açılınca formu yükle
+    document.querySelector('details.chart-card')?.addEventListener('toggle', function() {
+        if (this.open && document.getElementById('maliyet-form-container').querySelector('.text-dim')) {
+            loadMaliyetForm();
+        }
+    });
+
+    // ─── Dönem Karşılaştırma (2C) ─────────────────────────────────
+    let donemTrendChart = null;
+    let donemYemekChart = null;
+    let aktifDonem = 'ay';
+
+    async function loadDonemKarsilastirma(donem) {
+        aktifDonem = donem || 'ay';
+
+        // Buton stilleri güncelle
+        const hBtn = document.getElementById('donem-hafta-btn');
+        const aBtn = document.getElementById('donem-ay-btn');
+        const aktifStil = 'background:var(--clr-primary); color:#fff; border:none;';
+        const pasifStil = 'background:var(--clr-surface-2); color:var(--clr-text); border:1px solid var(--clr-border);';
+        hBtn.style.cssText = 'padding:8px 18px; font-size:13px; border-radius:8px; cursor:pointer;' + (aktifDonem === 'hafta' ? aktifStil : pasifStil);
+        aBtn.style.cssText = 'padding:8px 18px; font-size:13px; border-radius:8px; cursor:pointer;' + (aktifDonem === 'ay' ? aktifStil : pasifStil);
+
+        try {
+            const data = await apiFetch(`/api/v1/analytics/donem-karsilastirma?donem=${aktifDonem}`);
+            if (!data.success) return;
+
+            const d = data.degisim;
+            const donemLabel = aktifDonem === 'hafta' ? 'Hafta' : 'Ay';
+
+            // Durum badge
+            const durumMap = {
+                iyilesti: { icon: '✅', text: `Bu ${donemLabel.toLowerCase()} geçen ${donemLabel.toLowerCase()}a göre iyileşme var!`, bg: 'rgba(34,197,94,.12)', color: '#22c55e' },
+                kotulesti: { icon: '⚠️', text: `Bu ${donemLabel.toLowerCase()} geçen ${donemLabel.toLowerCase()}a göre kötüleşme var.`, bg: 'rgba(239,68,68,.12)', color: '#ef4444' },
+                stabil: { icon: '➡️', text: `Bu ${donemLabel.toLowerCase()} geçen ${donemLabel.toLowerCase()}a göre stabil.`, bg: 'rgba(156,163,175,.12)', color: '#9ca3af' },
+            };
+            const durum = durumMap[data.genel_durum] || durumMap.stabil;
+            document.getElementById('donem-durum-badge').innerHTML = `
+                <div style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:12px; background:${durum.bg}; color:${durum.color}; font-weight:600; font-size:14px;">
+                    ${durum.icon} ${durum.text}
+                    <span style="margin-left:12px; font-weight:800;">İsraf: %${Math.abs(d.israf_iyilesme_pct)} ${d.israf_iyilesme_pct > 0 ? 'azaldı' : (d.israf_iyilesme_pct < 0 ? 'arttı' : 'aynı')}</span>
+                </div>`;
+
+            // Kartlar
+            const israfOk = d.israf_puan < 0 ? '↓' : (d.israf_puan > 0 ? '↑' : '→');
+            const israfRenk = d.israf_puan < 0 ? '#22c55e' : (d.israf_puan > 0 ? '#ef4444' : '#9ca3af');
+            document.getElementById('donem-israf-degisim').textContent = `${israfOk} %${Math.abs(d.israf_puan)}`;
+            document.getElementById('donem-israf-degisim').style.color = israfRenk;
+            document.getElementById('donem-israf-detay').textContent = `Geçen: %${data.gecen_donem.ort_israf} → Bu: %${data.bu_donem.ort_israf}`;
+
+            const malOk = d.maliyet_fark_tl > 0 ? '↓' : (d.maliyet_fark_tl < 0 ? '↑' : '→');
+            const malRenk = d.maliyet_fark_tl > 0 ? '#22c55e' : (d.maliyet_fark_tl < 0 ? '#ef4444' : '#9ca3af');
+            document.getElementById('donem-maliyet-degisim').textContent = `${malOk} ${Math.abs(d.maliyet_fark_tl).toLocaleString('tr-TR')} ₺`;
+            document.getElementById('donem-maliyet-degisim').style.color = malRenk;
+            document.getElementById('donem-maliyet-detay').textContent = `Geçen: ${data.gecen_donem.maliyet_kayip_tl.toLocaleString('tr-TR')} ₺ → Bu: ${data.bu_donem.maliyet_kayip_tl.toLocaleString('tr-TR')} ₺`;
+
+            const puanOk = d.puan_fark > 0 ? '↑' : (d.puan_fark < 0 ? '↓' : '→');
+            const puanRenk = d.puan_fark > 0 ? '#22c55e' : (d.puan_fark < 0 ? '#ef4444' : '#9ca3af');
+            document.getElementById('donem-puan-degisim').textContent = `${puanOk} ${d.puan_fark > 0 ? '+' : ''}${d.puan_fark}`;
+            document.getElementById('donem-puan-degisim').style.color = puanRenk;
+            document.getElementById('donem-puan-detay').textContent = `Geçen: ${data.gecen_donem.ort_puan}/5 (${data.gecen_donem.toplam_oy} oy) → Bu: ${data.bu_donem.ort_puan}/5 (${data.bu_donem.toplam_oy} oy)`;
+
+            // Trend chart (iki çizgi yan yana)
+            renderDonemTrendChart(data);
+
+            // Yemek değişim chart
+            renderDonemYemekChart(data);
+
+            // Karşılaştırma tablosu
+            renderDonemTablo(data, donemLabel);
+
+        } catch (e) { console.error('Dönem karşılaştırma hata:', e); }
+    }
+
+    function renderDonemTrendChart(data) {
+        const ctx = document.getElementById('donem-trend-chart').getContext('2d');
+        if (donemTrendChart) donemTrendChart.destroy();
+
+        // Gün indeksine göre hizala
+        const buLabels = data.bu_donem_trend.map((_, i) => `Gün ${i + 1}`);
+        const gecenLabels = data.gecen_donem_trend.map((_, i) => `Gün ${i + 1}`);
+        const maxLen = Math.max(buLabels.length, gecenLabels.length);
+        const labels = Array.from({ length: maxLen }, (_, i) => `Gün ${i + 1}`);
+
+        donemTrendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Bu Dönem',
+                        data: data.bu_donem_trend.map(d => d.ort_israf),
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99,102,241,.1)',
+                        fill: true, tension: .3, borderWidth: 2, pointRadius: 3,
+                    },
+                    {
+                        label: 'Geçen Dönem',
+                        data: data.gecen_donem_trend.map(d => d.ort_israf),
+                        borderColor: '#9ca3af',
+                        backgroundColor: 'rgba(156,163,175,.08)',
+                        fill: true, tension: .3, borderWidth: 2, pointRadius: 3, borderDash: [5, 5],
+                    },
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: 'İsraf %', color: '#8892A4' }, ticks: { color: '#8892A4' }, grid: { color: 'rgba(46,134,193,.08)' } },
+                    x: { ticks: { color: '#8892A4', maxTicksLimit: 10 }, grid: { display: false } },
+                },
+                plugins: {
+                    legend: { labels: { color: '#AED6F1', padding: 12 } },
+                    tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: %${ctx.parsed.y}` } },
+                },
+            }
+        });
+    }
+
+    function renderDonemYemekChart(data) {
+        const ctx = document.getElementById('donem-yemek-chart').getContext('2d');
+        if (donemYemekChart) donemYemekChart.destroy();
+
+        const iyilesen = data.en_iyilesen_yemekler || [];
+        const kotulesen = data.en_kotulesen_yemekler || [];
+        const tum = [...iyilesen, ...kotulesen.filter(k => !iyilesen.find(i => i.yemek === k.yemek))].slice(0, 8);
+        tum.sort((a, b) => a.fark - b.fark);
+
+        donemYemekChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: tum.map(y => y.yemek.length > 18 ? y.yemek.slice(0, 16) + '…' : y.yemek),
+                datasets: [{
+                    label: 'İsraf Değişimi (%)',
+                    data: tum.map(y => y.fark),
+                    backgroundColor: tum.map(y => y.fark < 0 ? 'rgba(34,197,94,.7)' : 'rgba(239,68,68,.7)'),
+                    borderRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                scales: {
+                    x: { title: { display: true, text: 'Değişim (%)', color: '#8892A4' }, ticks: { color: '#8892A4' }, grid: { color: 'rgba(46,134,193,.08)' } },
+                    y: { ticks: { color: '#AED6F1', font: { size: 11 } }, grid: { display: false } },
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x > 0 ? '+' : ''}${ctx.parsed.x}% israf` } },
+                },
+            }
+        });
+    }
+
+    function renderDonemTablo(data, donemLabel) {
+        const b = data.bu_donem, g = data.gecen_donem, d = data.degisim;
+        const satir = (metrik, gecen, bu, fark, birim = '') => {
+            const renk = metrik === 'Ort. Puan' ? (d.puan_fark >= 0 ? '#22c55e' : '#ef4444') : (fark.startsWith('↓') ? '#22c55e' : '#ef4444');
+            return `<tr style="border-bottom:1px solid rgba(255,255,255,.06);">
+                <td style="padding:10px 16px; font-weight:600;">${metrik}</td>
+                <td style="padding:10px 16px; text-align:right;">${gecen}</td>
+                <td style="padding:10px 16px; text-align:right;">${bu}</td>
+                <td style="padding:10px 16px; text-align:right; color:${renk}; font-weight:700;">${fark}</td>
+            </tr>`;
+        };
+
+        document.getElementById('donem-karsilastirma-tablo').innerHTML = `
+            <div class="chart-card" style="overflow-x:auto;">
+                <h3>📋 Detaylı Karşılaştırma (${donemLabel})</h3>
+                <table style="margin-top:12px; width:100%; border-collapse:separate; border-spacing:0; font-size:14px;">
+                    <thead><tr style="background:rgba(99,102,241,.12); text-transform:uppercase; font-size:11px; letter-spacing:.5px;">
+                        <th style="padding:12px 16px; text-align:left; color:#a5b4fc;">Metrik</th>
+                        <th style="padding:12px 16px; text-align:right; color:#a5b4fc;">Geçen ${donemLabel}</th>
+                        <th style="padding:12px 16px; text-align:right; color:#a5b4fc;">Bu ${donemLabel}</th>
+                        <th style="padding:12px 16px; text-align:right; color:#a5b4fc;">Değişim</th>
+                    </tr></thead>
+                    <tbody>
+                        ${satir('Ort. İsraf', `%${g.ort_israf}`, `%${b.ort_israf}`, `${d.israf_puan < 0 ? '↓' : '↑'} %${Math.abs(d.israf_puan)} (${d.israf_iyilesme_pct > 0 ? '+' : ''}${d.israf_iyilesme_pct}%)`)}
+                        ${satir('İsraf Maliyeti', `${g.maliyet_kayip_tl.toLocaleString('tr-TR')} ₺`, `${b.maliyet_kayip_tl.toLocaleString('tr-TR')} ₺`, `${d.maliyet_fark_tl > 0 ? '↓' : '↑'} ${Math.abs(d.maliyet_fark_tl).toLocaleString('tr-TR')} ₺`)}
+                        ${satir('Ort. Puan', `${g.ort_puan}/5`, `${b.ort_puan}/5`, `${d.puan_fark >= 0 ? '↑' : '↓'} ${d.puan_fark > 0 ? '+' : ''}${d.puan_fark}`)}
+                        ${satir('Toplam Oy', `${g.toplam_oy}`, `${b.toplam_oy}`, `${d.oy_fark >= 0 ? '↑' : '↓'} ${d.oy_fark > 0 ? '+' : ''}${d.oy_fark}`)}
+                        ${satir('Üretilen Prs.', `${g.toplam_uretilen.toLocaleString('tr-TR')}`, `${b.toplam_uretilen.toLocaleString('tr-TR')}`, `${b.toplam_uretilen >= g.toplam_uretilen ? '↑' : '↓'} ${Math.abs(b.toplam_uretilen - g.toplam_uretilen).toLocaleString('tr-TR')}`)}
+                        ${satir('Kalan Prs.', `${g.toplam_kalan.toLocaleString('tr-TR')}`, `${b.toplam_kalan.toLocaleString('tr-TR')}`, `${b.toplam_kalan <= g.toplam_kalan ? '↓' : '↑'} ${Math.abs(b.toplam_kalan - g.toplam_kalan).toLocaleString('tr-TR')}`)}
+                    </tbody>
+                </table>
+            </div>`;
+    }
+
+    // ─── Menü Oylama (3C) ──────────────────────────────────────────
+    let adminVoteChart = null;
+
+    async function generateVoteAlts() {
+        if (!confirm('Gelecek hafta için 3 menü alternatifi oluşturulacak. Mevcut alternatifler ve oylar silinir. Devam?')) return;
+        try {
+            showToast('Alternatifler oluşturuluyor...', 'info');
+            const data = await apiFetch('/api/v1/voting/generate', { method: 'POST' });
+            if (data.success) {
+                showToast(`${data.mesaj} (${data.hafta})`, 'success');
+                loadVoteSonuclar();
+            } else {
+                showToast(data.error || 'Oluşturulamadı.', 'error');
+            }
+        } catch (e) { showToast('Alternatif oluşturma hatası.', 'error'); }
+    }
+
+    async function loadVoteSonuclar() {
+        try {
+            const altData = await apiFetch('/api/v1/voting/alternatifler');
+            if (!altData.success || !altData.alternatifler.length) {
+                document.getElementById('admin-vote-status').innerHTML = `
+                    <div style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:12px; background:rgba(156,163,175,.1); color:#9ca3af; font-size:14px;">
+                        📭 Henüz oylama alternatifi oluşturulmamış. Yukarıdaki butona tıklayarak oluşturabilirsiniz.
+                    </div>`;
+                return;
+            }
+
+            const hafta = altData.hafta;
+            const toplam = altData.toplam_oy;
+            document.getElementById('vote-hafta').textContent = hafta;
+            document.getElementById('vote-toplam-oy').textContent = toplam;
+
+            // Kazanan
+            const kazanan = altData.alternatifler.reduce((a, b) => a.oy_sayisi > b.oy_sayisi ? a : b);
+            document.getElementById('vote-kazanan').textContent = toplam > 0 ? `Menü ${kazanan.alternatif} (${kazanan.etiket})` : 'Henüz oy yok';
+
+            const altColors = { A: '#6366f1', B: '#f59e0b', C: '#10b981' };
+            const altIcons = { A: '⚖️', B: '🌟', C: '💰' };
+
+            // Durum
+            document.getElementById('admin-vote-status').innerHTML = `
+                <div style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:12px; background:rgba(99,102,241,.1); color:#818cf8; font-weight:600; font-size:14px;">
+                    📅 Hafta: ${hafta} &nbsp;|&nbsp; Toplam: ${toplam} oy
+                    ${toplam > 0 ? ' &nbsp;|&nbsp; 🏆 Kazanan: Menü ' + kazanan.alternatif + ' (' + kazanan.etiket + ')' : ''}
+                </div>`;
+
+            // Chart
+            const ctx = document.getElementById('admin-vote-chart').getContext('2d');
+            if (adminVoteChart) adminVoteChart.destroy();
+            adminVoteChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: altData.alternatifler.map(a => `Menü ${a.alternatif} (${a.etiket})`),
+                    datasets: [{
+                        data: altData.alternatifler.map(a => a.oy_sayisi),
+                        backgroundColor: altData.alternatifler.map(a => altColors[a.alternatif] || '#888'),
+                        borderWidth: 2, borderColor: 'rgba(0,0,0,.2)',
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '55%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#AED6F1', padding: 12 } },
+                    },
+                }
+            });
+
+            // Detay kartları
+            const detayEl = document.getElementById('admin-vote-detay');
+            detayEl.style.display = '';
+            let detayHtml = '';
+            altData.alternatifler.forEach(a => {
+                const pct = toplam > 0 ? (a.oy_sayisi / toplam * 100).toFixed(1) : 0;
+                const isWin = a.alternatif === kazanan.alternatif && toplam > 0;
+                detayHtml += `
+                    <div style="display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--clr-border);">
+                        <span style="font-size:20px;">${altIcons[a.alternatif]}</span>
+                        <div style="flex:1;">
+                            <div style="font-weight:700; color:${altColors[a.alternatif]};">Menü ${a.alternatif}: ${a.etiket} ${isWin ? '🏆' : ''}</div>
+                            <div style="font-size:12px; color:var(--clr-text-dim);">
+                                İsraf: ${a.skor_israf != null ? (a.skor_israf * 100).toFixed(0) + '%' : '—'} &nbsp;|&nbsp;
+                                Maliyet: ${a.skor_maliyet != null ? a.skor_maliyet.toFixed(0) + ' ₺/gün' : '—'} &nbsp;|&nbsp;
+                                Pop: ${a.skor_populerlik != null ? (a.skor_populerlik * 10).toFixed(1) : '—'}/10
+                            </div>
+                        </div>
+                        <div style="text-align:right; min-width:80px;">
+                            <div style="font-weight:700; color:${altColors[a.alternatif]};">${a.oy_sayisi} oy</div>
+                            <div style="font-size:12px; color:var(--clr-text-dim);">%${pct}</div>
+                        </div>
+                    </div>`;
+            });
+            document.getElementById('admin-vote-detay-content').innerHTML = detayHtml;
+
+        } catch (e) { console.error('Oylama sonuç yükleme hatası:', e); }
+    }
+
+    // ─── XAI Dashboard ────────────────────────────────────────────
+    let xaiGlobalChart = null;
+
+    async function loadXaiDashboard() {
+        const statusEl = document.getElementById('xai-status');
+        try {
+            const data = await apiFetch('/api/v1/xai/global');
+            if (!data.success) {
+                statusEl.innerHTML = '<div style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:12px;background:rgba(156,163,175,.1);color:#9ca3af;font-size:14px;">\u26a0\ufe0f ' + (data.error||'XAI verisi yüklenemedi.') + '</div>';
+                return;
+            }
+            statusEl.innerHTML = '<div style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:12px;background:rgba(99,102,241,.1);color:#818cf8;font-weight:600;font-size:14px;">\ud83e\udde0 Model: ' + (data.model_type||'?') + ' | Eğitim: ' + (data.sample_count||0) + ' örnek | SHAP: ' + (data.shap_available ? '\u2705 Aktif' : '\u274c Yok') + '</div>';
+
+            const features = data.shap_global || data.feature_importance || [];
+            if (!features.length) return;
+
+            const labels = features.map(f => f.label || f.feature);
+            const values = features.map(f => (f.shap_importance || f.importance || 0) * 100);
+            const colors = values.map((_, i) => 'hsla(' + (220 + i * 12) + ', 70%, 65%, 0.85)');
+
+            const ctx = document.getElementById('xai-global-chart').getContext('2d');
+            if (xaiGlobalChart) xaiGlobalChart.destroy();
+            xaiGlobalChart = new Chart(ctx, {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Etki (%)', data: values, backgroundColor: colors, borderRadius: 6, borderSkipped: false }] },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => 'Etki: %' + c.raw.toFixed(1) } } },
+                    scales: {
+                        x: { grid: { color: 'rgba(132,190,255,.06)' }, ticks: { color: '#8892a4', callback: v => '%' + v } },
+                        y: { grid: { display: false }, ticks: { color: '#aed6f1', font: { size: 11, weight: 600 } } }
+                    }
+                }
+            });
+
+            const icons = ['\ud83e\udd47','\ud83e\udd48','\ud83e\udd49','4\ufe0f\u20e3','5\ufe0f\u20e3','6\ufe0f\u20e3'];
+            let topHtml = '';
+            features.slice(0, 6).forEach((f, i) => {
+                const pct = ((f.shap_importance || f.importance || 0) * 100).toFixed(1);
+                const bw = Math.max(8, pct * 2.5);
+                topHtml += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--clr-border);">'
+                    + '<span style="font-size:16px;min-width:24px;">' + icons[i] + '</span>'
+                    + '<div style="flex:1;"><div style="font-weight:700;font-size:.85rem;color:var(--clr-light);">' + (f.label||f.feature) + '</div>'
+                    + '<div style="height:4px;border-radius:2px;background:var(--clr-surface-2);margin-top:4px;"><div style="height:100%;width:' + bw + '%;border-radius:2px;background:linear-gradient(90deg,#6366f1,#818cf8);"></div></div></div>'
+                    + '<span style="font-weight:800;font-size:.85rem;color:#818cf8;min-width:45px;text-align:right;">%' + pct + '</span></div>';
+            });
+            document.getElementById('xai-top-features').innerHTML = topHtml;
+
+            document.getElementById('xai-model-info').innerHTML = '<div style="color:var(--clr-text-dim);"><strong>Tip:</strong> ' + (data.model_type||'?') + ' | <strong>Eğitim:</strong> ' + (data.sample_count||0) + ' örnek | <strong>Tarih:</strong> ' + (data.trained_at ? new Date(data.trained_at).toLocaleDateString('tr-TR') : '?') + '</div>';
+        } catch (e) {
+            console.error('XAI yükleme hatası:', e);
+            document.getElementById('xai-status').innerHTML = '<div style="color:#f87171;font-size:14px;">\u274c XAI yüklenirken hata: ' + e.message + '</div>';
+        }
+    }
+
+    async function runXaiExplain() {
+        const yemek = document.getElementById('xai-yemek').value.trim();
+        const kategori = document.getElementById('xai-kategori').value;
+        const resultEl = document.getElementById('xai-explain-result');
+        const btn = document.getElementById('xai-explain-btn');
+        if (!yemek) { showToast('Lütfen bir yemek adı girin.', 'error'); return; }
+
+        btn.disabled = true; btn.textContent = '\u23f3 Hesaplanıyor...';
+        resultEl.innerHTML = '<p style="color:var(--clr-text-dim);">SHAP hesaplanıyor... Bu 10-30 saniye sürebilir.</p>';
+
+        try {
+            const data = await apiFetch('/api/v1/xai/explain?yemek_adi=' + encodeURIComponent(yemek) + '&kategori=' + kategori);
+            if (!data.success) { resultEl.innerHTML = '<div style="color:#f87171;">\u274c ' + data.error + '</div>'; return; }
+
+            let html = '<div style="padding:16px;border-radius:14px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);margin-bottom:16px;">'
+                + '<div style="font-size:1.1rem;font-weight:800;color:#818cf8;margin-bottom:4px;">' + data.yemek_adi + ' \u2014 Tahmini İsraf: %' + (data.prediction != null ? data.prediction.toFixed(1) : '?') + '</div>'
+                + '<div style="font-size:.82rem;color:var(--clr-text-dim);">' + (data.summary||'') + '</div>'
+                + '<div style="font-size:.75rem;color:var(--clr-text-dim);margin-top:4px;">Baz değer: %' + (data.base_value != null ? data.base_value.toFixed(1) : '?') + ' (tüm yemeklerin ortalaması)</div></div>';
+
+            if (data.explanations && data.explanations.length) {
+                html += '<div style="display:grid;gap:6px;">';
+                data.explanations.slice(0, 10).forEach(e => {
+                    const pos = e.shap_value > 0;
+                    const clr = pos ? '#ef4444' : '#10b981';
+                    const arr = pos ? '\u2191' : '\u2193';
+                    const bw = Math.min(100, Math.abs(e.shap_value) * 200);
+                    const iv = typeof e.input_value === 'number' ? e.input_value.toFixed(2) : e.input_value;
+                    html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid rgba(132,190,255,.06);">'
+                        + '<span style="font-size:14px;min-width:20px;color:' + clr + ';">' + arr + '</span>'
+                        + '<div style="flex:1;"><div style="font-weight:700;font-size:.82rem;color:var(--clr-light);">' + e.label + '</div><div style="font-size:.72rem;color:var(--clr-text-dim);">Değer: ' + iv + '</div></div>'
+                        + '<div style="width:100px;"><div style="height:6px;border-radius:3px;background:var(--clr-surface-2);"><div style="height:100%;width:' + bw + '%;border-radius:3px;background:' + clr + ';"></div></div></div>'
+                        + '<span style="font-weight:700;font-size:.82rem;color:' + clr + ';min-width:55px;text-align:right;">' + (pos?'+':'') + e.shap_value.toFixed(3) + '</span></div>';
+                });
+                html += '</div>';
+                html += '<div style="margin-top:12px;font-size:.72rem;color:var(--clr-text-dim);">\ud83d\udd34 Kırmızı = israfı artıran &nbsp;&nbsp; \ud83d\udfe2 Yeşil = israfı azaltan</div>';
+            }
+            resultEl.innerHTML = html;
+        } catch (e) {
+            resultEl.innerHTML = '<div style="color:#f87171;">\u274c Hata: ' + e.message + '</div>';
+        } finally {
+            btn.disabled = false; btn.textContent = '\ud83d\udd0e Açıkla';
+        }
+    }
+
+    // ─── Anomali Tespiti ──────────────────────────────────────────
+    let anomalySiddetChart = null;
+    let anomalyTrendChart = null;
+    const SIDDET_COLOR = { KRITIK: '#ef4444', YUKSEK: '#f97316', ORTA: '#eab308', DUSUK: '#3b82f6' };
+    const SIDDET_ICON = { KRITIK: '🔴', YUKSEK: '🟠', ORTA: '🟡', DUSUK: '🔵' };
+    const TIP_LABEL = {
+        ISRAF_ARTIS: 'İsraf Artışı',
+        ISRAF_DUSUS: 'İsraf Düşüşü',
+        TUKETIM_DUSUS: 'Tüketim Düşüşü',
+        KATEGORI_SAPMA: 'Kategori Sapması',
+    };
+
+    async function runAnomalyDetection(tarih = null) {
+        const btn = document.getElementById('anomaly-detect-btn');
+        const statusEl = document.getElementById('anomaly-status');
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ Taranıyor...'; }
+        statusEl.innerHTML = '<div style="color:var(--clr-text-dim);font-size:.85rem;">Anomali taraması çalışıyor (Z-score + Isolation Forest)...</div>';
+        try {
+            const url = tarih
+                ? `/api/v1/anomaly/detect?tarih=${tarih}`
+                : '/api/v1/anomaly/detect';
+            const data = await apiFetch(url, { method: 'POST' });
+            if (!data.success) {
+                statusEl.innerHTML = `<div style="color:#f87171;">❌ ${data.error}</div>`;
+                return null;
+            }
+            const ozet = data.siddet_ozet || {};
+            const tot = data.tespit_edilen || 0;
+            statusEl.innerHTML = `<div style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:12px;background:rgba(99,102,241,.1);color:#818cf8;font-weight:600;font-size:14px;">
+                ✅ Tarama tamamlandı: ${tot} anomali (yeni: ${data.yeni_kaydedilen||0})
+                ${tot > 0 ? `&nbsp;|&nbsp; 🔴 ${ozet.KRITIK||0} 🟠 ${ozet.YUKSEK||0} 🟡 ${ozet.ORTA||0} 🔵 ${ozet.DUSUK||0}` : ''}
+                ${data.iso_forest_aktif ? '&nbsp;|&nbsp; 🌲 IsoForest: aktif' : ''}
+            </div>`;
+            await loadAnomalies();
+            await loadAnomalyStats();
+            return data;
+        } catch (e) {
+            statusEl.innerHTML = `<div style="color:#f87171;">❌ ${e.message}</div>`;
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = '🔍 Bugünü Tara'; }
+        }
+    }
+
+    async function scanLast7Days() {
+        const btn = document.getElementById('anomaly-scan7-btn');
+        const statusEl = document.getElementById('anomaly-status');
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ Taranıyor...'; }
+        let total = 0;
+        let yeni = 0;
+        try {
+            for (let i = 0; i < 7; i++) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const t = d.toISOString().slice(0, 10);
+                statusEl.innerHTML = `<div style="color:var(--clr-text-dim);font-size:.85rem;">Tarıyor: ${t} (${i+1}/7)...</div>`;
+                try {
+                    const r = await apiFetch(`/api/v1/anomaly/detect?tarih=${t}`, { method: 'POST' });
+                    if (r.success) {
+                        total += r.tespit_edilen || 0;
+                        yeni += r.yeni_kaydedilen || 0;
+                    }
+                } catch (e) { /* skip */ }
+            }
+            statusEl.innerHTML = `<div style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:12px;background:rgba(16,185,129,.1);color:#34d399;font-weight:600;font-size:14px;">
+                ✅ Son 7 gün tarandı: ${total} anomali bulundu (yeni: ${yeni})
+            </div>`;
+            await loadAnomalies();
+            await loadAnomalyStats();
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = '📅 Son 7 Günü Tara'; }
+        }
+    }
+
+    async function loadAnomalies() {
+        const listEl = document.getElementById('anomaly-list');
+        const siddet = document.getElementById('anomaly-filter-siddet').value;
+        const showResolved = document.getElementById('anomaly-show-resolved').checked;
+        try {
+            let url = '/api/v1/anomaly/list?limit=50';
+            if (siddet) url += `&siddet=${siddet}`;
+            if (showResolved) url += '&cozulmus_dahil=true';
+            const data = await apiFetch(url);
+            if (!data.success || !data.anomaliler.length) {
+                listEl.innerHTML = '<p style="color:var(--clr-text-dim);font-size:.85rem;">Aktif anomali yok. 🎉 Sistem normal çalışıyor.</p>';
+                return;
+            }
+            let html = '<div style="display:grid;gap:10px;">';
+            data.anomaliler.forEach(a => {
+                const clr = SIDDET_COLOR[a.siddet] || '#888';
+                const icon = SIDDET_ICON[a.siddet] || '⚪';
+                const tipLabel = TIP_LABEL[a.anomali_tipi] || a.anomali_tipi;
+                const sapmaBadge = a.sapma_yuzdesi != null
+                    ? `<span style="font-weight:700;color:${a.sapma_yuzdesi>0?'#ef4444':'#10b981'};">${a.sapma_yuzdesi>0?'+':''}${a.sapma_yuzdesi.toFixed(0)}%</span>`
+                    : '';
+                const resolvedBadge = a.cozuldu_mu
+                    ? '<span style="padding:2px 8px;border-radius:8px;background:rgba(16,185,129,.15);color:#34d399;font-size:.7rem;font-weight:700;">✓ ÇÖZÜLDÜ</span>'
+                    : '';
+                html += `
+                    <div style="padding:14px 16px;border-radius:12px;background:rgba(255,255,255,.02);border:1px solid ${clr}33;border-left:4px solid ${clr};">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+                            <div style="flex:1;min-width:240px;">
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+                                    <span style="font-size:14px;">${icon}</span>
+                                    <span style="font-weight:800;color:${clr};">${a.siddet}</span>
+                                    <span style="padding:2px 8px;border-radius:8px;background:rgba(132,190,255,.08);color:var(--clr-text-dim);font-size:.7rem;">${tipLabel}</span>
+                                    <span style="font-size:.7rem;color:var(--clr-text-dim);">${a.tarih}</span>
+                                    <span style="font-size:.7rem;color:var(--clr-text-dim);">[${a.yontem}]</span>
+                                    ${resolvedBadge}
+                                </div>
+                                <div style="font-weight:700;font-size:.95rem;color:var(--clr-light);margin-bottom:4px;">
+                                    ${a.yemek_adi || '(' + (a.kategori || 'genel') + ' kategorisi)'}
+                                </div>
+                                <div style="font-size:.82rem;color:var(--clr-text-dim);line-height:1.5;">${a.aciklama}</div>
+                                ${a.beklenen_deger != null ? `<div style="font-size:.75rem;color:var(--clr-text-dim);margin-top:6px;">Beklenen: %${a.beklenen_deger.toFixed(1)} → Gerçekleşen: %${a.gerceklesen_deger.toFixed(1)} ${sapmaBadge}</div>` : ''}
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+                                <div style="font-size:.7rem;color:var(--clr-text-dim);">Skor</div>
+                                <div style="font-weight:800;color:${clr};font-size:1.1rem;">${(a.skor*100).toFixed(0)}%</div>
+                                ${!a.cozuldu_mu ? `
+                                    <div style="display:flex;gap:4px;">
+                                        ${a.yemek_adi ? `<button class="btn" onclick="explainAnomaly(${a.id})" style="padding:4px 10px;font-size:.7rem;">🧠 SHAP</button>` : ''}
+                                        <button class="btn" onclick="resolveAnomaly(${a.id})" style="padding:4px 10px;font-size:.7rem;">✓ Çöz</button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div id="anomaly-shap-${a.id}" style="margin-top:10px;"></div>
+                    </div>`;
+            });
+            html += '</div>';
+            listEl.innerHTML = html;
+        } catch (e) {
+            listEl.innerHTML = `<div style="color:#f87171;">❌ ${e.message}</div>`;
+        }
+    }
+
+    async function resolveAnomaly(id) {
+        const not = prompt('Çözüm notu (opsiyonel):') || '';
+        try {
+            const data = await apiFetch(`/api/v1/anomaly/${id}/resolve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cozum_notu: not }),
+            });
+            if (data.success) {
+                showToast('Anomali çözüldü olarak işaretlendi.', 'success');
+                await loadAnomalies();
+                await loadAnomalyStats();
+            } else {
+                showToast(data.error || 'Hata.', 'error');
+            }
+        } catch (e) { showToast(e.message, 'error'); }
+    }
+
+    async function explainAnomaly(id) {
+        const target = document.getElementById(`anomaly-shap-${id}`);
+        if (!target) return;
+        target.innerHTML = '<p style="color:var(--clr-text-dim);font-size:.78rem;">SHAP hesaplanıyor (10-30 sn)...</p>';
+        try {
+            const data = await apiFetch(`/api/v1/anomaly/explain/${id}`);
+            if (!data.success) {
+                target.innerHTML = `<div style="color:#f87171;font-size:.78rem;">❌ ${data.error}</div>`;
+                return;
+            }
+            const exp = data.shap_explanation;
+            if (!exp || !exp.success) {
+                target.innerHTML = `<div style="color:#f87171;font-size:.78rem;">❌ SHAP hesaplanamadı</div>`;
+                return;
+            }
+            let html = `<div style="padding:10px 12px;border-radius:10px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);">
+                <div style="font-size:.82rem;font-weight:700;color:#818cf8;margin-bottom:6px;">🧠 SHAP: Tahmin %${exp.prediction?.toFixed(1)}</div>
+                <div style="font-size:.72rem;color:var(--clr-text-dim);margin-bottom:8px;">${exp.summary || ''}</div>
+                <div style="display:grid;gap:4px;">`;
+            (exp.explanations || []).slice(0, 5).forEach(e => {
+                const pos = e.shap_value > 0;
+                const c = pos ? '#ef4444' : '#10b981';
+                const arr = pos ? '↑' : '↓';
+                const bw = Math.min(100, Math.abs(e.shap_value) * 200);
+                html += `<div style="display:flex;align-items:center;gap:8px;font-size:.72rem;">
+                    <span style="color:${c};min-width:14px;">${arr}</span>
+                    <span style="flex:1;color:var(--clr-light);font-weight:600;">${e.label}</span>
+                    <div style="width:60px;height:4px;border-radius:2px;background:var(--clr-surface-2);"><div style="height:100%;width:${bw}%;border-radius:2px;background:${c};"></div></div>
+                    <span style="color:${c};font-weight:700;min-width:50px;text-align:right;">${pos?'+':''}${e.shap_value.toFixed(2)}</span>
+                </div>`;
+            });
+            html += '</div></div>';
+            target.innerHTML = html;
+        } catch (e) {
+            target.innerHTML = `<div style="color:#f87171;font-size:.78rem;">❌ ${e.message}</div>`;
+        }
+    }
+
+    async function loadAnomalyStats() {
+        try {
+            const data = await apiFetch('/api/v1/anomaly/stats?gun=30');
+            if (!data.success) return;
+
+            // Şiddet dağılımı (doughnut)
+            const sd = data.siddet_dagilim || {};
+            const sdLabels = Object.keys(sd);
+            const sdData = sdLabels.map(k => sd[k]);
+            const sdColors = sdLabels.map(k => SIDDET_COLOR[k] || '#888');
+            const ctx1 = document.getElementById('anomaly-siddet-chart').getContext('2d');
+            if (anomalySiddetChart) anomalySiddetChart.destroy();
+            if (sdLabels.length) {
+                anomalySiddetChart = new Chart(ctx1, {
+                    type: 'doughnut',
+                    data: { labels: sdLabels.map(k => SIDDET_ICON[k]+' '+k), datasets: [{ data: sdData, backgroundColor: sdColors, borderWidth: 2, borderColor: 'rgba(0,0,0,.2)' }] },
+                    options: {
+                        responsive: true, maintainAspectRatio: false, cutout: '55%',
+                        plugins: { legend: { position: 'bottom', labels: { color: '#AED6F1', padding: 10 } } }
+                    }
+                });
+            } else {
+                ctx1.canvas.parentElement.innerHTML = '<p style="color:var(--clr-text-dim);text-align:center;padding:40px 0;font-size:.85rem;">Henüz anomali yok 🎉</p>';
+            }
+
+            // Günlük trend (line)
+            const trend = data.gunluk_trend || [];
+            const ctx2 = document.getElementById('anomaly-trend-chart').getContext('2d');
+            if (anomalyTrendChart) anomalyTrendChart.destroy();
+            if (trend.length) {
+                anomalyTrendChart = new Chart(ctx2, {
+                    type: 'line',
+                    data: { labels: trend.map(t => t.tarih), datasets: [{ label: 'Anomali Sayısı', data: trend.map(t => t.sayi), borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,.15)', fill: true, tension: .3, pointRadius: 3 }] },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { color: 'rgba(132,190,255,.06)' }, ticks: { color: '#8892a4', font: { size: 10 } } },
+                            y: { grid: { color: 'rgba(132,190,255,.06)' }, ticks: { color: '#8892a4', stepSize: 1 } }
+                        }
+                    }
+                });
+            } else {
+                ctx2.canvas.parentElement.innerHTML = '<p style="color:var(--clr-text-dim);text-align:center;padding:40px 0;font-size:.85rem;">Trend verisi yok</p>';
+            }
+
+            // Top yemekler
+            const topEl = document.getElementById('anomaly-top-foods');
+            const top = data.en_sik_yemekler || [];
+            if (!top.length) {
+                topEl.innerHTML = '<p style="color:var(--clr-text-dim);font-size:.85rem;">Anomali tespit edilmemiş.</p>';
+            } else {
+                let h = '<div style="display:grid;gap:8px;">';
+                const max = Math.max(...top.map(t => t.sayi));
+                top.forEach((t, i) => {
+                    const bw = (t.sayi / max) * 100;
+                    h += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--clr-border);">
+                        <span style="font-size:.85rem;color:var(--clr-text-dim);min-width:28px;font-weight:700;">#${i+1}</span>
+                        <div style="flex:1;">
+                            <div style="font-weight:700;font-size:.88rem;color:var(--clr-light);">${t.yemek_adi}</div>
+                            <div style="height:4px;border-radius:2px;background:var(--clr-surface-2);margin-top:4px;"><div style="height:100%;width:${bw}%;border-radius:2px;background:linear-gradient(90deg,#f97316,#ef4444);"></div></div>
+                        </div>
+                        <div style="text-align:right;min-width:80px;">
+                            <div style="font-weight:800;color:#f97316;font-size:.95rem;">${t.sayi} kez</div>
+                            <div style="font-size:.7rem;color:var(--clr-text-dim);">Ort. skor: ${(t.ort_skor*100).toFixed(0)}%</div>
+                        </div>
+                    </div>`;
+                });
+                h += '</div>';
+                topEl.innerHTML = h;
+            }
+        } catch (e) {
+            console.error('Anomali stats hatası:', e);
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         loadAdminSummary();
         loadAdminCharts();
         loadPredictions();
+        loadSelfReportStats();
+        loadIoTStats();
+        loadMaliyetStats();
+        loadDonemKarsilastirma('ay');
+        loadVoteSonuclar();
+        loadXaiDashboard();
+        loadAnomalies();
+        loadAnomalyStats();
     });
 </script>
 {% endblock %}

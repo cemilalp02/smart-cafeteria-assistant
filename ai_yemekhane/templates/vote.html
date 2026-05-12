@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% block title %}Menü Oylama{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">🗳️ Gelecek Hafta Menüsünü Sen Seç!</h2>
+            <p class="section-desc">AI tarafından oluşturulan 3 farklı menü alternatifinden birini oyla. En çok oy alan menü uygulanır!</p>
+        </div>
+
+        <!-- Durum badge -->
+        <div id="vote-status" style="margin-bottom:20px;"></div>
+
+        <!-- Alternatif kartlar -->
+        <div id="vote-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px,1fr)); gap:20px; margin-top:20px;">
+            <div style="text-align:center; padding:60px 20px;">
+                <div style="font-size:40px;">⏳</div>
+                <p style="color:var(--clr-text-dim); margin-top:12px;">Alternatifler yükleniyor...</p>
+            </div>
+        </div>
+
+        <!-- Sonuç grafiği -->
+        <div id="vote-results-section" style="margin-top:40px; display:none;">
+            <div class="section-header">
+                <h2 class="section-title">📊 Oylama Sonuçları</h2>
+                <p class="section-desc" id="vote-results-desc"></p>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:20px;">
+                <div class="chart-card">
+                    <h3>🗳️ Oy Dağılımı</h3>
+                    <div class="chart-canvas-wrap" style="max-height:280px;"><canvas id="vote-pie-chart"></canvas></div>
+                </div>
+                <div id="vote-summary-cards" style="display:flex; flex-direction:column; gap:12px;"></div>
+            </div>
+        </div>
+
+        <!-- Geçmiş -->
+        <div id="vote-history-section" style="margin-top:40px; display:none;">
+            <div class="section-header">
+                <h2 class="section-title">📅 Geçmiş Oylama Sonuçları</h2>
+            </div>
+            <div id="vote-history-list"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+    const GUNLER = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'];
+    const ALT_COLORS = { A: '#6366f1', B: '#f59e0b', C: '#10b981' };
+    const ALT_ICONS = { A: '⚖️', B: '🌟', C: '💰' };
+    let votePieChart = null;
+
+    // Anonim ID — her sayfa yüklemesinde yeni üretilir (giriş sistemi olmadığı için)
+    let _currentAnonId = 'anon_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+    function getAnonId() {
+        return _currentAnonId;
+    }
+
+    // ─── Alternatifleri yükle ────────────────────────────────────
+    async function loadAlternatifler() {
+        try {
+            const data = await apiFetch('/api/v1/voting/alternatifler');
+            if (!data.success || !data.alternatifler.length) {
+                document.getElementById('vote-cards').innerHTML = `
+                    <div style="text-align:center; padding:60px 20px; grid-column:1/-1;">
+                        <div style="font-size:48px;">📭</div>
+                        <p style="color:var(--clr-text-dim); margin-top:12px; font-size:16px;">Bu hafta için henüz menü alternatifi oluşturulmamış.</p>
+                        <p style="color:var(--clr-text-dim); font-size:13px; margin-top:6px;">Yönetici panelinden alternatifler oluşturulabilir.</p>
+                    </div>`;
+                return;
+            }
+
+            const hafta = data.hafta;
+            const basDate = data.baslangic_tarihi;
+            const oylandi = window._votedThisSession;
+
+            document.getElementById('vote-status').innerHTML = `
+                <div style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:12px; background:rgba(99,102,241,.1); color:#818cf8; font-weight:600; font-size:14px;">
+                    📅 Hafta: ${hafta} &nbsp;|&nbsp; Başlangıç: ${basDate} &nbsp;|&nbsp; Toplam oy: ${data.toplam_oy}
+                    ${oylandi ? ' &nbsp;|&nbsp; ✅ Oyunuz kaydedildi!' : ''}
+                </div>`;
+
+            let cardsHtml = '';
+            for (const alt of data.alternatifler) {
+                const key = alt.alternatif;
+                const color = ALT_COLORS[key];
+                const icon = ALT_ICONS[key];
+                const menu = alt.menu || [];
+                const isVoted = oylandi === key;
+
+                // Menü günleri tablosu
+                let menuRows = '';
+                menu.forEach((gun, i) => {
+                    menuRows += `
+                        <tr style="border-bottom:1px solid var(--clr-border);">
+                            <td style="padding:6px; font-weight:600; white-space:nowrap;">${GUNLER[i] || gun.gun}</td>
+                            <td style="padding:6px;">${gun.corba || '—'}</td>
+                            <td style="padding:6px;">${gun.ana_yemek || '—'}</td>
+                            <td style="padding:6px;">${gun.yan_yemek || '—'}</td>
+                            <td style="padding:6px;">${gun.tatli || '—'}</td>
+                            <td style="padding:6px;">${gun.salata || '—'}</td>
+                        </tr>`;
+                });
+
+                cardsHtml += `
+                <div class="chart-card" style="border:2px solid ${isVoted ? color : 'var(--clr-border)'}; position:relative; ${isVoted ? 'box-shadow:0 0 20px ' + color + '33;' : ''}">
+                    ${isVoted ? '<div style="position:absolute; top:12px; right:12px; background:' + color + '; color:#fff; border-radius:20px; padding:4px 14px; font-size:12px; font-weight:700;">✓ Oyunuz</div>' : ''}
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+                        <span style="font-size:28px;">${icon}</span>
+                        <div>
+                            <h3 style="margin:0; color:${color}; font-size:18px;">Menü ${key}: ${alt.etiket}</h3>
+                            <span style="font-size:12px; color:var(--clr-text-dim);">${alt.oy_sayisi} oy</span>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:12px; margin-bottom:14px; flex-wrap:wrap;">
+                        <span style="display:inline-block; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:600; background:rgba(239,68,68,.12); color:#ef4444;">📉 İsraf: ${alt.skor_israf != null ? (alt.skor_israf * 100).toFixed(0) + '%' : '—'}</span>
+                        <span style="display:inline-block; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:600; background:rgba(245,158,11,.12); color:#f59e0b;">💰 Maliyet: ${alt.skor_maliyet != null ? alt.skor_maliyet.toFixed(0) + ' ₺/gün' : '—'}</span>
+                        <span style="display:inline-block; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:600; background:rgba(16,185,129,.12); color:#10b981;">⭐ Pop: ${alt.skor_populerlik != null ? (alt.skor_populerlik * 10).toFixed(1) : '—'}/10</span>
+                        <span style="display:inline-block; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:600; background:rgba(99,102,241,.12); color:#6366f1;">🍽️ ${alt.skor_beslenme != null ? alt.skor_beslenme.toFixed(0) + ' kcal/gün' : '—'}</span>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%; font-size:12px; border-collapse:collapse; text-align:left;">
+                            <thead><tr style="border-bottom:2px solid var(--clr-border);"><th style="padding:8px 6px; color:var(--clr-text-dim); font-weight:600;">Gün</th><th style="padding:8px 6px; color:var(--clr-text-dim); font-weight:600;">Çorba</th><th style="padding:8px 6px; color:var(--clr-text-dim); font-weight:600;">Ana Yemek</th><th style="padding:8px 6px; color:var(--clr-text-dim); font-weight:600;">Yan Yemek</th><th style="padding:8px 6px; color:var(--clr-text-dim); font-weight:600;">Tatlı</th><th style="padding:8px 6px; color:var(--clr-text-dim); font-weight:600;">Salata</th></tr></thead>
+                            <tbody>${menuRows}</tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top:16px; text-align:center;">
+                        ${oylandi
+                            ? `<button disabled style="padding:12px 32px; border-radius:12px; border:none; font-size:14px; font-weight:700; background:var(--clr-surface-2); color:var(--clr-text-dim); cursor:default;">
+                                ${isVoted ? '✅ Bu menüye oy verdiniz' : 'Oy kullandınız'}
+                               </button>`
+                            : `<button onclick="oyVer('${hafta}','${key}')" style="padding:12px 32px; border-radius:12px; border:none; font-size:14px; font-weight:700; background:${color}; color:#fff; cursor:pointer; transition:transform .15s;">
+                                🗳️ Bu Menüye Oy Ver
+                               </button>`
+                        }
+                    </div>
+                </div>`;
+            }
+
+            document.getElementById('vote-cards').innerHTML = cardsHtml;
+
+            // Sonuçları göster
+            loadSonuclar(hafta);
+            loadGecmis();
+
+        } catch (e) {
+            console.error('Alternatif yükleme hatası:', e);
+        }
+    }
+
+    // ─── Oy ver ──────────────────────────────────────────────────
+    async function oyVer(hafta, alt) {
+        try {
+            const data = await apiFetch('/api/v1/voting/oy-ver', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hafta, alternatif: alt, anonim_id: getAnonId() }),
+            });
+
+            if (data.success) {
+                window._votedThisSession = alt;
+                loadAlternatifler();
+            } else if (data.zaten_oylandi) {
+                window._votedThisSession = alt;
+                loadAlternatifler();
+            } else {
+                alert(data.error || 'Oy verilemedi.');
+            }
+        } catch (e) {
+            console.error('Oy verme hatası:', e);
+        }
+    }
+
+    // ─── Sonuçlar ────────────────────────────────────────────────
+    async function loadSonuclar(hafta) {
+        try {
+            const data = await apiFetch('/api/v1/voting/sonuclar?hafta=' + hafta);
+            if (!data.success || data.toplam_oy === 0) return;
+
+            document.getElementById('vote-results-section').style.display = '';
+            document.getElementById('vote-results-desc').textContent = `Toplam ${data.toplam_oy} oy kullanıldı. Kazanan: Menü ${data.kazanan.alternatif} (${data.kazanan.etiket})`;
+
+            // Pie chart
+            const ctx = document.getElementById('vote-pie-chart').getContext('2d');
+            if (votePieChart) votePieChart.destroy();
+            votePieChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.sonuclar.map(s => `Menü ${s.alternatif} (${s.etiket})`),
+                    datasets: [{
+                        data: data.sonuclar.map(s => s.oy_sayisi),
+                        backgroundColor: data.sonuclar.map(s => ALT_COLORS[s.alternatif] || '#888'),
+                        borderWidth: 2, borderColor: 'rgba(0,0,0,.2)',
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '55%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#AED6F1', padding: 12 } },
+                        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} oy (${data.sonuclar[ctx.dataIndex].oy_yuzdesi}%)` } },
+                    },
+                }
+            });
+
+            // Özet kartlar
+            let cardsHtml = '';
+            data.sonuclar.forEach(s => {
+                const isWinner = s.alternatif === data.kazanan.alternatif;
+                cardsHtml += `
+                    <div style="background:var(--clr-surface-1); border:1px solid ${isWinner ? ALT_COLORS[s.alternatif] : 'var(--clr-border)'}; border-radius:14px; padding:16px 20px; display:flex; align-items:center; gap:14px; ${isWinner ? 'box-shadow:0 0 12px ' + ALT_COLORS[s.alternatif] + '22;' : ''}">
+                        <span style="font-size:24px;">${ALT_ICONS[s.alternatif]}</span>
+                        <div style="flex:1;">
+                            <div style="font-weight:700; color:${ALT_COLORS[s.alternatif]};">Menü ${s.alternatif}: ${s.etiket} ${isWinner ? '🏆' : ''}</div>
+                            <div style="font-size:13px; color:var(--clr-text-dim);">${s.oy_sayisi} oy — %${s.oy_yuzdesi}</div>
+                        </div>
+                        <div style="width:100px; background:var(--clr-surface-2); border-radius:8px; height:10px; overflow:hidden;">
+                            <div style="width:${s.oy_yuzdesi}%; height:100%; background:${ALT_COLORS[s.alternatif]}; border-radius:8px;"></div>
+                        </div>
+                    </div>`;
+            });
+            document.getElementById('vote-summary-cards').innerHTML = cardsHtml;
+
+        } catch (e) { console.error('Sonuç yükleme hatası:', e); }
+    }
+
+    // ─── Geçmiş ──────────────────────────────────────────────────
+    async function loadGecmis() {
+        try {
+            const data = await apiFetch('/api/v1/voting/gecmis');
+            if (!data.success || !data.gecmis.length) return;
+
+            // İlk eleman aktif haftaysa atla (zaten gösteriliyor)
+            const gecmis = data.gecmis.filter(g => g.toplam_oy > 0);
+            if (gecmis.length <= 1) return;
+
+            document.getElementById('vote-history-section').style.display = '';
+
+            let html = '';
+            gecmis.slice(1).forEach(g => {
+                const detayHtml = g.detay.map(d =>
+                    `<span style="margin-right:12px; font-size:13px; color:${ALT_COLORS[d.alt] || '#888'}; font-weight:600;">
+                        ${ALT_ICONS[d.alt] || ''} ${d.etiket}: ${d.oy} oy
+                    </span>`
+                ).join('');
+
+                html += `
+                    <div style="background:var(--clr-surface-1); border:1px solid var(--clr-border); border-radius:12px; padding:14px 20px; margin-bottom:10px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                        <span style="font-weight:700; color:var(--clr-text); min-width:90px;">📅 ${g.hafta}</span>
+                        <span style="font-size:13px; color:var(--clr-text-dim);">${g.toplam_oy} oy</span>
+                        <span style="font-size:13px; font-weight:700; color:${ALT_COLORS[g.kazanan_alternatif] || '#888'};">🏆 Menü ${g.kazanan_alternatif} (${g.kazanan_etiket})</span>
+                        <div style="flex:1; text-align:right;">${detayHtml}</div>
+                    </div>`;
+            });
+            document.getElementById('vote-history-list').innerHTML = html;
+
+        } catch (e) { console.error('Geçmiş yükleme hatası:', e); }
+    }
+
+    // Eski localStorage kilidini temizle (artık kullanılmıyor)
+    Object.keys(localStorage).filter(k => k.startsWith('voted_') || k === 'vote_anon_id').forEach(k => localStorage.removeItem(k));
+
+    document.addEventListener('DOMContentLoaded', loadAlternatifler);
+</script>
+{% endblock %}

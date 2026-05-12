@@ -1,0 +1,739 @@
+/* ═══════════════════════════════════════════════════════════════════
+   AURORA UI v4 — Cinematic, Thematic, Micro-interactive
+   Akilli Yemekhane icin ozel gelistirilmis animasyon/efekt katmani.
+   base.html ve base_admin.html son stylesheet olarak yuklenir, diger
+   tum stilleri tamamlar (override etmez, zenginlestirir).
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── 0. TOKENS (tema renkleri — sicak, lezzet cagrisimi) ─────────── */
+:root {
+    --aurora-primary: #6366f1;
+    /* indigo */
+    --aurora-accent: #f59e0b;
+    /* amber — sicak, yemek temasi */
+    --aurora-success: #10b981;
+    /* emerald — taze, saglikli */
+    --aurora-warm: #fb923c;
+    /* orange — iste */
+    --aurora-rose: #f43f5e;
+    /* rose — restoran klasigi */
+
+    --aurora-ease: cubic-bezier(.25, .8, .25, 1);
+    --aurora-spring: cubic-bezier(.34, 1.56, .64, 1);
+    --aurora-ease-out-back: cubic-bezier(.175, .885, .32, 1.275);
+}
+
+/* ─── 1. GLOBAL — daha yumusak gecisler ───────────────────────────── */
+* {
+    scroll-behavior: smooth;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    transition: background .6s var(--aurora-ease);
+}
+
+/* Secim rengi tema ile uyumlu */
+::selection {
+    background: rgba(245, 158, 11, .35);
+    color: #fff;
+}
+
+/* Daha sik, ozel scrollbar (webkit) */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, .02);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(99, 102, 241, .45), rgba(245, 158, 11, .35));
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(99, 102, 241, .7), rgba(245, 158, 11, .6));
+    background-clip: padding-box;
+    border: 2px solid transparent;
+}
+
+
+/* ─── 2. KEYFRAMES ────────────────────────────────────────────────── */
+@keyframes aur-fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes aur-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes aur-scale-in {
+    from {
+        opacity: 0;
+        transform: scale(.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes aur-blur-in {
+    from {
+        opacity: 0;
+        filter: blur(8px);
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        filter: blur(0);
+        transform: translateY(0);
+    }
+}
+
+@keyframes aur-shimmer {
+    0% {
+        background-position: -200% center;
+    }
+
+    100% {
+        background-position: 200% center;
+    }
+}
+
+@keyframes aur-steam {
+    0% {
+        transform: translateY(0) scaleX(1);
+        opacity: 0;
+    }
+
+    20% {
+        opacity: .4;
+    }
+
+    100% {
+        transform: translateY(-60px) scaleX(1.8);
+        opacity: 0;
+    }
+}
+
+@keyframes aur-pulse-ring {
+    0% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, .4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 14px rgba(245, 158, 11, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+    }
+}
+
+@keyframes aur-count-up {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes aur-border-flow {
+    0% {
+        background-position: 0% 0%;
+    }
+
+    100% {
+        background-position: 300% 0%;
+    }
+}
+
+@keyframes aur-tilt {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    25% {
+        transform: rotate(.5deg);
+    }
+
+    75% {
+        transform: rotate(-.5deg);
+    }
+}
+
+
+/* ─── 3. SAYFA YUKLEME — Staggered fade-up ────────────────────────── */
+.site-main {
+    animation: aur-fade-in .5s var(--aurora-ease) both;
+}
+
+/* Hero, section-header, card elementleri sayfaya yumusak girsin */
+.hero,
+.section-header,
+.hero-content,
+.page-hero,
+.dashboard-grid>*,
+.stats-grid>*,
+.report-grid>*,
+.feature-card,
+.chart-card {
+    animation: aur-fade-up .7s var(--aurora-ease) both;
+}
+
+/* Staggered — hero icerigi sirayla */
+.hero-content>* {
+    animation: aur-fade-up .6s var(--aurora-ease) both;
+}
+
+.hero-content>*:nth-child(1) {
+    animation-delay: .05s;
+}
+
+.hero-content>*:nth-child(2) {
+    animation-delay: .15s;
+}
+
+.hero-content>*:nth-child(3) {
+    animation-delay: .25s;
+}
+
+.hero-content>*:nth-child(4) {
+    animation-delay: .35s;
+}
+
+.hero-content>*:nth-child(5) {
+    animation-delay: .45s;
+}
+
+/* Kart gridleri staggered */
+.stats-grid>*:nth-child(1),
+.dashboard-grid>*:nth-child(1) {
+    animation-delay: .05s;
+}
+
+.stats-grid>*:nth-child(2),
+.dashboard-grid>*:nth-child(2) {
+    animation-delay: .12s;
+}
+
+.stats-grid>*:nth-child(3),
+.dashboard-grid>*:nth-child(3) {
+    animation-delay: .19s;
+}
+
+.stats-grid>*:nth-child(4),
+.dashboard-grid>*:nth-child(4) {
+    animation-delay: .26s;
+}
+
+.stats-grid>*:nth-child(5),
+.dashboard-grid>*:nth-child(5) {
+    animation-delay: .33s;
+}
+
+.stats-grid>*:nth-child(6),
+.dashboard-grid>*:nth-child(6) {
+    animation-delay: .40s;
+}
+
+
+/* ─── 4. SCROLL-REVEAL (JS .aur-reveal) ───────────────────────────── */
+.aur-reveal {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity .8s var(--aurora-ease), transform .8s var(--aurora-ease);
+    will-change: opacity, transform;
+}
+
+.aur-reveal.aur-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.aur-reveal-left {
+    opacity: 0;
+    transform: translateX(-32px);
+    transition: opacity .8s var(--aurora-ease), transform .8s var(--aurora-ease);
+}
+
+.aur-reveal-left.aur-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.aur-reveal-right {
+    opacity: 0;
+    transform: translateX(32px);
+    transition: opacity .8s var(--aurora-ease), transform .8s var(--aurora-ease);
+}
+
+.aur-reveal-right.aur-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.aur-reveal-scale {
+    opacity: 0;
+    transform: scale(.94);
+    transition: opacity .8s var(--aurora-ease), transform .8s var(--aurora-ease-out-back);
+}
+
+.aur-reveal-scale.aur-visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+
+/* ─── 5. KART ETKILESIMI — Gelismis hover ─────────────────────────── */
+.card,
+.chart-card,
+.stat-card,
+.feature-card,
+.menu-card,
+.action-card {
+    transition:
+        transform .45s var(--aurora-spring),
+        box-shadow .45s var(--aurora-ease),
+        border-color .3s var(--aurora-ease) !important;
+    will-change: transform;
+    position: relative;
+}
+
+/* 3D derinlik ile havalanma */
+.card:hover,
+.chart-card:hover,
+.feature-card:hover,
+.action-card:hover {
+    transform: translateY(-6px) scale(1.005) !important;
+    box-shadow:
+        0 20px 40px -18px rgba(99, 102, 241, .25),
+        0 10px 20px -10px rgba(0, 0, 0, .35),
+        0 0 0 1px rgba(99, 102, 241, .15) !important;
+}
+
+/* Stat kartlari — sakin ama daha zarif */
+.stat-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow:
+        0 16px 32px -14px rgba(245, 158, 11, .22),
+        0 8px 16px -8px rgba(0, 0, 0, .3) !important;
+}
+
+/* Kart "parildama" efekti — ust kenarda ince gradyan cizgisi */
+.chart-card::before,
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+            transparent 0%,
+            rgba(245, 158, 11, .3) 20%,
+            rgba(99, 102, 241, .5) 50%,
+            rgba(16, 185, 129, .3) 80%,
+            transparent 100%);
+    opacity: 0;
+    transition: opacity .5s var(--aurora-ease);
+    pointer-events: none;
+}
+
+.chart-card:hover::before,
+.feature-card:hover::before {
+    opacity: 1;
+}
+
+
+/* ─── 6. BUTON MIKRO-ETKILESIMI ───────────────────────────────────── */
+.btn,
+button.btn,
+button[type="submit"] {
+    position: relative;
+    overflow: hidden;
+    transition:
+        transform .2s var(--aurora-spring),
+        box-shadow .3s var(--aurora-ease),
+        filter .2s var(--aurora-ease) !important;
+}
+
+.btn:active,
+button.btn:active {
+    transform: scale(.97) !important;
+}
+
+/* Primary butonlar — pulse ring hover */
+.btn-primary:hover {
+    animation: aur-pulse-ring 1.4s var(--aurora-ease) infinite;
+    filter: brightness(1.08);
+}
+
+/* Ripple — JS tarafindan eklenir */
+.aur-ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .4);
+    transform: scale(0);
+    animation: aur-ripple-expand .6s var(--aurora-ease);
+    pointer-events: none;
+}
+
+@keyframes aur-ripple-expand {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+
+/* ─── 7. NAVBAR — Kaydirma ile daha opak ──────────────────────────── */
+.navbar {
+    transition:
+        background .5s var(--aurora-ease),
+        box-shadow .5s var(--aurora-ease),
+        border-color .5s var(--aurora-ease),
+        padding .3s var(--aurora-ease) !important;
+}
+
+.navbar.aur-scrolled {
+    background: rgba(8, 17, 29, .82) !important;
+    backdrop-filter: blur(28px) saturate(2) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(2) !important;
+    box-shadow: 0 8px 24px -12px rgba(0, 0, 0, .5) !important;
+}
+
+/* Navbar link hover — animasyonlu underline */
+.nav-links a {
+    position: relative;
+    transition: color .3s var(--aurora-ease) !important;
+}
+
+.nav-links a:not(.nav-btn)::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--aurora-primary), var(--aurora-accent));
+    border-radius: 2px;
+    transition: all .35s var(--aurora-spring);
+    transform: translateX(-50%);
+}
+
+.nav-links a:not(.nav-btn):hover::after {
+    width: 100%;
+}
+
+/* ─── 8. LOGO — Yemek temasi: altin nokta nabiz ───────────────────── */
+.logo-mark::after {
+    content: '';
+    position: absolute;
+    right: -4px;
+    bottom: -4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--aurora-accent);
+    box-shadow: 0 0 10px rgba(245, 158, 11, .9);
+    animation: aur-pulse-ring 2.4s var(--aurora-ease) infinite;
+}
+
+.logo-mark {
+    position: relative;
+}
+
+
+/* ─── 9. ISTATISTIK SAYILARI — Shimmer + count in ─────────────────── */
+.stat-value,
+.stat-card .value,
+.metric-value {
+    background: linear-gradient(90deg,
+            var(--clr-light, #fff) 0%,
+            var(--aurora-accent) 50%,
+            var(--clr-light, #fff) 100%);
+    background-size: 200% auto;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: aur-shimmer 5s linear infinite;
+}
+
+
+/* ─── 10. HERO — Yemek buhari efekti (SVG pseudo) ────────────────── */
+.hero,
+.page-hero {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Sicak yemek buhari — ust sag kosede ince ciziler */
+.hero::before,
+.page-hero::before {
+    content: '';
+    position: absolute;
+    top: 8%;
+    right: 10%;
+    width: 6px;
+    height: 60px;
+    background: linear-gradient(180deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(245, 158, 11, .4) 50%,
+            rgba(255, 255, 255, 0) 100%);
+    border-radius: 50%;
+    filter: blur(3px);
+    animation: aur-steam 3.5s ease-in-out infinite;
+    pointer-events: none;
+    opacity: .5;
+}
+
+.hero::after,
+.page-hero::after {
+    content: '';
+    position: absolute;
+    top: 12%;
+    right: 14%;
+    width: 4px;
+    height: 50px;
+    background: linear-gradient(180deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(99, 102, 241, .35) 50%,
+            rgba(255, 255, 255, 0) 100%);
+    border-radius: 50%;
+    filter: blur(3px);
+    animation: aur-steam 4s ease-in-out infinite .8s;
+    pointer-events: none;
+    opacity: .5;
+}
+
+
+/* ─── 11. TOAST — daha zarif cikis ────────────────────────────────── */
+.toast,
+.notification,
+.alert-float {
+    animation: aur-scale-in .4s var(--aurora-spring) both;
+}
+
+
+/* ─── 11B. DROPDOWN / SELECT — Koyu tema uyumu ────────────────────── */
+select,
+select option {
+    background: #1a2236 !important;
+    color: #f1f5f9 !important;
+}
+
+select option:checked,
+select option:hover {
+    background: linear-gradient(90deg, var(--aurora-primary), rgba(99, 102, 241, .7)) !important;
+    color: #fff !important;
+}
+
+/* Tarayici varsayilan acilir penceresi (webkit) */
+select:focus option {
+    background: #1a2236 !important;
+    color: #f1f5f9 !important;
+}
+
+/* ─── 12. FORM INPUTLARI — Focus halosu ─────────────────────────── */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+    transition:
+        border-color .3s var(--aurora-ease),
+        box-shadow .3s var(--aurora-ease),
+        background .3s var(--aurora-ease) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--aurora-primary) !important;
+    box-shadow:
+        0 0 0 4px rgba(99, 102, 241, .12),
+        0 0 20px rgba(99, 102, 241, .08) !important;
+    outline: none !important;
+}
+
+
+/* ─── 13. TABLO ROWS — Hover vurgulamasi ─────────────────────────── */
+table tbody tr {
+    transition: background .2s var(--aurora-ease), transform .2s var(--aurora-ease);
+}
+
+table tbody tr:hover {
+    background: linear-gradient(90deg,
+            rgba(99, 102, 241, .05) 0%,
+            rgba(245, 158, 11, .03) 100%) !important;
+}
+
+
+/* ─── 14. LOADING SHIMMER — Iskelet yukleyici ────────────────────── */
+.aur-skeleton {
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, .03) 0%,
+            rgba(255, 255, 255, .08) 50%,
+            rgba(255, 255, 255, .03) 100%);
+    background-size: 200% 100%;
+    animation: aur-shimmer 1.4s linear infinite;
+    border-radius: 8px;
+    min-height: 20px;
+}
+
+
+/* ─── 15. BADGE / CHIP — Gradyan kenarlik animasyonu ─────────────── */
+.badge-animated,
+.chip-animated {
+    position: relative;
+    background: var(--clr-surface, rgba(17, 24, 39, .5));
+    color: var(--clr-light, #fff);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 700;
+    display: inline-block;
+}
+
+.badge-animated::before,
+.chip-animated::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 999px;
+    padding: 2px;
+    background: linear-gradient(90deg,
+            var(--aurora-primary),
+            var(--aurora-accent),
+            var(--aurora-success),
+            var(--aurora-primary));
+    background-size: 300% 100%;
+    animation: aur-border-flow 4s linear infinite;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}
+
+
+/* ─── 16. GRAFIK CARD — Hover'da hafif tilt ──────────────────────── */
+.chart-card,
+.card-interactive {
+    transform-style: preserve-3d;
+}
+
+.chart-card:hover {
+    animation: aur-tilt 2s ease-in-out infinite;
+}
+
+
+/* ─── 17. LINK — Animasyonlu alti ciziklik ───────────────────────── */
+a:not(.btn):not(.nav-logo):not(.nav-links a) {
+    position: relative;
+    transition: color .25s var(--aurora-ease);
+}
+
+a:not(.btn):not(.nav-logo):not(.nav-links a):hover {
+    color: var(--aurora-accent);
+}
+
+
+/* ─── 18. CURSOR BLOB (sadece masaustu, pointer only) ────────────── */
+@media (hover: hover) and (pointer: fine) {
+    .aur-cursor-blob {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: radial-gradient(circle,
+                rgba(245, 158, 11, .35) 0%,
+                rgba(99, 102, 241, .2) 40%,
+                transparent 70%);
+        pointer-events: none;
+        z-index: 9999;
+        transform: translate(-50%, -50%);
+        transition: width .3s var(--aurora-ease), height .3s var(--aurora-ease), opacity .3s;
+        mix-blend-mode: screen;
+        will-change: transform;
+        opacity: 0;
+    }
+
+    .aur-cursor-blob.aur-visible {
+        opacity: 1;
+    }
+
+    .aur-cursor-blob.aur-hover-ui {
+        width: 48px;
+        height: 48px;
+    }
+}
+
+
+/* ─── 19. SECTION-TITLE — Gradyan metin ──────────────────────────── */
+.section-title,
+.hero-title h1,
+.page-title {
+    background: linear-gradient(120deg,
+            var(--clr-light, #f8fafc) 0%,
+            var(--aurora-accent) 50%,
+            var(--clr-light, #f8fafc) 100%);
+    background-size: 200% auto;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: aur-shimmer 8s linear infinite;
+}
+
+
+/* ─── 20. REDUCED MOTION — Erisilebilirlik ───────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .aur-reveal,
+    .aur-reveal-left,
+    .aur-reveal-right,
+    .aur-reveal-scale {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}
