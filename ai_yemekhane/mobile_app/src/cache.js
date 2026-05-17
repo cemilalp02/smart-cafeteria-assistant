@@ -9,9 +9,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const CACHE_KEYS = {
   MENU: "@yemekhane_menu",
-  STATS_MALIYET: "@yemekhane_stats_maliyet",
-  STATS_DETAY: "@yemekhane_stats_detay",
-  STATS_HAFTALIK: "@yemekhane_stats_haftalik",
   LAST_UPDATED: "@yemekhane_last_updated",
 };
 

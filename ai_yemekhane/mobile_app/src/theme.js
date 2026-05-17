@@ -43,34 +43,73 @@ export const C = {
 };
 
 export const TABS = {
+  home: "home",
   menu: "menu",
   rate: "rate",
+  vote: "vote",
   chat: "chat",
-  stats: "stats",
 };
 
 export const TAB_LABELS = [
+  { key: TABS.home, label: "Ana Sayfa", icon: "home-variant-outline" },
   { key: TABS.menu, label: "Menü", icon: "silverware-fork-knife" },
   { key: TABS.rate, label: "Puan", icon: "star-outline" },
+  { key: TABS.vote, label: "Oylama", icon: "vote-outline" },
   { key: TABS.chat, label: "Chat", icon: "chat-processing-outline" },
-  { key: TABS.stats, label: "İstatistik", icon: "chart-bar" },
 ];
 
 export const MENU_FIELDS = [
   { key: "corba", label: "Çorba", icon: "bowl-mix-outline", color: "#f59e0b" },
   { key: "ana_yemek", label: "Ana Yemek", icon: "food-steak", color: "#ef4444" },
-  { key: "pilav", label: "Yan Yemek", icon: "rice", color: "#8b5cf6" },
+  { key: "yan_yemek", label: "Yan Yemek", icon: "rice", color: "#8b5cf6" },
   { key: "tatli", label: "Tatlı", icon: "cupcake", color: "#ec4899" },
   { key: "salata", label: "Salata/İçecek", icon: "food-apple-outline", color: "#10b981" },
 ];
 
 export const DRINK_KEYWORDS = [
-  "ayran", "su", "meyve suyu", "komposto", "hoşaf", "limonata",
-  "çay", "kahve", "kola", "gazoz", "soda", "ice tea",
+  "ayran", "su", "meyve suyu", "komposto", "kompoto", "hoşaf", "hosaf",
+  "şalgam", "salgam", "limonata", "çay", "kahve", "kola", "gazoz",
+  "soda", "ice tea",
 ];
 
+export const FRUIT_KEYWORDS = [
+  "meyve", "elma", "portakal", "muz", "armut", "kiraz", "üzüm", "uzum",
+  "şeftali", "seftali", "kayısı", "kayisi", "çilek", "cilek", "karpuz",
+  "kavun", "nar", "incir", "mandalina", "limon", "erik", "ananas",
+];
+
+function _norm(name) {
+  return (name || "").toLocaleLowerCase("tr-TR").trim();
+}
+
 export function isDrinkLikeItem(name) {
-  const normalized = (name || "").toLocaleLowerCase("tr-TR").trim();
+  const normalized = _norm(name);
   if (!normalized || normalized === "-" || normalized === "yok") return false;
   return DRINK_KEYWORDS.some((keyword) => normalized.includes(keyword));
+}
+
+export function isFruitLikeItem(name) {
+  const normalized = _norm(name);
+  if (!normalized || normalized === "-" || normalized === "yok") return false;
+  return FRUIT_KEYWORDS.some((keyword) => normalized.includes(keyword));
+}
+
+/**
+ * Bir menü alanı için doğru gösterim etiketini döndürür.
+ * - "salata" alanı: içerik içecek-benzeri ise "İçecek", aksi halde "Salata"
+ * - "tatli"  alanı: içerik içecek (komposto/şalgam/hoşaf...) ise "İçecek",
+ *                   meyve ise "Meyve", aksi halde "Tatlı"
+ * - Diğer alanlar: MENU_FIELDS'taki sabit etiket
+ */
+export function categoryLabelFor(fieldKey, value) {
+  if (fieldKey === "salata") {
+    return isDrinkLikeItem(value) ? "İçecek" : "Salata";
+  }
+  if (fieldKey === "tatli") {
+    if (isDrinkLikeItem(value)) return "İçecek";
+    if (isFruitLikeItem(value)) return "Meyve";
+    return "Tatlı";
+  }
+  const field = MENU_FIELDS.find((f) => f.key === fieldKey);
+  return field ? field.label : fieldKey;
 }

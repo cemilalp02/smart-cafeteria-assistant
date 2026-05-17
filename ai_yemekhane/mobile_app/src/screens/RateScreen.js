@@ -4,7 +4,7 @@ import {
   ScrollView, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { C, MENU_FIELDS, isDrinkLikeItem } from "../theme";
+import { C, MENU_FIELDS, isDrinkLikeItem, isFruitLikeItem, categoryLabelFor } from "../theme";
 import { apiGet, apiPostJson } from "../api";
 import { FadeInView, ScaleOnPress, SectionCard, PrimaryButton } from "../components";
 
@@ -55,9 +55,20 @@ export default function RateScreen() {
       const rawValue = todayMenu[field.key];
       const yemekAdi = typeof rawValue === "string" ? rawValue.trim() : "";
       if (!yemekAdi || yemekAdi === "-" || yemekAdi.toLowerCase() === "yok") return null;
-      const isDrink = field.key === "salata" && isDrinkLikeItem(yemekAdi);
-      const kategori = isDrink ? "icecek" : field.key;
-      const kategoriLabel = isDrink ? "İçecek" : field.key === "salata" ? "Salata" : field.label;
+
+      // Etiket: komposto/şalgam → "İçecek", meyve → "Meyve", aksi halde alanın
+      // kendi etiketi (Çorba, Ana Yemek, Yan Yemek, Tatlı, Salata).
+      const kategoriLabel = categoryLabelFor(field.key, yemekAdi);
+
+      // Backend'e gönderilen kategori — analitik gruplaması için içecek/meyve
+      // alt-kategorileri ayrıştırılır (mevcut salata→icecek pattern'i ile uyumlu).
+      let kategori = field.key;
+      if ((field.key === "salata" || field.key === "tatli") && isDrinkLikeItem(yemekAdi)) {
+        kategori = "icecek";
+      } else if (field.key === "tatli" && isFruitLikeItem(yemekAdi)) {
+        kategori = "meyve";
+      }
+
       return { id: `${kategori}:${yemekAdi}`, kategori, kategoriLabel, yemekAdi, icon: field.icon, color: field.color };
     }).filter(Boolean);
   }, [todayMenu]);

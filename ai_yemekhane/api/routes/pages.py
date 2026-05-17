@@ -12,31 +12,37 @@ router = APIRouter(tags=["pages"])
 
 
 # ═══════════════════════════════════════════════════════════════════
-# SAYFA ROUTE'LARI — ÖĞRENCİ (HERKESE AÇIK)
+# WEB UYGULAMASI — YALNIZCA YÖNETİCİ ARAYÜZÜ
+# ═══════════════════════════════════════════════════════════════════
+# Öğrenci sayfaları (Ana Sayfa, Chatbot, Günün Menüsü, Puanlama, Oylama)
+# mobil uygulamaya taşındığı için web tarafında yalnızca yetkili paneli sunulur.
+# Eski öğrenci URL'lerine gelen istekler yetkili giriş sayfasına yönlendirilir.
 # ═══════════════════════════════════════════════════════════════════
 
-@router.get("/", response_class=HTMLResponse)
-async def anasayfa(request: Request):
-    """Ana sayfa — Projenin landing page'i."""
-    return templates.TemplateResponse(request, "index.html")
+@router.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def landing_redirect(request: Request):
+    """Web kök sayfası — yetkili giriş sayfasına yönlendirir.
+
+    Öğrenci işlevselliği mobil uygulamada bulunduğundan, web yalnızca
+    yöneticiler için tasarlanmıştır.
+    """
+    if _is_admin(request):
+        return RedirectResponse(url="/admin", status_code=302)
+    return RedirectResponse(url="/admin/login", status_code=302)
 
 
-@router.get("/chat", response_class=HTMLResponse)
-async def chat_page(request: Request):
-    """Chatbot sayfası."""
-    return templates.TemplateResponse(request, "chat.html")
+@router.get("/chat", include_in_schema=False)
+@router.get("/rate", include_in_schema=False)
+@router.get("/today-menu", include_in_schema=False)
+@router.get("/vote", include_in_schema=False)
+async def deprecated_student_pages():
+    """Eski öğrenci sayfası URL'leri — mobil uygulamaya yönlendirir.
 
-
-@router.get("/rate", response_class=HTMLResponse)
-async def rate_page(request: Request):
-    """Anonim yemek puanlama sayfası."""
-    return templates.TemplateResponse(request, "rate.html")
-
-
-@router.get("/today-menu", response_class=HTMLResponse)
-async def today_menu_page(request: Request):
-    """Öğrenci günün menüsü sayfası (herkese açık)."""
-    return templates.TemplateResponse(request, "today_menu.html")
+    Öğrenci sayfaları (Chatbot, Günün Menüsü, Puanlama, Oylama) mobil
+    uygulamaya taşınmıştır. Eski bağlantılarla gelen ziyaretçiler kök
+    sayfaya, oradan da yetkili giriş ekranına yönlendirilir.
+    """
+    return RedirectResponse(url="/", status_code=302)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -128,12 +134,6 @@ async def feedback_analysis_page(request: Request):
     if not _is_admin(request):
         return RedirectResponse(url="/admin/login", status_code=302)
     return templates.TemplateResponse(request, "feedback_analysis.html")
-
-
-@router.get("/vote", response_class=HTMLResponse)
-async def vote_page(request: Request):
-    """Menü oylama sayfası (herkese açık, anonim)."""
-    return templates.TemplateResponse(request, "vote.html")
 
 
 @router.get("/admin/simulation", response_class=HTMLResponse)

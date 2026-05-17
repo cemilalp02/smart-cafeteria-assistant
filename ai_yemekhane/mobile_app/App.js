@@ -7,7 +7,7 @@ import * as Notifications from "expo-notifications";
 import { C, TABS } from "./src/theme";
 import { apiPostJson } from "./src/api";
 import { HeaderBlock, HeaderTabs } from "./src/components";
-import { MenuScreen, RateScreen, ChatScreen, StatsScreen } from "./src/screens";
+import { HomeScreen, MenuScreen, RateScreen, VoteScreen, ChatScreen } from "./src/screens";
 
 // ─── PUSH NOTIFICATION SETUP ───────────────────────────────────
 try {
@@ -81,7 +81,7 @@ async function registerForPushNotifications() {
 // ═══════════════════════════════════════════════════════════════
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState(TABS.menu);
+  const [activeTab, setActiveTab] = useState(TABS.home);
   const [notification, setNotification] = useState(null);
   const notifAnim = useRef(new Animated.Value(-80)).current;
 
@@ -123,9 +123,10 @@ export default function App() {
   }, []);
 
   const content = useMemo(() => {
+    if (activeTab === TABS.home) return <HomeScreen setActiveTab={setActiveTab} />;
     if (activeTab === TABS.menu) return <MenuScreen />;
     if (activeTab === TABS.rate) return <RateScreen />;
-    if (activeTab === TABS.stats) return <StatsScreen />;
+    if (activeTab === TABS.vote) return <VoteScreen />;
     return <ChatScreen />;
   }, [activeTab]);
 

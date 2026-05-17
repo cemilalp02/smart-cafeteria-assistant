@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1100" viewBox="0 0 1800 1100" role="img" aria-labelledby="title desc">
+  <title id="title">AI Smart Cafeteria Waste Reduction - Visual System Architecture</title>
+  <desc id="desc">A visual-first architecture diagram with clean non-overlapping arrows between inputs, FastAPI, AI services, data stores, model artifacts and feedback loop.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f6f8fb; }
+      .title { font: 900 38px Arial, Helvetica, sans-serif; fill: #12202e; }
+      .subtitle { font: 400 17px Arial, Helvetica, sans-serif; fill: #526170; }
+      .layer { fill: #ffffff; stroke: #d8e1ea; stroke-width: 1.4; rx: 8; }
+      .shadow { filter: drop-shadow(0 14px 26px rgba(25, 35, 45, .13)); }
+      .shadow-soft { filter: drop-shadow(0 7px 14px rgba(25, 35, 45, .10)); }
+      .header { font: 900 15px Arial, Helvetica, sans-serif; fill: #ffffff; letter-spacing: 1px; }
+      .label { font: 900 19px Arial, Helvetica, sans-serif; fill: #12202e; }
+      .label-white { font: 900 20px Arial, Helvetica, sans-serif; fill: #ffffff; }
+      .caption { font: 800 13px Arial, Helvetica, sans-serif; fill: #344250; letter-spacing: .2px; }
+      .tiny { font: 700 11px Arial, Helvetica, sans-serif; fill: #617282; letter-spacing: .3px; }
+      .num { font: 900 24px Arial, Helvetica, sans-serif; fill: #ffffff; }
+      .green { fill: #2f7d47; }
+      .blue { fill: #2f6fae; }
+      .purple { fill: #7652a6; }
+      .gold { fill: #a77115; }
+      .red { fill: #b6534a; }
+      .teal { fill: #2d7781; }
+      .input-card { fill: #eaf7ef; stroke: #64a876; stroke-width: 1.4; rx: 8; }
+      .api-card { fill: #e8f2ff; stroke: #5c94d1; stroke-width: 1.4; rx: 8; }
+      .ai-card { fill: #f4eefb; stroke: #a181cb; stroke-width: 1.4; rx: 8; }
+      .data-card { fill: #fff5dc; stroke: #c79332; stroke-width: 1.5; rx: 8; }
+      .external-card { fill: #fff0ed; stroke: #c66b5f; stroke-width: 1.4; rx: 8; }
+      .icon { stroke: #26323d; stroke-width: 4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .icon-fill { fill: #26323d; }
+      .flow { stroke: #344250; stroke-width: 3.2; fill: none; marker-end: url(#arrow); stroke-linecap: round; stroke-linejoin: round; }
+      .flow-soft { stroke: #66788a; stroke-width: 2.4; fill: none; marker-end: url(#arrowSoft); stroke-linecap: round; stroke-linejoin: round; }
+      .flow-dashed { stroke: #8f6d63; stroke-width: 2.2; fill: none; stroke-dasharray: 9 8; marker-end: url(#arrowDash); stroke-linecap: round; stroke-linejoin: round; }
+      .connect { stroke: #8e6cbc; stroke-width: 3; fill: none; stroke-linecap: round; opacity: .85; }
+      .loop { stroke: #2d7781; stroke-width: 4.2; fill: none; marker-end: url(#arrowLoop); stroke-linecap: round; stroke-linejoin: round; }
+      .db { fill: #fff8e8; stroke: #a77115; stroke-width: 2; }
+      .file { fill: #fffdf7; stroke: #a77115; stroke-width: 2; }
+    </style>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,4 L0,8 z" fill="#344250"/>
+    </marker>
+    <marker id="arrowSoft" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3.5 L0,7 z" fill="#66788a"/>
+    </marker>
+    <marker id="arrowDash" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3.5 L0,7 z" fill="#8f6d63"/>
+    </marker>
+    <marker id="arrowLoop" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,4 L0,8 z" fill="#2d7781"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1800" height="1100"/>
+  <text class="title" x="64" y="68">System Architecture</text>
+  <text class="subtitle" x="64" y="96">AI Smart Cafeteria Waste Reduction - cleaner visual map of requests, intelligence, storage and actions</text>
+
+  <!-- Main column shells -->
+  <g class="shadow">
+    <rect class="layer" x="54" y="136" width="276" height="734"/>
+    <rect class="layer" x="382" y="136" width="344" height="734"/>
+    <rect class="layer" x="778" y="136" width="522" height="734"/>
+    <rect class="layer" x="1352" y="136" width="394" height="734"/>
+  </g>
+  <rect class="green" x="54" y="136" width="276" height="42" rx="8"/>
+  <rect class="blue" x="382" y="136" width="344" height="42" rx="8"/>
+  <rect class="purple" x="778" y="136" width="522" height="42" rx="8"/>
+  <rect class="gold" x="1352" y="136" width="394" height="42" rx="8"/>
+  <text class="header" x="74" y="162">INPUTS</text>
+  <text class="header" x="402" y="162">APPLICATION</text>
+  <text class="header" x="798" y="162">INTELLIGENCE</text>
+  <text class="header" x="1372" y="162">DATA + MODELS</text>
+
+  <!-- Inputs -->
+  <g class="shadow-soft">
+    <rect class="input-card" x="82" y="220" width="220" height="112"/>
+    <rect class="input-card" x="82" y="372" width="220" height="112"/>
+    <rect class="input-card" x="82" y="524" width="220" height="112"/>
+    <rect class="input-card" x="82" y="676" width="220" height="112"/>
+  </g>
+  <g transform="translate(112 244)">
+    <rect x="0" y="0" width="78" height="50" rx="5" fill="#fff" stroke="#26323d" stroke-width="4"/>
+    <line class="icon" x1="30" y1="62" x2="48" y2="62"/>
+    <line class="icon" x1="39" y1="50" x2="39" y2="62"/>
+    <circle cx="62" cy="14" r="5" fill="#2f7d47"/>
+  </g>
+  <text class="label" x="206" y="260">WEB</text>
+  <text class="tiny" x="206" y="284">student UI</text>
+  <text class="tiny" x="206" y="304">ratings + chat</text>
+
+  <g transform="translate(120 390)">
+    <rect x="0" y="0" width="48" height="76" rx="10" fill="#fff" stroke="#26323d" stroke-width="4"/>
+    <circle cx="24" cy="62" r="4" class="icon-fill"/>
+    <rect x="12" y="12" width="24" height="34" rx="4" fill="#2f7d47" opacity=".18"/>
+  </g>
+  <text class="label" x="206" y="416">MOBILE</text>
+  <text class="tiny" x="206" y="440">Expo app</text>
+  <text class="tiny" x="206" y="460">push token</text>
+
+  <g transform="translate(116 548)">
+    <rect x="0" y="22" width="74" height="48" rx="8" fill="#fff" stroke="#26323d" stroke-width="4"/>
+    <path class="icon" d="M14 38 C22 20, 52 20, 60 38"/>
+    <line class="icon" x1="37" y1="36" x2="48" y2="24"/>
+    <circle cx="37" cy="42" r="5" fill="#2f7d47"/>
+  </g>
+  <text class="label" x="206" y="568">IOT</text>
+  <text class="tiny" x="206" y="592">scale input</text>
+  <text class="tiny" x="206" y="612">waste kg</text>
+
+  <g transform="translate(116 698)">
+    <circle cx="38" cy="22" r="18" fill="#fff" stroke="#26323d" stroke-width="4"/>
+    <path class="icon" d="M10 76 C16 52, 60 52, 66 76"/>
+    <circle cx="62" cy="54" r="12" fill="#2f7d47"/>
+    <path d="M56 54 L61 59 L69 48" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text class="label" x="206" y="720">ADMIN</text>
+  <text class="tiny" x="206" y="744">dashboard</text>
+  <text class="tiny" x="206" y="764">operations</text>
+
+  <!-- Application -->
+  <g class="shadow-soft">
+    <rect class="api-card" x="424" y="260" width="260" height="472"/>
+    <rect class="blue" x="454" y="298" width="200" height="88" rx="8"/>
+  </g>
+  <text class="label-white" x="505" y="334">FastAPI</text>
+  <text class="tiny" x="492" y="360">/api/v1</text>
+
+  <g>
+    <rect x="456" y="426" width="82" height="72" rx="8" fill="#fff" stroke="#5c94d1" stroke-width="2"/>
+    <path class="icon" d="M478 458 L492 444 L506 458 L520 444"/>
+    <text class="tiny" x="476" y="486">MENU</text>
+
+    <rect x="570" y="426" width="82" height="72" rx="8" fill="#fff" stroke="#5c94d1" stroke-width="2"/>
+    <circle cx="597" cy="456" r="12" fill="none" stroke="#26323d" stroke-width="4"/>
+    <path class="icon" d="M609 468 L624 482"/>
+    <text class="tiny" x="592" y="486">CHAT</text>
+
+    <rect x="456" y="532" width="82" height="72" rx="8" fill="#fff" stroke="#5c94d1" stroke-width="2"/>
+    <rect x="480" y="548" width="34" height="26" rx="4" fill="#2f6fae" opacity=".20"/>
+    <line class="icon" x1="475" y1="574" x2="520" y2="574"/>
+    <text class="tiny" x="474" y="592">WASTE</text>
+
+    <rect x="570" y="532" width="82" height="72" rx="8" fill="#fff" stroke="#5c94d1" stroke-width="2"/>
+    <path class="icon" d="M592 578 L592 552 L628 552 L628 578"/>
+    <line class="icon" x1="584" y1="578" x2="636" y2="578"/>
+    <text class="tiny" x="584" y="592">REPORT</text>
+
+    <rect x="512" y="640" width="82" height="54" rx="8" fill="#fff" stroke="#5c94d1" stroke-width="2"/>
+    <path class="icon" d="M532 670 C542 650, 566 650, 576 670"/>
+    <text class="tiny" x="529" y="688">WS/API</text>
+  </g>
+
+  <!-- Intelligence -->
+  <g class="shadow-soft">
+    <circle cx="1040" cy="496" r="128" fill="#f5effb" stroke="#7652a6" stroke-width="3"/>
+    <circle cx="1040" cy="496" r="82" fill="#fff" stroke="#a181cb" stroke-width="2"/>
+  </g>
+  <g transform="translate(994 392)">
+    <path class="icon" d="M36 24 C18 20, 10 34, 18 50 C6 60, 12 80, 32 82 C38 98, 64 98, 70 80 C90 78, 96 58, 82 48 C90 30, 72 18, 56 26 C52 16, 42 16, 36 24 Z"/>
+    <line class="icon" x1="42" y1="42" x2="42" y2="76"/>
+    <line class="icon" x1="60" y1="40" x2="78" y2="52"/>
+    <line class="icon" x1="60" y1="74" x2="78" y2="64"/>
+    <circle cx="42" cy="42" r="5" fill="#7652a6"/>
+    <circle cx="42" cy="76" r="5" fill="#7652a6"/>
+    <circle cx="78" cy="52" r="5" fill="#7652a6"/>
+    <circle cx="78" cy="64" r="5" fill="#7652a6"/>
+  </g>
+  <text class="label" x="998" y="520">AI CORE</text>
+  <text class="tiny" x="996" y="544">predict + optimize</text>
+
+  <g class="shadow-soft">
+    <rect class="ai-card" x="828" y="228" width="158" height="76"/>
+    <rect class="ai-card" x="1094" y="228" width="158" height="76"/>
+    <rect class="ai-card" x="828" y="660" width="158" height="76"/>
+    <rect class="ai-card" x="1094" y="660" width="158" height="76"/>
+    <rect class="ai-card" x="856" y="774" width="352" height="64"/>
+  </g>
+  <text class="caption" x="864" y="260">MENU AI</text>
+  <path class="icon" d="M934 276 L960 250 L960 286"/>
+  <text class="caption" x="1128" y="260">WASTE AI</text>
+  <path class="icon" d="M1208 284 C1196 260, 1222 250, 1210 232"/>
+  <text class="caption" x="862" y="692">ANOMALY</text>
+  <path class="icon" d="M950 709 L964 681 L978 709"/>
+  <text class="caption" x="1138" y="692">XAI</text>
+  <circle cx="1198" cy="696" r="18" fill="none" stroke="#26323d" stroke-width="4"/>
+  <circle cx="1198" cy="696" r="6" fill="#7652a6"/>
+  <text class="caption" x="954" y="812">FEEDBACK + SENTIMENT + PLANNING</text>
+
+  <!-- Clean radial connectors, no arrowheads -->
+  <path class="connect" d="M960 304 L998 412"/>
+  <path class="connect" d="M1138 304 L1084 414"/>
+  <path class="connect" d="M962 660 L1000 580"/>
+  <path class="connect" d="M1136 660 L1082 580"/>
+  <path class="connect" d="M1032 774 L1038 624"/>
+
+  <!-- Data / models -->
+  <g class="shadow-soft">
+    <path class="db" d="M1400 246 C1400 224, 1704 224, 1704 246 L1704 376 C1704 398, 1400 398, 1400 376 Z"/>
+    <ellipse class="db" cx="1552" cy="246" rx="152" ry="22"/>
+  </g>
+  <text class="label" x="1516" y="294">DB</text>
+  <text class="tiny" x="1460" y="326">ratings + production + votes</text>
+  <text class="tiny" x="1478" y="348">menus + alerts + tokens</text>
+
+  <g class="shadow-soft">
+    <rect class="data-card" x="1400" y="460" width="304" height="116"/>
+    <path class="file" d="M1440 486 L1488 486 L1504 502 L1504 562 L1440 562 Z"/>
+    <path class="file" d="M1522 486 L1570 486 L1586 502 L1586 562 L1522 562 Z"/>
+    <path class="file" d="M1604 486 L1652 486 L1668 502 L1668 562 L1604 562 Z"/>
+  </g>
+  <text class="label" x="1488" y="618">MODELS</text>
+  <text class="tiny" x="1448" y="642">joblib artifacts</text>
+
+  <g class="shadow-soft">
+    <rect class="data-card" x="1400" y="686" width="304" height="96"/>
+    <path class="icon" d="M1456 740 L1496 704 L1536 740 L1584 704 L1624 740"/>
+    <line class="icon" x1="1456" y1="754" x2="1624" y2="754"/>
+  </g>
+  <text class="label" x="1510" y="824">CSV</text>
+  <text class="tiny" x="1458" y="846">menu + nutrition data</text>
+
+  <!-- External integrations placed in their own lane -->
+  <g class="shadow-soft">
+    <rect class="external-card" x="860" y="68" width="184" height="58"/>
+    <rect class="external-card" x="1080" y="68" width="184" height="58"/>
+  </g>
+  <text class="caption" x="900" y="102">GEMINI</text>
+  <text class="caption" x="1132" y="102">EXPO PUSH</text>
+
+  <!-- Main flows - adjusted to avoid overlaps -->
+  <path class="flow" d="M302 276 C350 276, 382 314, 454 330"/>
+  <path class="flow" d="M302 428 C354 428, 390 446, 456 456"/>
+  <path class="flow" d="M302 580 C354 580, 390 566, 456 568"/>
+  <path class="flow" d="M302 732 C354 732, 390 668, 512 668"/>
+
+  <path class="flow" d="M684 496 C760 496, 820 496, 912 496"/>
+
+  <path class="flow-soft" d="M1148 426 C1236 340, 1324 278, 1400 262"/>
+  <path class="flow-soft" d="M1168 496 C1248 496, 1326 508, 1400 518"/>
+  <path class="flow-soft" d="M1148 566 C1230 668, 1318 724, 1400 734"/>
+
+  <path class="flow-dashed" d="M952 126 C952 176, 948 210, 948 228"/>
+  <path class="flow-dashed" d="M1172 126 C1258 250, 1320 508, 1322 878"/>
+
+  <!-- Compact legend -->
+  <g transform="translate(64 806)">
+    <rect x="0" y="0" width="16" height="16" rx="3" class="green"/>
+    <text class="tiny" x="24" y="13">clients</text>
+    <rect x="96" y="0" width="16" height="16" rx="3" class="blue"/>
+    <text class="tiny" x="120" y="13">API</text>
+    <rect x="176" y="0" width="16" height="16" rx="3" class="purple"/>
+    <text class="tiny" x="200" y="13">AI</text>
+    <rect x="252" y="0" width="16" height="16" rx="3" class="gold"/>
+    <text class="tiny" x="276" y="13">data</text>
+    <rect x="336" y="0" width="16" height="16" rx="3" class="red"/>
+    <text class="tiny" x="360" y="13">external</text>
+  </g>
+
+  <!-- Bottom closed loop, kept inside the panel -->
+  <g class="shadow">
+    <rect class="layer" x="54" y="914" width="1692" height="126"/>
+  </g>
+  <rect class="teal" x="54" y="914" width="1692" height="42" rx="8"/>
+  <text class="header" x="74" y="940">CLOSED LOOP</text>
+  <path class="loop" d="M208 992 L426 992"/>
+  <path class="loop" d="M500 992 L718 992"/>
+  <path class="loop" d="M792 992 L1010 992"/>
+  <path class="loop" d="M1084 992 L1302 992"/>
+  <path class="loop" d="M1376 992 L1594 992"/>
+  <path class="loop" d="M1634 1008 C1500 1030, 340 1030, 174 1008"/>
+
+  <g class="shadow-soft">
+    <circle cx="174" cy="992" r="34" class="green"/>
+    <circle cx="466" cy="992" r="34" class="blue"/>
+    <circle cx="758" cy="992" r="34" class="purple"/>
+    <circle cx="1050" cy="992" r="34" class="gold"/>
+    <circle cx="1342" cy="992" r="34" class="teal"/>
+    <circle cx="1634" cy="992" r="34" class="red"/>
+  </g>
+  <text class="num" x="167" y="1001">1</text>
+  <text class="num" x="459" y="1001">2</text>
+  <text class="num" x="751" y="1001">3</text>
+  <text class="num" x="1043" y="1001">4</text>
+  <text class="num" x="1335" y="1001">5</text>
+  <text class="num" x="1627" y="1001">6</text>
+  <text class="caption" x="124" y="1064">INPUT</text>
+  <text class="caption" x="420" y="1064">STORE</text>
+  <text class="caption" x="716" y="1064">LEARN</text>
+  <text class="caption" x="1002" y="1064">OPTIMIZE</text>
+  <text class="caption" x="1302" y="1064">DECIDE</text>
+  <text class="caption" x="1596" y="1064">ALERT</text>
+</svg>

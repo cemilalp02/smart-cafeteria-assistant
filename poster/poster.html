@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Team 30 — AI-Powered Smart Cafeteria Waste Reduction System</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700;800&display=swap');
+
+    :root {
+      --green-900: #064e3b;
+      --green-800: #065f46;
+      --green-700: #047857;
+      --green-600: #059669;
+      --green-500: #10b981;
+      --green-100: #d1fae5;
+      --green-50: #ecfdf5;
+      --amber-700: #b45309;
+      --amber-600: #d97706;
+      --amber-500: #f59e0b;
+      --amber-100: #fef3c7;
+      --slate-900: #0f172a;
+      --slate-800: #1e293b;
+      --slate-700: #334155;
+      --slate-600: #475569;
+      --slate-500: #64748b;
+      --slate-400: #94a3b8;
+      --slate-300: #cbd5e1;
+      --slate-200: #e2e8f0;
+      --slate-100: #f1f5f9;
+      --slate-50: #f8fafc;
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #b0b0b0;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+      font-family: var(--font-body);
+      color: var(--slate-800);
+    }
+
+    .poster {
+      width: 700px;
+      height: 1150px;
+      background: #fff;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .content {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── HEADER ─── */
+    .header {
+      background: linear-gradient(135deg, var(--green-900) 0%, var(--green-800) 45%, var(--green-700) 100%);
+      padding: 16px 22px;
+      display: grid;
+      grid-template-columns: 120px 1fr 96px;
+      gap: 14px;
+      align-items: center;
+      position: relative;
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--amber-500), var(--green-500), var(--amber-500));
+    }
+
+    .ceng-block {
+      color: #fff;
+    }
+
+    .ceng-block .label {
+      font-family: var(--font-display);
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: rgba(255, 255, 255, .65);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .ceng-block .name {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.15;
+    }
+
+    .ceng-block .sub {
+      font-size: 7.5px;
+      color: rgba(255, 255, 255, .7);
+      margin-top: 3px;
+      line-height: 1.3;
+    }
+
+    .title-block {
+      text-align: center;
+    }
+
+    .title-eyebrow {
+      display: inline-block;
+      font-family: var(--font-display);
+      font-size: 7.5px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--amber-500);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      padding: 3px 10px;
+      background: rgba(245, 158, 11, .12);
+      border: 1px solid rgba(245, 158, 11, .35);
+      border-radius: 99px;
+    }
+
+    .project-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.1;
+      letter-spacing: -.3px;
+    }
+
+    .project-title .accent {
+      color: var(--amber-500);
+    }
+
+    .project-subtitle {
+      font-size: 8.5px;
+      color: rgba(255, 255, 255, .8);
+      margin-top: 5px;
+      font-weight: 400;
+      line-height: 1.4;
+    }
+
+    .aybu-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: #fff;
+    }
+
+    .aybu-logo {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--green-800);
+      font-family: var(--font-display);
+      font-weight: 800;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .15);
+      border: 2px solid var(--amber-500);
+    }
+
+    .aybu-logo .text-large {
+      font-size: 13px;
+      letter-spacing: 1px;
+      line-height: 1;
+    }
+
+    .aybu-logo .text-small {
+      font-size: 5.5px;
+      color: var(--green-700);
+      margin-top: 2px;
+      letter-spacing: .8px;
+      font-weight: 600;
+    }
+
+    .aybu-block .year {
+      font-size: 7.5px;
+      color: rgba(255, 255, 255, .75);
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    /* ─── META BAR ─── */
+    .meta-bar {
+      background: var(--slate-50);
+      border-bottom: 1px solid var(--slate-200);
+      padding: 7px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 8.5px;
+      gap: 10px;
+    }
+
+    .meta-team {
+      color: var(--slate-700);
+    }
+
+    .meta-team strong {
+      color: var(--green-800);
+      font-weight: 700;
+      font-family: var(--font-display);
+      letter-spacing: .3px;
+    }
+
+    .meta-team .members {
+      font-weight: 500;
+      margin-left: 4px;
+    }
+
+    .meta-supervisor {
+      color: var(--slate-500);
+      font-size: 7.5px;
+      font-style: italic;
+    }
+
+    .meta-url {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--green-50);
+      color: var(--green-800);
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-family: var(--font-display);
+      font-size: 8px;
+      font-weight: 600;
+      border: 1px solid var(--green-100);
+    }
+
+    .meta-url svg {
+      width: 10px;
+      height: 10px;
+    }
+
+    /* ─── HERO METRICS ─── */
+    .hero {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--slate-200);
+      border-bottom: 1px solid var(--slate-200);
+    }
+
+    .hero-m {
+      background: #fff;
+      padding: 11px 10px;
+      text-align: center;
+    }
+
+    .hero-m .v {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -1px;
+      color: var(--green-800);
+    }
+
+    .hero-m .v .u {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--amber-600);
+    }
+
+    .hero-m .v.amber {
+      color: var(--amber-600);
+    }
+
+    .hero-m .l {
+      font-family: var(--font-display);
+      font-size: 7.5px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      color: var(--slate-600);
+      text-transform: uppercase;
+      margin-top: 5px;
+    }
+
+    .hero-m .d {
+      font-size: 7px;
+      color: var(--slate-500);
+      margin-top: 2px;
+      line-height: 1.3;
+    }
+
+    /* ─── MAIN ─── */
+    .main {
+      flex: 1;
+      padding: 9px 22px 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .row {
+      display: grid;
+      gap: 6px;
+    }
+
+    .row.two {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .row.split-60-40 {
+      grid-template-columns: 1.5fr 1fr;
+    }
+
+    .row.split-40-60 {
+      grid-template-columns: 1fr 1.5fr;
+    }
+
+    .section {
+      background: #fff;
+      border: 1px solid var(--slate-200);
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+
+    .section.hl {
+      border-left: 3px solid var(--green-600);
+    }
+
+    .section.am {
+      border-left: 3px solid var(--amber-500);
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--green-900);
+      text-transform: uppercase;
+      letter-spacing: 1.1px;
+      margin-bottom: 5px;
+      padding-bottom: 3px;
+      border-bottom: 1.5px solid var(--green-100);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .section-title .icon {
+      width: 11px;
+      height: 11px;
+      color: var(--green-600);
+      flex-shrink: 0;
+    }
+
+    .body-text {
+      font-size: 7.5px;
+      line-height: 1.5;
+      color: var(--slate-700);
+    }
+
+    .body-text strong {
+      color: var(--amber-700);
+      font-weight: 600;
+    }
+
+    .body-text .gh {
+      color: var(--green-700);
+      font-weight: 600;
+    }
+
+    .goal-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .goal-list li {
+      font-size: 7px;
+      line-height: 1.4;
+      color: var(--slate-700);
+      padding-left: 12px;
+      position: relative;
+    }
+
+    .goal-list li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 3px;
+      width: 8px;
+      height: 8px;
+      background: var(--green-500);
+      clip-path: polygon(20% 50%, 0 65%, 40% 100%, 100% 25%, 80% 10%, 40% 65%);
+    }
+
+    .goal-list li strong {
+      color: var(--green-800);
+      font-weight: 600;
+    }
+
+    /* ─── ARCHITECTURE ─── */
+    .arch {
+      padding: 4px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .arch-label {
+      font-family: var(--font-display);
+      font-size: 6.5px;
+      font-weight: 700;
+      letter-spacing: 1.3px;
+      text-transform: uppercase;
+      text-align: center;
+      padding: 2px 0 3px;
+    }
+
+    .arch-row {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .arch-node {
+      flex: 1;
+      max-width: 115px;
+      min-width: 65px;
+      padding: 6px 5px;
+      text-align: center;
+      border-radius: 5px;
+      border: 1px solid;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
+    }
+
+    .arch-node svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .arch-node .nl {
+      font-family: var(--font-display);
+      font-size: 7.5px;
+      font-weight: 700;
+      line-height: 1.15;
+    }
+
+    .arch-node .ns {
+      font-size: 5.8px;
+      font-weight: 500;
+      line-height: 1.25;
+      opacity: .85;
+    }
+
+    .arch-node.t1 {
+      background: var(--green-50);
+      border-color: var(--green-100);
+      color: var(--green-800);
+    }
+
+    .arch-node.t2 {
+      background: linear-gradient(135deg, var(--green-800), var(--green-700));
+      border-color: var(--green-600);
+      color: #fff;
+      max-width: none;
+      flex: 0 0 100%;
+      padding: 7px 14px;
+      box-shadow: 0 2px 6px rgba(6, 95, 70, .25);
+    }
+
+    .arch-node.t2 .nl {
+      font-size: 9.5px;
+    }
+
+    .arch-node.t2 .ns {
+      color: rgba(255, 255, 255, .78);
+    }
+
+    .arch-node.t3 {
+      background: var(--amber-100);
+      border-color: var(--amber-500);
+      color: var(--amber-700);
+    }
+
+    .arch-node.t4 {
+      background: var(--slate-100);
+      border-color: var(--slate-300);
+      color: var(--slate-700);
+    }
+
+    .arch-conn {
+      height: 9px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .arch-conn svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ─── FEATURES ─── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+    }
+
+    .feat {
+      background: var(--slate-50);
+      border-radius: 5px;
+      padding: 7px 8px;
+      border-left: 2.5px solid var(--green-600);
+    }
+
+    .feat.am {
+      border-left-color: var(--amber-500);
+    }
+
+    .feat svg {
+      width: 13px;
+      height: 13px;
+      color: var(--green-700);
+      margin-bottom: 3px;
+    }
+
+    .feat.am svg {
+      color: var(--amber-600);
+    }
+
+    .feat .ft {
+      font-family: var(--font-display);
+      font-size: 8px;
+      font-weight: 700;
+      color: var(--slate-900);
+      margin-bottom: 2px;
+      line-height: 1.2;
+    }
+
+    .feat .fd {
+      font-size: 6.8px;
+      color: var(--slate-600);
+      line-height: 1.35;
+    }
+
+    /* ─── SCREENSHOTS ─── */
+    .screens {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+    }
+
+    .ss {
+      background: linear-gradient(135deg, var(--slate-100), var(--slate-50));
+      border: 1px solid var(--slate-200);
+      border-radius: 5px;
+      height: 78px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ss::before {
+      content: '';
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      width: 24px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--green-500), var(--amber-500));
+      border-radius: 2px;
+    }
+
+    .ss svg {
+      width: 26px;
+      height: 26px;
+      color: var(--slate-400);
+      opacity: .5;
+    }
+
+    .ss .ssl {
+      position: absolute;
+      bottom: 4px;
+      left: 4px;
+      right: 4px;
+      background: rgba(255, 255, 255, .95);
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-family: var(--font-display);
+      font-size: 6.5px;
+      font-weight: 700;
+      color: var(--slate-700);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      text-align: center;
+      border: 1px solid var(--slate-200);
+    }
+
+    /* ─── RESULTS ─── */
+    .results {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+    }
+
+    .res {
+      background: linear-gradient(135deg, var(--green-50), #fff);
+      border: 1px solid var(--green-100);
+      border-radius: 5px;
+      padding: 7px 5px;
+      text-align: center;
+    }
+
+    .res.am {
+      background: linear-gradient(135deg, var(--amber-100), #fff);
+      border-color: rgba(245, 158, 11, .3);
+    }
+
+    .res .rv {
+      font-family: var(--font-display);
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--green-700);
+      line-height: 1;
+      letter-spacing: -.5px;
+    }
+
+    .res.am .rv {
+      color: var(--amber-700);
+    }
+
+    .res .rv .u {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .res .rl {
+      font-family: var(--font-display);
+      font-size: 6.5px;
+      font-weight: 700;
+      color: var(--slate-600);
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      margin-top: 3px;
+    }
+
+    .res .rd {
+      font-size: 6px;
+      color: var(--slate-500);
+      margin-top: 1px;
+    }
+
+    /* ─── FUTURE LIST ─── */
+    .future-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .future-list li {
+      font-size: 7px;
+      line-height: 1.4;
+      color: var(--slate-700);
+      padding-left: 11px;
+      position: relative;
+    }
+
+    .future-list li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--amber-600);
+      font-weight: 700;
+    }
+
+    /* ─── TECH BAR ─── */
+    .tech {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      flex-wrap: wrap;
+      padding: 1px 0;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: #fff;
+      border: 1px solid var(--slate-200);
+      padding: 2.5px 6px;
+      border-radius: 99px;
+      font-size: 6.5px;
+      font-weight: 600;
+      color: var(--slate-700);
+      font-family: var(--font-display);
+      letter-spacing: .3px;
+    }
+
+    .chip .dot {
+      width: 4.5px;
+      height: 4.5px;
+      border-radius: 50%;
+    }
+
+    .dot.py {
+      background: #3b82f6;
+    }
+
+    .dot.fa {
+      background: var(--green-600);
+    }
+
+    .dot.sk {
+      background: var(--amber-500);
+    }
+
+    .dot.xg {
+      background: #ef4444;
+    }
+
+    .dot.sq {
+      background: #6366f1;
+    }
+
+    .dot.ge {
+      background: #8b5cf6;
+    }
+
+    .dot.dk {
+      background: #0ea5e9;
+    }
+
+    /* ─── FOOTER ─── */
+    .footer {
+      background: linear-gradient(135deg, var(--green-900), var(--green-800));
+      padding: 9px 22px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 12px;
+      align-items: center;
+      color: #fff;
+    }
+
+    .footer-left {
+      font-size: 7px;
+      color: rgba(255, 255, 255, .8);
+      line-height: 1.4;
+    }
+
+    .footer-left strong {
+      color: #fff;
+      font-family: var(--font-display);
+      font-weight: 700;
+      letter-spacing: .5px;
+    }
+
+    .qr-block {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .qr-text {
+      text-align: right;
+      font-size: 6.5px;
+      color: rgba(255, 255, 255, .85);
+      line-height: 1.3;
+    }
+
+    .qr-text .qrt {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 7.5px;
+      color: var(--amber-500);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .qr-code {
+      width: 42px;
+      height: 42px;
+      background: #fff;
+      padding: 3px;
+      border-radius: 4px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
+    }
+
+    .qr-code svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .footer-right {
+      text-align: right;
+      font-size: 7px;
+      color: rgba(255, 255, 255, .8);
+      line-height: 1.4;
+    }
+
+    .footer-right strong {
+      color: var(--amber-500);
+      font-family: var(--font-display);
+      font-weight: 700;
+      letter-spacing: .5px;
+    }
+
+    @media print {
+      body {
+        background: none;
+        padding: 0;
+      }
+
+      .poster {
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="poster">
+    <div class="content">
+
+      <!-- ═══════ HEADER (Şartname A: CENG | Title | AYBU) ═══════ -->
+      <div class="header">
+        <div class="ceng-block">
+          <div class="label">Department</div>
+          <div class="name">Computer<br>Engineering</div>
+          <div class="sub">Faculty of Engineering<br>&amp; Natural Sciences</div>
+        </div>
+        <div class="title-block">
+          <div class="title-eyebrow">Graduation Project · 2025–2026</div>
+          <div class="project-title">
+            <span class="accent">AI-Powered</span> Smart Cafeteria<br>
+            Waste Reduction System
+          </div>
+          <div class="project-subtitle">
+            Reducing Food Waste through Machine Learning, Predictive Analytics &amp; Intelligent Menu Optimization
+          </div>
+        </div>
+        <div class="aybu-block">
+          <div class="aybu-logo">
+            <div class="text-large">AYBU</div>
+            <div class="text-small">EST. 2010</div>
+          </div>
+          <div class="year">2025–2026</div>
+        </div>
+      </div>
+
+      <!-- ═══════ META BAR (Şartname B: URL + Team + Supervisor) ═══════ -->
+      <div class="meta-bar">
+        <div class="meta-team">
+          <strong>Team 30</strong>
+          <span class="members">Cemil Alp · Ali Batuhan Zeytün · Muhammet Talha Şatır</span>
+        </div>
+        <div class="meta-supervisor">Supervisor: Asst. Prof. Muhammed Abdullah Bülbül</div>
+        <div class="meta-url">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path
+              d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+          </svg>
+          github.com/cemilalp02/smart-cafeteria-assistant
+        </div>
+      </div>
+
+      <!-- ═══════ HERO METRICS ═══════ -->
+      <div class="hero">
+        <div class="hero-m">
+          <div class="v amber">30–40<span class="u">%</span></div>
+          <div class="l">Food Wasted Daily</div>
+          <div class="d">Industry baseline in cafeterias</div>
+        </div>
+        <div class="hero-m">
+          <div class="v">816</div>
+          <div class="l">Production Records</div>
+          <div class="d">Real cafeteria data, ML trained</div>
+        </div>
+        <div class="hero-m">
+          <div class="v">2,573</div>
+          <div class="l">Student Ratings</div>
+          <div class="d">Anonymous feedback &amp; reviews</div>
+        </div>
+      </div>
+
+      <!-- ═══════ MAIN CONTENT ═══════ -->
+      <div class="main">
+
+        <!-- ── ROW 1: PROBLEM (left) + GOALS (right) ── -->
+        <div class="row split-60-40">
+          <div class="section am">
+            <div class="section-title">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              The Problem
+            </div>
+            <p class="body-text">
+              University cafeterias waste <strong>30–40%</strong> of prepared meals daily — an environmental, financial
+              and ethical crisis. Static menu planning and lack of real-time student feedback drive over-production. Our
+              system uses <span class="gh">AI &amp; machine learning</span> to predict demand, capture anonymous
+              preferences and optimize menus to <strong>reduce waste at the source</strong>.
+            </p>
+          </div>
+          <div class="section hl">
+            <div class="section-title">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="6" />
+                <circle cx="12" cy="12" r="2" />
+              </svg>
+              Project Goals
+            </div>
+            <ul class="goal-list">
+              <li><strong>Predict</strong> daily food waste with ensemble ML</li>
+              <li><strong>Optimize</strong> weekly menu via multi-objective AI</li>
+              <li><strong>Capture</strong> anonymous student feedback at scale</li>
+              <li><strong>Explain</strong> predictions through SHAP-based XAI</li>
+              <li><strong>Reduce</strong> cost, carbon footprint &amp; food waste</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- ── ROW 2: SYSTEM ARCHITECTURE (Şartname C1: block diagram, UML değil) ── -->
+        <div class="section">
+          <div class="section-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="2" width="20" height="8" rx="2" />
+              <rect x="2" y="14" width="20" height="8" rx="2" />
+              <line x1="6" y1="6" x2="6.01" y2="6" />
+              <line x1="6" y1="18" x2="6.01" y2="18" />
+            </svg>
+            System Architecture
+          </div>
+          <div class="arch">
+            <!-- LAYER 1: PRESENTATION -->
+            <div class="arch-label" style="color:var(--green-700);">Presentation Layer</div>
+            <div class="arch-row">
+              <div class="arch-node t1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" />
+                  <line x1="8" y1="21" x2="16" y2="21" />
+                  <line x1="12" y1="17" x2="12" y2="21" />
+                </svg>
+                <span class="nl">Web App</span>
+                <span class="ns">14 Pages · Jinja2</span>
+              </div>
+              <div class="arch-node t1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10" />
+                  <line x1="12" y1="20" x2="12" y2="4" />
+                  <line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+                <span class="nl">Admin Panel</span>
+                <span class="ns">Dashboard &amp; Charts</span>
+              </div>
+              <div class="arch-node t1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <rect x="5" y="2" width="14" height="20" rx="2" />
+                  <line x1="12" y1="18" x2="12.01" y2="18" />
+                </svg>
+                <span class="nl">Mobile App</span>
+                <span class="ns">Flutter · Cross-platform</span>
+              </div>
+              <div class="arch-node t1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <span class="nl">AI Chatbot</span>
+                <span class="ns">Gemini 2.0 Flash</span>
+              </div>
+            </div>
+            <div class="arch-conn">
+              <svg viewBox="0 0 660 9" preserveAspectRatio="none">
+                <defs>
+                  <marker id="a1" markerWidth="5" markerHeight="5" refX="2.5" refY="2.5" orient="auto">
+                    <path d="M0,0 L5,2.5 L0,5 Z" fill="var(--green-500)" />
+                  </marker>
+                </defs>
+                <line x1="90" y1="0" x2="90" y2="8" stroke="#10b981" stroke-width="1.3" marker-end="url(#a1)" />
+                <line x1="245" y1="0" x2="245" y2="8" stroke="#10b981" stroke-width="1.3" marker-end="url(#a1)" />
+                <line x1="415" y1="0" x2="415" y2="8" stroke="#10b981" stroke-width="1.3" marker-end="url(#a1)" />
+                <line x1="570" y1="0" x2="570" y2="8" stroke="#10b981" stroke-width="1.3" marker-end="url(#a1)" />
+                <line x1="90" y1="4.5" x2="570" y2="4.5" stroke="#10b981" stroke-width=".7" stroke-dasharray="3,2" />
+              </svg>
+            </div>
+
+            <!-- LAYER 2: API GATEWAY -->
+            <div class="arch-label" style="color:var(--green-800);">API Gateway</div>
+            <div class="arch-row">
+              <div class="arch-node t2">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <polyline points="13 2 13 9 20 9" />
+                  <path d="M20 9v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7z" />
+                </svg>
+                <span class="nl">FastAPI Backend &nbsp;·&nbsp; 20 Routers &nbsp;·&nbsp; 40+ REST Endpoints &nbsp;·&nbsp;
+                  WebSocket</span>
+                <span class="ns">CORS · JWT Auth · Rate Limiting · API Versioning</span>
+              </div>
+            </div>
+            <div class="arch-conn">
+              <svg viewBox="0 0 660 9" preserveAspectRatio="none">
+                <defs>
+                  <marker id="a2" markerWidth="5" markerHeight="5" refX="2.5" refY="2.5" orient="auto">
+                    <path d="M0,0 L5,2.5 L0,5 Z" fill="var(--amber-500)" />
+                  </marker>
+                </defs>
+                <line x1="120" y1="0" x2="120" y2="8" stroke="#f59e0b" stroke-width="1.3" marker-end="url(#a2)" />
+                <line x1="240" y1="0" x2="240" y2="8" stroke="#f59e0b" stroke-width="1.3" marker-end="url(#a2)" />
+                <line x1="350" y1="0" x2="350" y2="8" stroke="#f59e0b" stroke-width="1.3" marker-end="url(#a2)" />
+                <line x1="460" y1="0" x2="460" y2="8" stroke="#f59e0b" stroke-width="1.3" marker-end="url(#a2)" />
+                <line x1="555" y1="0" x2="555" y2="8" stroke="#f59e0b" stroke-width="1.3" marker-end="url(#a2)" />
+                <line x1="120" y1="4.5" x2="555" y2="4.5" stroke="#f59e0b" stroke-width=".7" stroke-dasharray="3,2" />
+              </svg>
+            </div>
+
+            <!-- LAYER 3: ML / AI ENGINE -->
+            <div class="arch-label" style="color:var(--amber-700);">ML / AI Engine</div>
+            <div class="arch-row">
+              <div class="arch-node t3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                  <polyline points="17 6 23 6 23 12" />
+                </svg>
+                <span class="nl">Waste Predictor</span>
+                <span class="ns">RF + GBR + XGBoost</span>
+              </div>
+              <div class="arch-node t3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
+                <span class="nl">Menu Optimizer</span>
+                <span class="ns">Multi-Objective AI</span>
+              </div>
+              <div class="arch-node t3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <span class="nl">Anomaly Detector</span>
+                <span class="ns">Outlier Detection</span>
+              </div>
+              <div class="arch-node t3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path
+                    d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                </svg>
+                <span class="nl">Sentiment NLP</span>
+                <span class="ns">TF-IDF · F1=0.82</span>
+              </div>
+              <div class="arch-node t3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                <span class="nl">XAI Explainer</span>
+                <span class="ns">SHAP Values</span>
+              </div>
+            </div>
+            <div class="arch-conn">
+              <svg viewBox="0 0 660 9" preserveAspectRatio="none">
+                <defs>
+                  <marker id="a3" markerWidth="5" markerHeight="5" refX="2.5" refY="2.5" orient="auto">
+                    <path d="M0,0 L5,2.5 L0,5 Z" fill="#94a3b8" />
+                  </marker>
+                </defs>
+                <line x1="180" y1="0" x2="180" y2="8" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#a3)" />
+                <line x1="330" y1="0" x2="330" y2="8" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#a3)" />
+                <line x1="480" y1="0" x2="480" y2="8" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#a3)" />
+                <line x1="180" y1="4.5" x2="480" y2="4.5" stroke="#94a3b8" stroke-width=".7" stroke-dasharray="3,2" />
+              </svg>
+            </div>
+
+            <!-- LAYER 4: DATA -->
+            <div class="arch-label" style="color:var(--slate-600);">Data Layer</div>
+            <div class="arch-row">
+              <div class="arch-node t4">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <ellipse cx="12" cy="5" rx="9" ry="3" />
+                  <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+                  <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+                </svg>
+                <span class="nl">SQLite + SQLAlchemy</span>
+                <span class="ns">12 Tables · ORM</span>
+              </div>
+              <div class="arch-node t4">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path
+                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                </svg>
+                <span class="nl">ML Models (.joblib)</span>
+                <span class="ns">Optuna Hyper-tuned</span>
+              </div>
+              <div class="arch-node t4">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+                <span class="nl">CSV Pipeline</span>
+                <span class="ns">Historical Menus</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── ROW 3: KEY FEATURES ── -->
+        <div class="section">
+          <div class="section-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polygon
+                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+            Key Features
+          </div>
+          <div class="features">
+            <div class="feat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+              <div class="ft">Real-time Prediction</div>
+              <div class="fd">Forecasts daily waste per meal using ensemble ML on 20+ features</div>
+            </div>
+            <div class="feat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+              </svg>
+              <div class="ft">Smart Menu Optimizer</div>
+              <div class="fd">Generates weekly menus balancing nutrition, popularity &amp; waste</div>
+            </div>
+            <div class="feat am">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+              <div class="ft">Anonymous Voting</div>
+              <div class="fd">5-star ratings, comments &amp; self-reported leftover capture</div>
+            </div>
+            <div class="feat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <div class="ft">AI Conversational Chat</div>
+              <div class="fd">Gemini-powered chatbot answers menu, nutrition &amp; allergen queries</div>
+            </div>
+            <div class="feat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <div class="ft">Explainable AI (XAI)</div>
+              <div class="fd">SHAP-based interpretation — managers see WHY a prediction was made</div>
+            </div>
+            <div class="feat am">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <div class="ft">Anomaly Alerts</div>
+              <div class="fd">Detects unusual waste patterns and triggers manager notifications</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── ROW 4: SCREENSHOTS + RESULTS ── -->
+        <div class="row split-60-40">
+          <div class="section">
+            <div class="section-title">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+              System Screenshots
+            </div>
+            <div class="screens">
+              <div class="ss">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M9 9h6v6H9z" />
+                </svg>
+                <div class="ssl">Admin Dashboard</div>
+              </div>
+              <div class="ss">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                  <path d="M2 17l10 5 10-5" />
+                  <path d="M2 12l10 5 10-5" />
+                </svg>
+                <div class="ssl">Menu Optimizer</div>
+              </div>
+              <div class="ss">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="12" cy="12" r="10" />
+                  <path
+                    d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                </svg>
+                <div class="ssl">Mobile Voting</div>
+              </div>
+            </div>
+          </div>
+          <div class="section am">
+            <div class="section-title">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="20" x2="12" y2="10" />
+                <line x1="18" y1="20" x2="18" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="16" />
+              </svg>
+              Model Results
+            </div>
+            <div class="results" style="grid-template-columns:1fr 1fr;gap:5px;">
+              <div class="res">
+                <div class="rv">2.6<span class="u"></span></div>
+                <div class="rl">MAE (portions)</div>
+              </div>
+              <div class="res am">
+                <div class="rv">0.82<span class="u"></span></div>
+                <div class="rl">Sentiment F1</div>
+              </div>
+              <div class="res">
+                <div class="rv">25<span class="u">%</span></div>
+                <div class="rl">Top Feature Impact</div>
+              </div>
+              <div class="res am">
+                <div class="rv">136<span class="u"></span></div>
+                <div class="rl">Unit Tests</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── ROW 5: CONCLUSION + FUTURE WORK ── -->
+        <div class="row two">
+          <div class="section hl">
+            <div class="section-title">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+              Conclusion
+            </div>
+            <p class="body-text">
+              We delivered a <span class="gh">production-ready AI platform</span> that unifies waste prediction, menu
+              optimization and anonymous student feedback into one ecosystem. Trained on <strong>816 real production
+                records</strong> and <strong>2,573 ratings</strong>, our ensemble model achieves an MAE of 2.6 portions,
+              with student ratings ranked as the <strong>#1 most important feature</strong> (25% impact). The system
+              demonstrates that <span class="gh">data-driven cafeterias</span> can meaningfully cut food waste while
+              improving meal satisfaction.
+            </p>
+          </div>
+          <div class="section am">
+            <div class="section-title">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+              Future Improvements
+            </div>
+            <ul class="future-list">
+              <li>Computer vision for automatic plate-waste measurement</li>
+              <li>LSTM / Transformer models for time-series demand</li>
+              <li>Personalized nutrition recommendations</li>
+              <li>Carbon footprint &amp; sustainability scoring</li>
+              <li>Multi-campus deployment with federated learning</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- ── ROW 6: TECH STACK BAR ── -->
+        <div class="tech">
+          <div class="chip"><span class="dot py"></span> Python 3.10</div>
+          <div class="chip"><span class="dot fa"></span> FastAPI</div>
+          <div class="chip"><span class="dot sk"></span> scikit-learn</div>
+          <div class="chip"><span class="dot xg"></span> XGBoost</div>
+          <div class="chip"><span class="dot sq"></span> SQLAlchemy</div>
+          <div class="chip"><span class="dot ge"></span> Gemini API</div>
+          <div class="chip"><span class="dot dk"></span> Flutter</div>
+        </div>
+
+      </div>
+
+      <!-- ═══════ FOOTER ═══════ -->
+      <div class="footer">
+        <div class="footer-left">
+          <strong>Ankara Yıldırım Beyazıt University</strong><br>
+          Department of Computer Engineering · Graduation Project
+        </div>
+        <div class="qr-block">
+          <div class="qr-text">
+            <div class="qrt">Scan to Explore</div>
+            Source code &amp; demo<br>on GitHub
+          </div>
+          <div class="qr-code">
+            <!-- Stylized QR placeholder (replace with real QR pointing to repo) -->
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <rect width="100" height="100" fill="#fff" />
+              <g fill="#0f172a">
+                <rect x="5" y="5" width="22" height="22" />
+                <rect x="9" y="9" width="14" height="14" fill="#fff" />
+                <rect x="13" y="13" width="6" height="6" />
+                <rect x="73" y="5" width="22" height="22" />
+                <rect x="77" y="9" width="14" height="14" fill="#fff" />
+                <rect x="81" y="13" width="6" height="6" />
+                <rect x="5" y="73" width="22" height="22" />
+                <rect x="9" y="77" width="14" height="14" fill="#fff" />
+                <rect x="13" y="81" width="6" height="6" />
+                <rect x="35" y="5" width="4" height="4" />
+                <rect x="43" y="5" width="4" height="4" />
+                <rect x="51" y="9" width="4" height="4" />
+                <rect x="59" y="5" width="4" height="4" />
+                <rect x="5" y="35" width="4" height="4" />
+                <rect x="13" y="39" width="4" height="4" />
+                <rect x="21" y="35" width="4" height="4" />
+                <rect x="35" y="35" width="4" height="4" />
+                <rect x="43" y="39" width="4" height="4" />
+                <rect x="51" y="35" width="8" height="4" />
+                <rect x="63" y="39" width="4" height="4" />
+                <rect x="71" y="35" width="4" height="4" />
+                <rect x="79" y="35" width="4" height="4" />
+                <rect x="87" y="39" width="4" height="4" />
+                <rect x="35" y="43" width="8" height="4" />
+                <rect x="47" y="47" width="4" height="4" />
+                <rect x="55" y="43" width="4" height="4" />
+                <rect x="63" y="47" width="4" height="4" />
+                <rect x="75" y="43" width="4" height="4" />
+                <rect x="83" y="47" width="8" height="4" />
+                <rect x="35" y="55" width="4" height="4" />
+                <rect x="43" y="51" width="4" height="4" />
+                <rect x="51" y="55" width="4" height="4" />
+                <rect x="59" y="59" width="4" height="4" />
+                <rect x="67" y="55" width="8" height="4" />
+                <rect x="79" y="51" width="4" height="4" />
+                <rect x="87" y="55" width="4" height="4" />
+                <rect x="35" y="63" width="4" height="4" />
+                <rect x="43" y="67" width="8" height="4" />
+                <rect x="55" y="63" width="4" height="4" />
+                <rect x="63" y="67" width="4" height="4" />
+                <rect x="71" y="63" width="4" height="4" />
+                <rect x="79" y="67" width="4" height="4" />
+                <rect x="87" y="63" width="4" height="4" />
+                <rect x="35" y="75" width="4" height="4" />
+                <rect x="43" y="79" width="4" height="4" />
+                <rect x="51" y="83" width="4" height="4" />
+                <rect x="59" y="75" width="4" height="4" />
+                <rect x="67" y="79" width="4" height="4" />
+                <rect x="75" y="83" width="4" height="4" />
+                <rect x="83" y="75" width="4" height="4" />
+                <rect x="91" y="79" width="4" height="4" />
+                <rect x="35" y="87" width="4" height="4" />
+                <rect x="47" y="91" width="4" height="4" />
+                <rect x="55" y="87" width="8" height="4" />
+                <rect x="67" y="91" width="4" height="4" />
+                <rect x="79" y="87" width="4" height="4" />
+                <rect x="87" y="91" width="4" height="4" />
+              </g>
+            </svg>
+          </div>
+        </div>
+        <div class="footer-right">
+          <strong>TEAM 30</strong><br>
+          May 21, 2026 · Block A, Ground Floor
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+
+</html>

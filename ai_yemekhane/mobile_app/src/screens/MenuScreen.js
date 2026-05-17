@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { C, MENU_FIELDS, isDrinkLikeItem } from "../theme";
+import { C, MENU_FIELDS, categoryLabelFor } from "../theme";
 import { apiGet } from "../api";
 import { cacheSet, cacheGet, CACHE_KEYS, formatAge } from "../cache";
 import { SectionCard, DataRow, PrimaryButton } from "../components";
@@ -89,10 +89,7 @@ export default function MenuScreen() {
             </View>
             {MENU_FIELDS.map((field, index) => {
               const value = menu[field.key] || "-";
-              const label =
-                field.key === "salata"
-                  ? isDrinkLikeItem(value) ? "İçecek" : "Salata"
-                  : field.label;
+              const label = categoryLabelFor(field.key, value);
               return (
                 <DataRow
                   key={field.key}
